@@ -5,53 +5,7 @@
 
 #define PI 3.14159265358979323846f
 
-#define ARR_LEN(arr) (sizeof(arr)/sizeof(*arr))
-
-typedef enum {
-  COLOR_BLACK   = 0xFF000000,
-  COLOR_WHITE   = 0xFFFFFFFF,
-  COLOR_GREEN   = 0xFF00FF00,
-  COLOR_RED     = 0xFFFF0000,
-  COLOR_BLUE    = 0xFF0000FF,
-  COLOR_YELLOW  = 0xFFFFFF00,
-  COLOR_MAGENTA = 0xFFFF00FF,
-  COLOR_CYAN    = 0xFF00FFFF,
-  COLOR_PINK    = 0xFFF6A5D1,
-} Color;
-
-typedef struct {
-  Color *memory;
-  size_t size;
-  int width;
-  int height;
-  int windowWidth;
-  int windowHeight;
-  HDC deviceContext;
-  BITMAPINFO info;
-} BackBuffer;
-
-BackBuffer makeBackBuffer(int width, int height) {
-  BackBuffer bb = {0};
-
-  bb.size = width * height * sizeof(*bb.memory);
-  bb.memory = malloc(bb.size);
-
-  bb.width = width;
-  bb.height = height;
-
-  bb.info.bmiHeader.biSize = sizeof(bb.info.bmiHeader);
-  bb.info.bmiHeader.biWidth = width;
-  bb.info.bmiHeader.biHeight = height;
-  bb.info.bmiHeader.biPlanes = 1;
-  bb.info.bmiHeader.biBitCount = 32;
-  bb.info.bmiHeader.biCompression = BI_RGB;
-
-  return bb;
-}
-
-void setPixel(BackBuffer *bb, int x, int y, Color color) {
-  bb->memory[y*bb->width + x] = color;
-}
+#define ARRAY_LENGTH(array) (sizeof(array)/sizeof(*array))
 
 LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
   switch (msg) {
@@ -65,6 +19,18 @@ LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 }
 
 int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdShow) {
+  int backBufferWidth = 256;
+  int backBufferHeight = 192;
+  int *backBuffer = malloc(backBufferWidth * backBufferHeight * sizeof(*backBuffer));
+
+  BITMAPINFO backBufferBitmapInfo = {0};
+  backBufferBitmapInfo.bmiHeader.biSize = sizeof(backBufferBitmapInfo.bmiHeader);
+  backBufferBitmapInfo.bmiHeader.biWidth = backBufferWidth;
+  backBufferBitmapInfo.bmiHeader.biHeight = backBufferHeight;
+  backBufferBitmapInfo.bmiHeader.biPlanes = 1;
+  backBufferBitmapInfo.bmiHeader.biBitCount = 32;
+  backBufferBitmapInfo.bmiHeader.biCompression = BI_RGB;
+
   WNDCLASS wndClass = {0};
   wndClass.style = CS_HREDRAW | CS_VREDRAW;
   wndClass.lpfnWndProc = wndProc;
@@ -73,8 +39,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   wndClass.lpszClassName = "Boulder Dash";
   RegisterClass(&wndClass);
 
-  int windowWidth = 1920/2;
-  int windowHeight = 1080/2;
+  int windowWidth = backBufferWidth;
+  int windowHeight = backBufferHeight;
 
   RECT crect = {0};
   crect.right = windowWidth;
@@ -101,8 +67,6 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
   bool running = true;
   HDC deviceContext = GetDC(wnd);
-  int bbInvScale = 4;
-  BackBuffer bb = makeBackBuffer(windowWidth/bbInvScale, windowHeight/bbInvScale);
 
   while (running) {
     prefcPrev = perfc;
@@ -136,12 +100,12 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       }
     }
 
-    for (size_t i = 0; i < bb.width*bb.height; ++i) {
-      bb.memory[i] = COLOR_GREEN;
+    for (int i = 0; i < backBufferWidth * backBufferHeight; ++i) {
+      backBuffer[i] = 0xFF00FF00;
     }
 
     StretchDIBits(deviceContext, 0, 0, windowWidth, windowHeight,
-                  0, 0, bb.width, bb.height, bb.memory,
-                  &bb.info, DIB_RGB_COLORS, SRCCOPY);
+                  0, 0, backBufferWidth, backBufferHeight, backBuffer,
+                  &backBufferBitmapInfo, DIB_RGB_COLORS, SRCCOPY);
   }
 }
