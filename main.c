@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <math.h>
 #include <stdio.h>
+#include <assert.h>
 
 #define PI 3.14159265358979323846f
 
@@ -67,6 +68,19 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
   bool running = true;
   HDC deviceContext = GetDC(wnd);
+
+  {
+    HANDLE fileHandle = CreateFile("sprites.bmp", GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    assert(fileHandle != INVALID_HANDLE_VALUE);
+
+    LARGE_INTEGER fileSize;
+    GetFileSizeEx(fileHandle, &fileSize);
+
+    void *fileContents = malloc(fileSize.LowPart);
+    DWORD bytesRead;
+    ReadFile(fileHandle, fileContents, fileSize.LowPart, &bytesRead, NULL);
+    assert(bytesRead == fileSize.LowPart);
+  }
 
   while (running) {
     prefcPrev = perfc;
