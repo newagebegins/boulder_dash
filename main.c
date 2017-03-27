@@ -3,6 +3,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <assert.h>
+#include <stdint.h>
 
 #define PI 3.14159265358979323846f
 
@@ -69,17 +70,28 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   bool running = true;
   HDC deviceContext = GetDC(wnd);
 
-  {
-    HANDLE fileHandle = CreateFile("sprites.bmp", GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    assert(fileHandle != INVALID_HANDLE_VALUE);
+  HANDLE fileHandle = CreateFile("sprites.bmp", GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  assert(fileHandle != INVALID_HANDLE_VALUE);
+  LARGE_INTEGER fileSize;
+  GetFileSizeEx(fileHandle, &fileSize);
+  uint8_t *fileContents = malloc(fileSize.LowPart);
+  DWORD bytesRead;
+  ReadFile(fileHandle, fileContents, fileSize.LowPart, &bytesRead, NULL);
+  assert(bytesRead == fileSize.LowPart);
+  CloseHandle(fileHandle);
 
-    LARGE_INTEGER fileSize;
-    GetFileSizeEx(fileHandle, &fileSize);
+  int pixelsOffset = *(int*)(fileContents + 10);
+  int imageWidth = *(int*)(fileContents + 18);
+  int imageHeight = *(int*)(fileContents + 22);
+  uint8_t *pixels = fileContents + pixelsOffset;
 
-    void *fileContents = malloc(fileSize.LowPart);
-    DWORD bytesRead;
-    ReadFile(fileHandle, fileContents, fileSize.LowPart, &bytesRead, NULL);
-    assert(bytesRead == fileSize.LowPart);
+  int *texture = malloc(imageWidth * imageHeight * sizeof(*texture));
+  for (int i = 0, j = 0; i < imageWidth*imageHeight*3; i += 3, ++j) {
+    int red = pixels[i] << 0;
+    int green = pixels[i+1] << 8;
+    int blue = pixels[i+2] << 16;
+    int color = red | green | blue;
+    texture[j] = color;
   }
 
   while (running) {
@@ -116,6 +128,12 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
     for (int i = 0; i < backBufferWidth * backBufferHeight; ++i) {
       backBuffer[i] = 0xFF00FF00;
+    }
+
+    for (int srcY = 0, destY = 0; srcY < imageHeight; ++srcY, ++destY) {
+      for (int srcX = 0, destX = 0; srcX < imageWidth; ++srcX, ++destX) {
+        backBuffer[destY*backBufferWidth + destX] = texture[srcY*imageWidth + srcX];
+      }
     }
 
     StretchDIBits(deviceContext, 0, 0, windowWidth, windowHeight,
