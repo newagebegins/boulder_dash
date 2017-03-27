@@ -41,8 +41,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   wndClass.lpszClassName = "Boulder Dash";
   RegisterClass(&wndClass);
 
-  int windowWidth = backBufferWidth;
-  int windowHeight = backBufferHeight;
+  int windowWidth = backBufferWidth*3;
+  int windowHeight = backBufferHeight*3;
 
   RECT crect = {0};
   crect.right = windowWidth;
