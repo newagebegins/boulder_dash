@@ -16,8 +16,10 @@
 #define SPRITE_ATLAS_WIDTH 256
 #define MAP_HEIGHT 3
 #define MAP_WIDTH 3
+#define HERO_MOVE_TIME 0.2f
 
 typedef enum {
+  Tile_empty,
   Tile_hero,
   Tile_earth,
   Tile_gem,
@@ -179,6 +181,12 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   };
 
   bool rightIsDown = false;
+  bool leftIsDown = false;
+  bool upIsDown = false;
+  bool downIsDown = false;
+  float heroMoveTimer = 0;
+  int heroRow = 2;
+  int heroCol = 1;
 
   while (running) {
     prefcPrev = perfc;
@@ -204,6 +212,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               break;
 
             case VK_LEFT:
+              leftIsDown = isDown;
               break;
 
             case VK_RIGHT:
@@ -211,9 +220,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               break;
 
             case VK_UP:
+              upIsDown = isDown;
               break;
               
             case VK_DOWN:
+              downIsDown = isDown;
               break;
           }
           break;
@@ -226,7 +237,39 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     }
 
     if (rightIsDown) {
-      OutputDebugString("right is down\n");
+      heroMoveTimer += dt;
+      if (heroMoveTimer >= HERO_MOVE_TIME) {
+        heroMoveTimer -= HERO_MOVE_TIME;
+        map[heroRow][heroCol] = Tile_empty;
+        ++heroCol;
+        map[heroRow][heroCol] = Tile_hero;
+      }
+    } else if (leftIsDown) {
+      heroMoveTimer += dt;
+      if (heroMoveTimer >= HERO_MOVE_TIME) {
+        heroMoveTimer -= HERO_MOVE_TIME;
+        map[heroRow][heroCol] = Tile_empty;
+        --heroCol;
+        map[heroRow][heroCol] = Tile_hero;
+      }      
+    } else if (upIsDown) {
+      heroMoveTimer += dt;
+      if (heroMoveTimer >= HERO_MOVE_TIME) {
+        heroMoveTimer -= HERO_MOVE_TIME;
+        map[heroRow][heroCol] = Tile_empty;
+        --heroRow;
+        map[heroRow][heroCol] = Tile_hero;
+      }      
+    } else if (downIsDown) {
+      heroMoveTimer += dt;
+      if (heroMoveTimer >= HERO_MOVE_TIME) {
+        heroMoveTimer -= HERO_MOVE_TIME;
+        map[heroRow][heroCol] = Tile_empty;
+        ++heroRow;
+        map[heroRow][heroCol] = Tile_hero;
+      }      
+    } else {
+      heroMoveTimer = 0;
     }
 
     for (int i = 0; i < BACKBUFFER_PIXEL_COUNT; ++i) {
