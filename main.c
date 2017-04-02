@@ -178,6 +178,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     {Tile_earth, Tile_hero, Tile_earth},
   };
 
+  bool rightIsDown = false;
+
   while (running) {
     prefcPrev = perfc;
     QueryPerformanceCounter(&perfc);
@@ -200,6 +202,19 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             case VK_ESCAPE:
               running = false;
               break;
+
+            case VK_LEFT:
+              break;
+
+            case VK_RIGHT:
+              rightIsDown = isDown;
+              break;
+
+            case VK_UP:
+              break;
+              
+            case VK_DOWN:
+              break;
           }
           break;
 
@@ -208,6 +223,10 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           DispatchMessage(&msg);
           break;
       }
+    }
+
+    if (rightIsDown) {
+      OutputDebugString("right is down\n");
     }
 
     for (int i = 0; i < BACKBUFFER_PIXEL_COUNT; ++i) {
