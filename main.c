@@ -46,23 +46,27 @@ void drawSprite(int bbX, int bbY, int atlX, int atlY) {
 }
 
 void drawTile(Tile tile, int col, int row) {
+  if (tile == Tile_empty) {
+    return;
+  }
+
   int atlX = 0;
   int atlY = 0;
 
   switch (tile) {
     case Tile_earth:
-      atlX = 16;
-      atlY = 32;
+      atlX = 32;
+      atlY = 16;
       break;
 
     case Tile_brick:
-      atlX = 16;
-      atlY = 128;
+      atlX = 48;
+      atlY = 16;
       break;
 
     case Tile_hero:
-      atlX = 48;
-      atlY = 48;
+      atlX = 0;
+      atlY = 0;
       break;
   }
 
@@ -84,16 +88,16 @@ LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 }
 
 char *level1 =
-  "#################\n"
-  "#...... ..$.o ..#\n"
-  "#.oRo...... ....#\n"
-  "#.......... .. .#\n"
-  "#o.  ...........#\n"
-  "#o.oo...........#\n"
-  "#...o..o........#\n"
-  "#===============#\n"
-  "#. ...o..$. ..o.#\n"
-  "#..$.....o..... #\n"
+  "#################"
+  "#...... ..$.o ..#"
+  "#.oRo...... ....#"
+  "#.......... .. .#"
+  "#o.  ...........#"
+  "#o.oo...........#"
+  "#...o..o........#"
+  "#===============#"
+  "#. ...o..$. ..o.#"
+  "#..$.....o..... #"
   "#################";
 
 int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdShow) {
@@ -272,9 +276,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       heroMoveTimer = 0;
     }
 
-    for (int i = 0; i < BACKBUFFER_PIXEL_COUNT; ++i) {
-      backbuffer[i] = 0xFF00FF00;
-    }
+    memset(backbuffer, 0, BACKBUFFER_PIXEL_COUNT);
 
     for (int row = 0; row < MAP_HEIGHT; ++row) {
       for (int col = 0; col < MAP_WIDTH; ++col) {
