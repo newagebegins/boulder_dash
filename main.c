@@ -13,25 +13,14 @@
 #define BACKBUFFER_WIDTH 256
 #define BACKBUFFER_HEIGHT 192
 #define BACKBUFFER_PIXEL_COUNT BACKBUFFER_WIDTH*BACKBUFFER_HEIGHT
+#define BACKBUFFER_BYTES BACKBUFFER_PIXEL_COUNT*sizeof(int)
 #define SPRITE_ATLAS_WIDTH 256
-#define MAP_HEIGHT 3
-#define MAP_WIDTH 3
 #define HERO_MOVE_TIME 0.2f
-
-typedef enum {
-  Tile_empty,
-  Tile_hero,
-  Tile_earth,
-  Tile_gem,
-  Tile_wall,
-  Tile_brick,
-  Tile_count,
-} Tile;
 
 uint32_t *backbuffer;
 uint32_t *spriteAtlas;
-int cameraX;
-int cameraY;
+int cameraX = 0;
+int cameraY = 0;
 
 void drawSprite(int bbX, int bbY, int atlX, int atlY) {
   for (int y = 0; y < TILE_HEIGHT; ++y) {
@@ -40,13 +29,15 @@ void drawSprite(int bbX, int bbY, int atlX, int atlY) {
       int srcY = atlY + y;
       int dstX = bbX + x;
       int dstY = bbY + y;
-      backbuffer[dstY*BACKBUFFER_WIDTH + dstX] = spriteAtlas[srcY*SPRITE_ATLAS_WIDTH + srcX];
+      int dstOffset = dstY*BACKBUFFER_WIDTH + dstX;
+      assert(dstOffset >= 0 && dstOffset < BACKBUFFER_PIXEL_COUNT);
+      backbuffer[dstOffset] = spriteAtlas[srcY*SPRITE_ATLAS_WIDTH + srcX];
     }
   }
 }
 
-void drawTile(Tile tile, int col, int row) {
-  if (tile == Tile_empty) {
+void drawTile(char tile, int col, int row) {
+  if (tile == ' ' || tile == '$') {
     return;
   }
 
@@ -54,19 +45,32 @@ void drawTile(Tile tile, int col, int row) {
   int atlY = 0;
 
   switch (tile) {
-    case Tile_earth:
+    case '.':
       atlX = 32;
       atlY = 16;
       break;
 
-    case Tile_brick:
+    case '=':
       atlX = 48;
       atlY = 16;
       break;
 
-    case Tile_hero:
+    case 'R':
       atlX = 0;
       atlY = 0;
+      break;
+
+    case 'o':
+      atlX = 16;
+      atlY = 16;
+      break;
+
+    case '#':
+      atlX = 0;
+      atlY = 16;
+      break;
+
+    case '$':
       break;
   }
 
@@ -88,20 +92,21 @@ LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 }
 
 char *level1 =
-  "#################"
-  "#...... ..$.o ..#"
-  "#.oRo...... ....#"
-  "#.......... .. .#"
-  "#o.  ...........#"
-  "#o.oo...........#"
-  "#...o..o........#"
-  "#===============#"
-  "#. ...o..$. ..o.#"
-  "#..$.....o..... #"
-  "#################";
+  "################"
+  "#...... ..$.o .#"
+  "o.oRo...... ...#"
+  "#.......... .. #"
+  "#o.  ..........#"
+  "#o.oo..........#"
+  "#...o..o.......#"
+  "#==============#"
+  "#. ...o..$. ..o#"
+  "#..$.....o.....#"
+  "#..$.....o.....#"
+  "################";
 
 int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdShow) {
-  backbuffer = malloc(BACKBUFFER_WIDTH * BACKBUFFER_HEIGHT * sizeof(*backbuffer));
+  backbuffer = malloc(BACKBUFFER_BYTES);
 
   BITMAPINFO backbufferBmpInf = {0};
   backbufferBmpInf.bmiHeader.biSize = sizeof(backbufferBmpInf.bmiHeader);
@@ -178,19 +183,25 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     }
   }
 
-  Tile map[MAP_HEIGHT][MAP_WIDTH] = {
-    {Tile_earth, Tile_earth, Tile_earth},
-    {Tile_earth, Tile_brick, Tile_earth},
-    {Tile_earth, Tile_hero, Tile_earth},
-  };
-
   bool rightIsDown = false;
   bool leftIsDown = false;
   bool upIsDown = false;
   bool downIsDown = false;
   float heroMoveTimer = 0;
-  int heroRow = 2;
-  int heroCol = 1;
+  int heroRow = 0;
+  int heroCol = 0;
+
+  int mapWidth = 16;
+  int mapHeight = 12;
+  int mapBytes = mapWidth * mapHeight;
+  char *map = malloc(mapBytes);
+  for (int i = 0; i < mapBytes; ++i) {
+    map[i] = level1[i];
+    if (map[i] == 'R') {
+      heroRow = i / mapWidth;
+      heroCol = i % mapWidth;
+    }
+  }
 
   while (running) {
     prefcPrev = perfc;
@@ -240,47 +251,32 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       }
     }
 
-    if (rightIsDown) {
+    if (rightIsDown || leftIsDown || upIsDown || downIsDown) {
       heroMoveTimer += dt;
       if (heroMoveTimer >= HERO_MOVE_TIME) {
         heroMoveTimer -= HERO_MOVE_TIME;
-        map[heroRow][heroCol] = Tile_empty;
-        ++heroCol;
-        map[heroRow][heroCol] = Tile_hero;
+        map[heroRow*mapWidth + heroCol] = ' ';
+        if (rightIsDown) {
+          ++heroCol;
+        } else if (leftIsDown) {
+          --heroCol;
+        } else if (upIsDown) {
+          --heroRow;
+        } else if (downIsDown) {
+          ++heroRow;
+        }
+        assert(heroRow >= 0 && heroRow < mapHeight && heroCol >= 0 && heroCol < mapWidth);
+        map[heroRow*mapWidth + heroCol] = 'R';
       }
-    } else if (leftIsDown) {
-      heroMoveTimer += dt;
-      if (heroMoveTimer >= HERO_MOVE_TIME) {
-        heroMoveTimer -= HERO_MOVE_TIME;
-        map[heroRow][heroCol] = Tile_empty;
-        --heroCol;
-        map[heroRow][heroCol] = Tile_hero;
-      }      
-    } else if (upIsDown) {
-      heroMoveTimer += dt;
-      if (heroMoveTimer >= HERO_MOVE_TIME) {
-        heroMoveTimer -= HERO_MOVE_TIME;
-        map[heroRow][heroCol] = Tile_empty;
-        --heroRow;
-        map[heroRow][heroCol] = Tile_hero;
-      }      
-    } else if (downIsDown) {
-      heroMoveTimer += dt;
-      if (heroMoveTimer >= HERO_MOVE_TIME) {
-        heroMoveTimer -= HERO_MOVE_TIME;
-        map[heroRow][heroCol] = Tile_empty;
-        ++heroRow;
-        map[heroRow][heroCol] = Tile_hero;
-      }      
     } else {
       heroMoveTimer = 0;
     }
 
-    memset(backbuffer, 0, BACKBUFFER_PIXEL_COUNT);
+    memset(backbuffer, 0, BACKBUFFER_BYTES);
 
-    for (int row = 0; row < MAP_HEIGHT; ++row) {
-      for (int col = 0; col < MAP_WIDTH; ++col) {
-        drawTile(map[row][col], col, row);
+    for (int row = 0; row < mapHeight; ++row) {
+      for (int col = 0; col < mapWidth; ++col) {
+        drawTile(map[row*mapWidth + col], col, row);
       }
     }
 
