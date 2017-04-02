@@ -14,12 +14,13 @@
 #define BACKBUFFER_HEIGHT 192
 #define BACKBUFFER_PIXEL_COUNT BACKBUFFER_WIDTH*BACKBUFFER_HEIGHT
 #define SPRITE_ATLAS_WIDTH 256
-#define MAP_HEIGHT 2
+#define MAP_HEIGHT 3
 #define MAP_WIDTH 3
 
 typedef enum {
+  Tile_hero,
   Tile_earth,
-  Tile_Gem,
+  Tile_gem,
   Tile_wall,
   Tile_brick,
   Tile_count,
@@ -55,6 +56,11 @@ void drawTile(Tile tile, int col, int row) {
     case Tile_brick:
       atlX = 16;
       atlY = 128;
+      break;
+
+    case Tile_hero:
+      atlX = 48;
+      atlY = 48;
       break;
   }
 
@@ -169,6 +175,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   Tile map[MAP_HEIGHT][MAP_WIDTH] = {
     {Tile_earth, Tile_earth, Tile_earth},
     {Tile_earth, Tile_brick, Tile_earth},
+    {Tile_earth, Tile_hero, Tile_earth},
   };
 
   while (running) {
