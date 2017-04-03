@@ -15,7 +15,7 @@
 #define BACKBUFFER_PIXEL_COUNT BACKBUFFER_WIDTH*BACKBUFFER_HEIGHT
 #define BACKBUFFER_BYTES BACKBUFFER_PIXEL_COUNT*sizeof(int)
 #define SPRITE_ATLAS_WIDTH 256
-#define HERO_MOVE_TIME 0.2f
+#define HERO_MOVE_TIME 0.1f
 
 uint32_t *backbuffer;
 uint32_t *spriteAtlas;
@@ -255,18 +255,28 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       heroMoveTimer += dt;
       if (heroMoveTimer >= HERO_MOVE_TIME) {
         heroMoveTimer -= HERO_MOVE_TIME;
-        map[heroRow*mapWidth + heroCol] = ' ';
+
+        int newRow = heroRow;
+        int newCol = heroCol;
+
         if (rightIsDown) {
-          ++heroCol;
+          ++newCol;
         } else if (leftIsDown) {
-          --heroCol;
+          --newCol;
         } else if (upIsDown) {
-          --heroRow;
+          --newRow;
         } else if (downIsDown) {
-          ++heroRow;
+          ++newRow;
         }
-        assert(heroRow >= 0 && heroRow < mapHeight && heroCol >= 0 && heroCol < mapWidth);
-        map[heroRow*mapWidth + heroCol] = 'R';
+
+        char newCell = map[newRow*mapWidth + newCol];
+        if (newCell != '#' && newCell != '=' && newCell != 'o') {
+          map[heroRow*mapWidth + heroCol] = ' ';
+          heroRow = newRow;
+          heroCol = newCol;
+          assert(heroRow >= 0 && heroRow < mapHeight && heroCol >= 0 && heroCol < mapWidth);
+          map[heroRow*mapWidth + heroCol] = 'R';
+        }
       }
     } else {
       heroMoveTimer = 0;
