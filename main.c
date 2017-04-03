@@ -16,11 +16,15 @@
 #define BACKBUFFER_BYTES BACKBUFFER_PIXEL_COUNT*sizeof(int)
 #define SPRITE_ATLAS_WIDTH 256
 #define HERO_MOVE_TIME 0.1f
+#define HERO_ANIM_FRAME_DURATION 0.05f
+#define HERO_ANIM_FRAME_COUNT 6
 
 uint32_t *backbuffer;
 uint32_t *spriteAtlas;
 int cameraX = 0;
 int cameraY = 0;
+int heroMoveFrame = 0;
+float heroAnimTimer = 0;
 
 void drawSprite(int bbX, int bbY, int atlX, int atlY) {
   for (int y = 0; y < TILE_HEIGHT; ++y) {
@@ -34,6 +38,10 @@ void drawSprite(int bbX, int bbY, int atlX, int atlY) {
       backbuffer[dstOffset] = spriteAtlas[srcY*SPRITE_ATLAS_WIDTH + srcX];
     }
   }
+}
+
+bool heroIsMoving() {
+  return heroAnimTimer > 0;
 }
 
 void drawTile(char tile, int col, int row) {
@@ -56,8 +64,13 @@ void drawTile(char tile, int col, int row) {
       break;
 
     case 'R':
-      atlX = 0;
-      atlY = 0;
+      if (heroIsMoving()) {
+        atlX = 32 + heroMoveFrame * 16;
+        atlY = 0;
+      } else {
+        atlX = 0;
+        atlY = 0;
+      }
       break;
 
     case 'o':
@@ -253,6 +266,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
     if (rightIsDown || leftIsDown || upIsDown || downIsDown) {
       heroMoveTimer += dt;
+      heroAnimTimer += dt;
       if (heroMoveTimer >= HERO_MOVE_TIME) {
         heroMoveTimer -= HERO_MOVE_TIME;
 
@@ -280,7 +294,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       }
     } else {
       heroMoveTimer = 0;
+      heroAnimTimer = 0;
     }
+
+    int k = (int)(heroAnimTimer / HERO_ANIM_FRAME_DURATION);
+    heroMoveFrame = k % HERO_ANIM_FRAME_COUNT;
 
     memset(backbuffer, 0, BACKBUFFER_BYTES);
 
