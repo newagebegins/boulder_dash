@@ -25,11 +25,17 @@ int cameraX = 0;
 int cameraY = 0;
 int heroMoveFrame = 0;
 float heroAnimTimer = 0;
+bool heroMovingRight = false;
 
-void drawSprite(int bbX, int bbY, int atlX, int atlY) {
+void drawSprite(int bbX, int bbY, int atlX, int atlY, bool flipHorizontally) {
   for (int y = 0; y < TILE_HEIGHT; ++y) {
     for (int x = 0; x < TILE_WIDTH; ++x) {
-      int srcX = atlX + x;
+      int srcX;
+      if (flipHorizontally) {
+        srcX = atlX + TILE_WIDTH - x - 1;
+      } else {
+        srcX = atlX + x;
+      }
       int srcY = atlY + y;
       int dstX = bbX + x;
       int dstY = bbY + y;
@@ -49,6 +55,7 @@ void drawTile(char tile, int col, int row) {
     return;
   }
 
+  bool flipHorizontally = false;
   int atlX = 0;
   int atlY = 0;
 
@@ -67,6 +74,7 @@ void drawTile(char tile, int col, int row) {
       if (heroIsMoving()) {
         atlX = 32 + heroMoveFrame * 16;
         atlY = 0;
+        flipHorizontally = heroMovingRight;
       } else {
         atlX = 0;
         atlY = 0;
@@ -90,7 +98,7 @@ void drawTile(char tile, int col, int row) {
   int x = col * TILE_WIDTH - cameraX;
   int y = row * TILE_HEIGHT - cameraY;
 
-  drawSprite(x, y, atlX, atlY);
+  drawSprite(x, y, atlX, atlY, flipHorizontally);
 }
 
 LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
@@ -275,8 +283,10 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
         if (rightIsDown) {
           ++newCol;
+          heroMovingRight = true;
         } else if (leftIsDown) {
           --newCol;
+          heroMovingRight = false;
         } else if (upIsDown) {
           --newRow;
         } else if (downIsDown) {
