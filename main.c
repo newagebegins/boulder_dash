@@ -25,7 +25,8 @@ int cameraX = 0;
 int cameraY = 0;
 int heroMoveFrame = 0;
 float heroAnimTimer = 0;
-bool heroMovingRight = false;
+bool heroIsFacingRight = false;
+bool heroIsRunning = false;
 
 void drawSprite(int bbX, int bbY, int atlX, int atlY, bool flipHorizontally) {
   for (int y = 0; y < TILE_HEIGHT; ++y) {
@@ -44,10 +45,6 @@ void drawSprite(int bbX, int bbY, int atlX, int atlY, bool flipHorizontally) {
       backbuffer[dstOffset] = spriteAtlas[srcY*SPRITE_ATLAS_WIDTH + srcX];
     }
   }
-}
-
-bool heroIsMoving() {
-  return heroAnimTimer > 0;
 }
 
 void drawTile(char tile, int col, int row) {
@@ -71,10 +68,10 @@ void drawTile(char tile, int col, int row) {
       break;
 
     case 'R':
-      if (heroIsMoving()) {
+      if (heroAnimTimer > 0) {
         atlX = 32 + heroMoveFrame * 16;
         atlY = 0;
-        flipHorizontally = heroMovingRight;
+        flipHorizontally = heroIsFacingRight;
       } else {
         atlX = 0;
         atlY = 0;
@@ -275,6 +272,13 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     if (rightIsDown || leftIsDown || upIsDown || downIsDown) {
       heroMoveTimer += dt;
       heroAnimTimer += dt;
+
+      if (rightIsDown) {
+        heroIsFacingRight = true;
+      } else if (leftIsDown) {
+        heroIsFacingRight = false;
+      }
+
       if (heroMoveTimer >= HERO_MOVE_TIME) {
         heroMoveTimer -= HERO_MOVE_TIME;
 
@@ -283,10 +287,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
         if (rightIsDown) {
           ++newCol;
-          heroMovingRight = true;
         } else if (leftIsDown) {
           --newCol;
-          heroMovingRight = false;
         } else if (upIsDown) {
           --newRow;
         } else if (downIsDown) {
