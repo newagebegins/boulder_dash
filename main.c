@@ -15,9 +15,9 @@
 #define BACKBUFFER_PIXEL_COUNT BACKBUFFER_WIDTH*BACKBUFFER_HEIGHT
 #define BACKBUFFER_BYTES BACKBUFFER_PIXEL_COUNT*sizeof(int)
 #define SPRITE_ATLAS_WIDTH 256
-#define HERO_MOVE_TIME 0.1f
 #define HERO_ANIM_FRAME_DURATION 0.05f
 #define HERO_ANIM_FRAME_COUNT 6
+#define TURN_DURATION 0.15f
 
 uint32_t *backbuffer;
 uint32_t *spriteAtlas;
@@ -201,11 +201,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     }
   }
 
+  float turnTimer = 0;
   bool rightIsDown = false;
   bool leftIsDown = false;
   bool upIsDown = false;
   bool downIsDown = false;
-  float heroMoveTimer = 0;
   int heroRow = 0;
   int heroCol = 0;
 
@@ -270,7 +270,6 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     }
 
     if (rightIsDown || leftIsDown || upIsDown || downIsDown) {
-      heroMoveTimer += dt;
       heroAnimTimer += dt;
 
       if (rightIsDown) {
@@ -278,10 +277,23 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       } else if (leftIsDown) {
         heroIsFacingRight = false;
       }
+    } else {
+      heroAnimTimer = 0;
+    }
 
-      if (heroMoveTimer >= HERO_MOVE_TIME) {
-        heroMoveTimer -= HERO_MOVE_TIME;
+    int k = (int)(heroAnimTimer / HERO_ANIM_FRAME_DURATION);
+    heroMoveFrame = k % HERO_ANIM_FRAME_COUNT;
 
+    turnTimer += dt;
+    if (turnTimer >= TURN_DURATION) {
+      turnTimer -= TURN_DURATION;
+
+      //
+      // Do turn
+      //
+
+      // Move hero
+      {
         int newRow = heroRow;
         int newCol = heroCol;
 
@@ -304,13 +316,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           map[heroRow*mapWidth + heroCol] = 'R';
         }
       }
-    } else {
-      heroMoveTimer = 0;
-      heroAnimTimer = 0;
     }
-
-    int k = (int)(heroAnimTimer / HERO_ANIM_FRAME_DURATION);
-    heroMoveFrame = k % HERO_ANIM_FRAME_COUNT;
 
     memset(backbuffer, 0, BACKBUFFER_BYTES);
 
