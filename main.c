@@ -292,6 +292,22 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       // Do turn
       //
 
+      // Move rocks
+      // (processing order: top to bottom, left to right)
+      {
+        for (int row = 0; row < mapHeight; ++row) {
+          for (int col = 0; col < mapWidth; ++col) {
+            if (map[row*mapWidth + col] == 'o') {
+              if (map[(row+1)*mapWidth + col] == ' ') {
+                map[row*mapWidth + col] = ' ';
+                map[(row+1)*mapWidth + col] = 'o';
+                // TODO: Remember that the rock has already moved in this turn
+              }
+            }
+          }
+        }
+      }
+
       // Move hero
       {
         int newRow = heroRow;
