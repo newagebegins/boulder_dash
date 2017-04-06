@@ -124,16 +124,16 @@ LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 
 char *level1 =
   "################"
-  "#...... .. .o .#"
-  "o.oRo...... ...#"
-  "#.......... .. #"
-  "#o.  ..........#"
-  "#o.oo..........#"
-  "#...o..o.......#"
-  "#==============#"
-  "#. ...o.. . ..o#"
-  "#.. .....o.....#"
-  "#.. .....o.....#"
+  "#...... o    ..#"
+  "#..R... .    ..#"
+  "#...         ..#"
+  "#...    o    ..#"
+  "#...... .o   ..#"
+  "#...... ..o  ..#"
+  "#..........  ..#"
+  "#..............#"
+  "#..............#"
+  "#..............#"
   "################";
 
 int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdShow) {
@@ -286,7 +286,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             case VK_UP:
               upIsDown = isDown;
               break;
-              
+
             case VK_DOWN:
               downIsDown = isDown;
               break;
@@ -334,11 +334,27 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       for (int row = 0; row < mapHeight; ++row) {
         for (int col = 0; col < mapWidth; ++col) {
           int current = row*mapWidth + col;
-          int below = (row+1)*mapWidth + col;
-          if (map[current].type == TILE_TYPE_ROCK && !map[current].moved && map[below].type == TILE_TYPE_EMPTY) {
-            map[current].type = TILE_TYPE_EMPTY;
-            map[below].type = TILE_TYPE_ROCK;
-            map[below].moved = true;
+          if (map[current].type == TILE_TYPE_ROCK && !map[current].moved) {
+            int below = (row+1)*mapWidth + col;
+            int left = row*mapWidth + (col-1);
+            int right = row*mapWidth + (col+1);
+            int belowLeft = (row+1)*mapWidth + (col-1);
+            int belowRight = (row+1)*mapWidth + (col+1);
+            if (map[below].type == TILE_TYPE_EMPTY) {
+              map[current].type = TILE_TYPE_EMPTY;
+              map[below].type = TILE_TYPE_ROCK;
+              map[below].moved = true;
+            } else if (map[below].type == TILE_TYPE_ROCK) {
+              if (map[left].type == TILE_TYPE_EMPTY && map[belowLeft].type == TILE_TYPE_EMPTY) {
+                map[current].type = TILE_TYPE_EMPTY;
+                map[left].type = TILE_TYPE_ROCK;
+                map[left].moved = true;
+              } else if (map[right].type == TILE_TYPE_EMPTY && map[belowRight].type == TILE_TYPE_EMPTY) {
+                map[current].type = TILE_TYPE_EMPTY;
+                map[right].type = TILE_TYPE_ROCK;
+                map[right].moved = true;
+              }
+            }
           }
         }
       }
