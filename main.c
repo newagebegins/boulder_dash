@@ -18,6 +18,22 @@
 #define HERO_ANIM_FRAME_DURATION 0.05f
 #define HERO_ANIM_FRAME_COUNT 6
 #define TURN_DURATION 0.15f
+#define MAX_MAP_TILES 100*100
+
+typedef enum {
+  TILE_TYPE_EMPTY,
+  TILE_TYPE_HERO,
+  TILE_TYPE_ROCK,
+  TILE_TYPE_WALL,
+  TILE_TYPE_BRICK,
+  TILE_TYPE_EARTH,
+  TILE_TYPE_COUNT,
+} TileType;
+
+typedef struct {
+  TileType type;
+  bool moved;
+} Tile;
 
 uint32_t *backbuffer;
 uint32_t *spriteAtlas;
@@ -47,8 +63,8 @@ void drawSprite(int bbX, int bbY, int atlX, int atlY, bool flipHorizontally) {
   }
 }
 
-void drawTile(char tile, int col, int row) {
-  if (tile == ' ' || tile == '$') {
+void drawTile(TileType tile, int col, int row) {
+  if (tile == TILE_TYPE_EMPTY) {
     return;
   }
 
@@ -57,17 +73,17 @@ void drawTile(char tile, int col, int row) {
   int atlY = 0;
 
   switch (tile) {
-    case '.':
+    case TILE_TYPE_EARTH:
       atlX = 32;
       atlY = 16;
       break;
 
-    case '=':
+    case TILE_TYPE_BRICK:
       atlX = 48;
       atlY = 16;
       break;
 
-    case 'R':
+    case TILE_TYPE_HERO:
       if (heroAnimTimer > 0) {
         atlX = 32 + heroMoveFrame * 16;
         atlY = 0;
@@ -78,17 +94,14 @@ void drawTile(char tile, int col, int row) {
       }
       break;
 
-    case 'o':
+    case TILE_TYPE_ROCK:
       atlX = 16;
       atlY = 16;
       break;
 
-    case '#':
+    case TILE_TYPE_WALL:
       atlX = 0;
       atlY = 16;
-      break;
-
-    case '$':
       break;
   }
 
@@ -111,16 +124,16 @@ LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 
 char *level1 =
   "################"
-  "#...... ..$.o .#"
+  "#...... .. .o .#"
   "o.oRo...... ...#"
   "#.......... .. #"
   "#o.  ..........#"
   "#o.oo..........#"
   "#...o..o.......#"
   "#==============#"
-  "#. ...o..$. ..o#"
-  "#..$.....o.....#"
-  "#..$.....o.....#"
+  "#. ...o.. . ..o#"
+  "#.. .....o.....#"
+  "#.. .....o.....#"
   "################";
 
 int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdShow) {
@@ -211,11 +224,29 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
   int mapWidth = 16;
   int mapHeight = 12;
-  int mapBytes = mapWidth * mapHeight;
-  char *map = malloc(mapBytes);
-  for (int i = 0; i < mapBytes; ++i) {
-    map[i] = level1[i];
-    if (map[i] == 'R') {
+  int mapTiles = mapWidth * mapHeight;
+  Tile map[MAX_MAP_TILES];
+  for (int i = 0; i < mapTiles; ++i) {
+    switch (level1[i]) {
+      case '#':
+        map[i].type = TILE_TYPE_WALL;
+        break;
+      case '.':
+        map[i].type = TILE_TYPE_EARTH;
+        break;
+      case 'o':
+        map[i].type = TILE_TYPE_ROCK;
+        break;
+      case 'R':
+        map[i].type = TILE_TYPE_HERO;
+        break;
+      case '=':
+        map[i].type = TILE_TYPE_BRICK;
+        break;
+      default:
+        assert("Unhandled type!");
+    }
+    if (map[i].type == TILE_TYPE_HERO) {
       heroRow = i / mapWidth;
       heroCol = i % mapWidth;
     }
@@ -292,18 +323,22 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       // Do turn
       //
 
-      // Move rocks
-      // (processing order: top to bottom, left to right)
-      {
-        for (int row = 0; row < mapHeight; ++row) {
-          for (int col = 0; col < mapWidth; ++col) {
-            if (map[row*mapWidth + col] == 'o') {
-              if (map[(row+1)*mapWidth + col] == ' ') {
-                map[row*mapWidth + col] = ' ';
-                map[(row+1)*mapWidth + col] = 'o';
-                // TODO: Remember that the rock has already moved in this turn
-              }
-            }
+      for (int row = 0; row < mapHeight; ++row) {
+        for (int col = 0; col < mapWidth; ++col) {
+          map[row*mapWidth + col].moved = false;
+        }
+      }
+
+      // Move rocks (processing order: top to bottom, left to right).
+      // Move only one tile per turn.
+      for (int row = 0; row < mapHeight; ++row) {
+        for (int col = 0; col < mapWidth; ++col) {
+          int current = row*mapWidth + col;
+          int below = (row+1)*mapWidth + col;
+          if (map[current].type == TILE_TYPE_ROCK && !map[current].moved && map[below].type == TILE_TYPE_EMPTY) {
+            map[current].type = TILE_TYPE_EMPTY;
+            map[below].type = TILE_TYPE_ROCK;
+            map[below].moved = true;
           }
         }
       }
@@ -323,13 +358,13 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           ++newRow;
         }
 
-        char newCell = map[newRow*mapWidth + newCol];
-        if (newCell != '#' && newCell != '=' && newCell != 'o') {
-          map[heroRow*mapWidth + heroCol] = ' ';
+        int newCell = newRow*mapWidth + newCol;
+        if (map[newCell].type != TILE_TYPE_WALL && map[newCell].type != TILE_TYPE_BRICK && map[newCell].type != TILE_TYPE_ROCK) {
+          map[heroRow*mapWidth + heroCol].type = TILE_TYPE_EMPTY;
           heroRow = newRow;
           heroCol = newCol;
           assert(heroRow >= 0 && heroRow < mapHeight && heroCol >= 0 && heroCol < mapWidth);
-          map[heroRow*mapWidth + heroCol] = 'R';
+          map[heroRow*mapWidth + heroCol].type = TILE_TYPE_HERO;
         }
       }
     }
@@ -338,7 +373,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
     for (int row = 0; row < mapHeight; ++row) {
       for (int col = 0; col < mapWidth; ++col) {
-        drawTile(map[row*mapWidth + col], col, row);
+        drawTile(map[row*mapWidth + col].type, col, row);
       }
     }
 
