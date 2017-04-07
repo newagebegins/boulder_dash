@@ -39,9 +39,12 @@ uint32_t *backbuffer;
 uint32_t *spriteAtlas;
 int cameraX = 0;
 int cameraY = 0;
+int heroMoveRockTurns = 0;
 int heroMoveFrame = 0;
 float heroAnimTimer = 0;
+bool heroIsMoving = false;
 bool heroIsFacingRight = false;
+bool heroIsFacingRightOld = false;
 bool heroIsRunning = false;
 
 void drawSprite(int bbX, int bbY, int atlX, int atlY, bool flipHorizontally) {
@@ -300,8 +303,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       }
     }
 
+    heroIsFacingRightOld = heroIsFacingRight;
+
     if (rightIsDown || leftIsDown || upIsDown || downIsDown) {
       heroAnimTimer += dt;
+      heroIsMoving = true;
 
       if (rightIsDown) {
         heroIsFacingRight = true;
@@ -310,6 +316,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       }
     } else {
       heroAnimTimer = 0;
+      heroIsMoving = false;
+    }
+
+    if ((heroIsFacingRightOld != heroIsFacingRight) || !heroIsMoving) {
+      heroMoveRockTurns = 0;
     }
 
     int k = (int)(heroAnimTimer / HERO_ANIM_FRAME_DURATION);
@@ -374,13 +385,32 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           ++newRow;
         }
 
+        int deltaCol = newCol - heroCol;
         int newCell = newRow*mapWidth + newCol;
-        if (map[newCell].type != TILE_TYPE_WALL && map[newCell].type != TILE_TYPE_BRICK && map[newCell].type != TILE_TYPE_ROCK) {
-          map[heroRow*mapWidth + heroCol].type = TILE_TYPE_EMPTY;
-          heroRow = newRow;
-          heroCol = newCol;
-          assert(heroRow >= 0 && heroRow < mapHeight && heroCol >= 0 && heroCol < mapWidth);
-          map[heroRow*mapWidth + heroCol].type = TILE_TYPE_HERO;
+
+        switch (map[newCell].type) {
+          case TILE_TYPE_EMPTY:
+          case TILE_TYPE_EARTH:
+            map[heroRow*mapWidth + heroCol].type = TILE_TYPE_EMPTY;
+            heroRow = newRow;
+            heroCol = newCol;
+            map[heroRow*mapWidth + heroCol].type = TILE_TYPE_HERO;
+            break;
+
+          case TILE_TYPE_ROCK:
+            int targetRockCell = newRow*mapWidth + newCol + deltaCol;
+            if (deltaCol != 0 && map[targetRockCell].type == TILE_TYPE_EMPTY) {
+              heroMoveRockTurns++;
+              if (heroMoveRockTurns == 3) {
+                heroMoveRockTurns = 0;
+                map[heroRow*mapWidth + heroCol].type = TILE_TYPE_EMPTY;
+                heroRow = newRow;
+                heroCol = newCol;
+                map[heroRow*mapWidth + heroCol].type = TILE_TYPE_HERO;
+                map[targetRockCell].type = TILE_TYPE_ROCK;
+              }
+            }
+            break;
         }
       }
     }
