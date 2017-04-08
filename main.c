@@ -154,6 +154,20 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   bool heroIsFacingRight = false;
   bool heroIsFacingRightOld = false;
   bool heroIsRunning = false;
+  float heroIdleTimer = 0;
+  int heroIdleFrame = 0;
+  float nextIdleAnimTimer = 0;
+  int currentIdleAnimation = 0;
+  bool idleAnimOnce = false;
+
+#define IDLE_ANIMATIONS_COUNT 4
+  int idleAnim1[] = {0,1,2,1};
+  int idleAnim2[] = {3,4};
+  int idleAnim3[] = {0};
+  int idleAnim4[] = {4,6,5,3};
+  int *currentIdleAnim = 0;
+  int currentIdleAnimNumFrames = 0;
+  float currentIdleAnimFrameDuration = 0;
 
   int mapWidth = 16;
   int mapHeight = 12;
@@ -253,8 +267,79 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       heroMoveRockTurns = 0;
     }
 
-    int k = (int)(heroAnimTimer / HERO_ANIM_FRAME_DURATION);
-    heroMoveFrame = k % HERO_ANIM_FRAME_COUNT;
+    heroMoveFrame = (int)(heroAnimTimer / HERO_ANIM_FRAME_DURATION) % HERO_ANIM_FRAME_COUNT;
+
+    // Idle animation
+    if (!heroIsMoving) {
+      nextIdleAnimTimer -= dt;
+
+      heroIdleTimer += dt;
+      if (heroIdleTimer > currentIdleAnimFrameDuration*currentIdleAnimNumFrames) {
+        heroIdleTimer = 0;
+        if (idleAnimOnce) {
+          nextIdleAnimTimer = 0;
+        }
+      }
+
+      if (nextIdleAnimTimer <= 0) {
+        heroIdleTimer = 0;
+        currentIdleAnimation = rand() % IDLE_ANIMATIONS_COUNT;
+        switch (currentIdleAnimation) {
+          case 0:
+            nextIdleAnimTimer = (float)(rand()%1000 + 500) / 1000.0f;
+            break;
+          case 1:
+            nextIdleAnimTimer = (float)(rand()%2000 + 1000) / 1000.0f;
+            break;
+          case 2:
+            nextIdleAnimTimer = (float)(rand()%2000 + 1000) / 1000.0f;
+            break;
+          case 3:
+            nextIdleAnimTimer = (float)(rand()%2000 + 1000) / 1000.0f;
+            break;
+          default:
+            assert('no!');
+        }
+      }
+
+      switch (currentIdleAnimation) {
+        case 0:
+          currentIdleAnim = idleAnim1;
+          currentIdleAnimNumFrames = ARRAY_LENGTH(idleAnim1);
+          currentIdleAnimFrameDuration = 0.07f;
+          idleAnimOnce = true;
+          break;
+
+        case 1:
+          currentIdleAnim = idleAnim2;
+          currentIdleAnimNumFrames = ARRAY_LENGTH(idleAnim2);
+          currentIdleAnimFrameDuration = 0.1f;
+          idleAnimOnce = false;
+          break;
+
+        case 2:
+          currentIdleAnim = idleAnim3;
+          currentIdleAnimNumFrames = ARRAY_LENGTH(idleAnim3);
+          currentIdleAnimFrameDuration = 0.1f;
+          idleAnimOnce = false;
+          break;
+
+        case 3:
+          currentIdleAnim = idleAnim4;
+          currentIdleAnimNumFrames = ARRAY_LENGTH(idleAnim4);
+          currentIdleAnimFrameDuration = 0.07f;
+          idleAnimOnce = true;
+          break;
+
+        default:
+          assert('no!');
+      }
+
+      heroIdleFrame = currentIdleAnim[(int)(heroIdleTimer / currentIdleAnimFrameDuration)];
+    } else {
+      nextIdleAnimTimer = 0;
+      heroIdleTimer = 0;
+    }
 
     turnTimer += dt;
     if (turnTimer >= TURN_DURATION) {
@@ -375,12 +460,12 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             break;
 
           case TILE_TYPE_HERO:
-            if (heroAnimTimer > 0) {
+            if (heroIsMoving) {
               atlX = 112 + heroMoveFrame * 16;
               atlY = 0;
               flipHorizontally = heroIsFacingRight;
             } else {
-              atlX = 0;
+              atlX = heroIdleFrame * 16;
               atlY = 0;
             }
             break;
