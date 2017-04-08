@@ -33,6 +33,7 @@ typedef enum {
 typedef struct {
   TileType type;
   bool moved;
+  bool movedInPreviousFrame;
 } Tile;
 
 LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
@@ -159,6 +160,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   float nextIdleAnimTimer = 0;
   int currentIdleAnimation = 0;
   bool idleAnimOnce = false;
+  bool heroIsAlive = true;
 
 #define IDLE_ANIMATIONS_COUNT 4
   int idleAnim1[] = {0,1,2,1};
@@ -351,7 +353,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
       for (int row = 0; row < mapHeight; ++row) {
         for (int col = 0; col < mapWidth; ++col) {
-          map[row*mapWidth + col].moved = false;
+          int i = row*mapWidth + col;
+          map[i].movedInPreviousFrame = map[i].moved;
+          map[i].moved = false;
         }
       }
 
@@ -370,6 +374,12 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               map[current].type = TILE_TYPE_EMPTY;
               map[below].type = TILE_TYPE_ROCK;
               map[below].moved = true;
+            } else if (map[below].type == TILE_TYPE_HERO) {
+              if (map[current].movedInPreviousFrame) {
+                map[current].type = TILE_TYPE_EMPTY;
+                map[below].type = TILE_TYPE_EMPTY;
+                heroIsAlive = false;
+              }
             } else if (map[below].type == TILE_TYPE_ROCK) {
               if (map[left].type == TILE_TYPE_EMPTY && map[belowLeft].type == TILE_TYPE_EMPTY) {
                 map[current].type = TILE_TYPE_EMPTY;
@@ -386,7 +396,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       }
 
       // Move hero
-      {
+      if (heroIsAlive) {
         int newRow = heroRow;
         int newCol = heroCol;
 
