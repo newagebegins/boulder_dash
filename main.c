@@ -35,85 +35,6 @@ typedef struct {
   bool moved;
 } Tile;
 
-uint32_t *backbuffer;
-uint32_t *spriteAtlas;
-int cameraX = 0;
-int cameraY = 0;
-int heroMoveRockTurns = 0;
-int heroMoveFrame = 0;
-float heroAnimTimer = 0;
-bool heroIsMoving = false;
-bool heroIsFacingRight = false;
-bool heroIsFacingRightOld = false;
-bool heroIsRunning = false;
-
-void drawSprite(int bbX, int bbY, int atlX, int atlY, bool flipHorizontally) {
-  for (int y = 0; y < TILE_HEIGHT; ++y) {
-    for (int x = 0; x < TILE_WIDTH; ++x) {
-      int srcX;
-      if (flipHorizontally) {
-        srcX = atlX + TILE_WIDTH - x - 1;
-      } else {
-        srcX = atlX + x;
-      }
-      int srcY = atlY + y;
-      int dstX = bbX + x;
-      int dstY = bbY + y;
-      int dstOffset = dstY*BACKBUFFER_WIDTH + dstX;
-      assert(dstOffset >= 0 && dstOffset < BACKBUFFER_PIXEL_COUNT);
-      backbuffer[dstOffset] = spriteAtlas[srcY*SPRITE_ATLAS_WIDTH + srcX];
-    }
-  }
-}
-
-void drawTile(TileType tile, int col, int row) {
-  if (tile == TILE_TYPE_EMPTY) {
-    return;
-  }
-
-  bool flipHorizontally = false;
-  int atlX = 0;
-  int atlY = 0;
-
-  switch (tile) {
-    case TILE_TYPE_EARTH:
-      atlX = 32;
-      atlY = 16;
-      break;
-
-    case TILE_TYPE_BRICK:
-      atlX = 48;
-      atlY = 16;
-      break;
-
-    case TILE_TYPE_HERO:
-      if (heroAnimTimer > 0) {
-        atlX = 32 + heroMoveFrame * 16;
-        atlY = 0;
-        flipHorizontally = heroIsFacingRight;
-      } else {
-        atlX = 0;
-        atlY = 0;
-      }
-      break;
-
-    case TILE_TYPE_ROCK:
-      atlX = 16;
-      atlY = 16;
-      break;
-
-    case TILE_TYPE_WALL:
-      atlX = 0;
-      atlY = 16;
-      break;
-  }
-
-  int x = col * TILE_WIDTH - cameraX;
-  int y = row * TILE_HEIGHT - cameraY;
-
-  drawSprite(x, y, atlX, atlY, flipHorizontally);
-}
-
 LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
   switch (msg) {
     case WM_DESTROY:
@@ -127,8 +48,8 @@ LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 
 char *level1 =
   "################"
-  "#...... o    ..#"
-  "#..R... .    ..#"
+  "#     oRo    ..#"
+  "#..............#"
   "#...         ..#"
   "#...    o    ..#"
   "#...... .o   ..#"
@@ -140,7 +61,7 @@ char *level1 =
   "################";
 
 int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdShow) {
-  backbuffer = malloc(BACKBUFFER_BYTES);
+  uint32_t *backbuffer = malloc(BACKBUFFER_BYTES);
 
   BITMAPINFO backbufferBmpInf = {0};
   backbufferBmpInf.bmiHeader.biSize = sizeof(backbufferBmpInf.bmiHeader);
@@ -202,7 +123,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int imageHeight = *(int*)(fileContents + 22);
   uint8_t *pixels = fileContents + pixelsOffset;
 
-  spriteAtlas = malloc(imageWidth * imageHeight * sizeof(*spriteAtlas));
+  uint32_t *spriteAtlas = malloc(imageWidth * imageHeight * sizeof(*spriteAtlas));
 
   for (int dstRow = 0; dstRow < imageHeight; ++dstRow) {
     int srcRow = imageHeight - dstRow - 1;
@@ -217,6 +138,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     }
   }
 
+  int cameraX = 0;
+  int cameraY = 0;
   float turnTimer = 0;
   bool rightIsDown = false;
   bool leftIsDown = false;
@@ -224,6 +147,13 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   bool downIsDown = false;
   int heroRow = 0;
   int heroCol = 0;
+  int heroMoveRockTurns = 0;
+  int heroMoveFrame = 0;
+  float heroAnimTimer = 0;
+  bool heroIsMoving = false;
+  bool heroIsFacingRight = false;
+  bool heroIsFacingRightOld = false;
+  bool heroIsRunning = false;
 
   int mapWidth = 16;
   int mapHeight = 12;
@@ -415,11 +345,76 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       }
     }
 
+    // Clear back buffer
     memset(backbuffer, 0, BACKBUFFER_BYTES);
 
+    //
+    // Draw tiles
+    //
     for (int row = 0; row < mapHeight; ++row) {
       for (int col = 0; col < mapWidth; ++col) {
-        drawTile(map[row*mapWidth + col].type, col, row);
+        TileType tile = map[row*mapWidth + col].type;
+
+        if (tile == TILE_TYPE_EMPTY) {
+          continue;
+        }
+
+        bool flipHorizontally = false;
+        int atlX = 0;
+        int atlY = 0;
+
+        switch (tile) {
+          case TILE_TYPE_EARTH:
+            atlX = 32;
+            atlY = 16;
+            break;
+
+          case TILE_TYPE_BRICK:
+            atlX = 48;
+            atlY = 16;
+            break;
+
+          case TILE_TYPE_HERO:
+            if (heroAnimTimer > 0) {
+              atlX = 32 + heroMoveFrame * 16;
+              atlY = 0;
+              flipHorizontally = heroIsFacingRight;
+            } else {
+              atlX = 0;
+              atlY = 0;
+            }
+            break;
+
+          case TILE_TYPE_ROCK:
+            atlX = 16;
+            atlY = 16;
+            break;
+
+          case TILE_TYPE_WALL:
+            atlX = 0;
+            atlY = 16;
+            break;
+        }
+
+        int bbX = col * TILE_WIDTH - cameraX;
+        int bbY = row * TILE_HEIGHT - cameraY;
+
+        for (int y = 0; y < TILE_HEIGHT; ++y) {
+          for (int x = 0; x < TILE_WIDTH; ++x) {
+            int srcX;
+            if (flipHorizontally) {
+              srcX = atlX + TILE_WIDTH - x - 1;
+            } else {
+              srcX = atlX + x;
+            }
+            int srcY = atlY + y;
+            int dstX = bbX + x;
+            int dstY = bbY + y;
+            int dstOffset = dstY*BACKBUFFER_WIDTH + dstX;
+            assert(dstOffset >= 0 && dstOffset < BACKBUFFER_PIXEL_COUNT);
+            backbuffer[dstOffset] = spriteAtlas[srcY*SPRITE_ATLAS_WIDTH + srcX];
+          }
+        }
       }
     }
 
