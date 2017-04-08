@@ -376,7 +376,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
           case TILE_TYPE_HERO:
             if (heroAnimTimer > 0) {
-              atlX = 32 + heroMoveFrame * 16;
+              atlX = 112 + heroMoveFrame * 16;
               atlY = 0;
               flipHorizontally = heroIsFacingRight;
             } else {
