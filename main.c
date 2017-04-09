@@ -20,6 +20,8 @@
 #define TURN_DURATION 0.15f
 #define MAX_MAP_TILES 100*100
 #define EXPLOSION_FRAME_DURATION 0.1f
+#define GEM_FRAME_DURATION 0.2f
+#define GEM_FRAME_COUNT 8
 
 typedef enum {
   TILE_TYPE_EMPTY,
@@ -29,6 +31,7 @@ typedef enum {
   TILE_TYPE_BRICK,
   TILE_TYPE_EARTH,
   TILE_TYPE_EXPLOSION,
+  TILE_TYPE_GEM,
   TILE_TYPE_COUNT,
 } TileType;
 
@@ -51,8 +54,8 @@ LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 
 char *level1 =
   "################"
-  "#     oRo    ..#"
-  "#..............#"
+  "#$$   oRo    ..#"
+  "#$$............#"
   "#...         ..#"
   "#...    o    ..#"
   "#...... .o   ..#"
@@ -167,6 +170,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   bool explosionIsActive = false;
   int explosionFrame = 0;
   int explosionAnim[] = {0,1,0,2};
+  int gemFrame = 0;
+  float gemTimer = 0;
 
 #define IDLE_ANIMATIONS_COUNT 4
   int idleAnim1[] = {0,1,2,1};
@@ -197,6 +202,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         break;
       case '=':
         map[i].type = TILE_TYPE_BRICK;
+        break;
+      case '$':
+        map[i].type = TILE_TYPE_GEM;
         break;
       default:
         assert("Unhandled type!");
@@ -276,6 +284,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     }
 
     heroMoveFrame = (int)(heroAnimTimer / HERO_ANIM_FRAME_DURATION) % HERO_ANIM_FRAME_COUNT;
+
+    gemTimer += dt;
+    gemFrame = (int)(gemTimer / GEM_FRAME_DURATION) % GEM_FRAME_COUNT;
 
     // Idle animation
     if (!heroIsMoving) {
@@ -464,6 +475,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         switch (map[newCell].type) {
           case TILE_TYPE_EMPTY:
           case TILE_TYPE_EARTH:
+          case TILE_TYPE_GEM:
             map[heroRow*mapWidth + heroCol].type = TILE_TYPE_EMPTY;
             heroRow = newRow;
             heroCol = newCol;
@@ -541,6 +553,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           case TILE_TYPE_EXPLOSION:
             atlX = explosionAnim[explosionFrame]*16;
             atlY = 32;
+            break;
+
+          case TILE_TYPE_GEM:
+            atlX = gemFrame*16;
+            atlY = 48;
             break;
         }
 
