@@ -19,6 +19,7 @@
 #define HERO_ANIM_FRAME_COUNT 6
 #define TURN_DURATION 0.15f
 #define MAX_MAP_TILES 100*100
+#define EXPLOSION_FRAME_DURATION 0.1f
 
 typedef enum {
   TILE_TYPE_EMPTY,
@@ -27,6 +28,7 @@ typedef enum {
   TILE_TYPE_WALL,
   TILE_TYPE_BRICK,
   TILE_TYPE_EARTH,
+  TILE_TYPE_EXPLOSION,
   TILE_TYPE_COUNT,
 } TileType;
 
@@ -161,6 +163,10 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int currentIdleAnimation = 0;
   bool idleAnimOnce = false;
   bool heroIsAlive = true;
+  float explosionFrameTimer = 0;
+  bool explosionIsActive = false;
+  int explosionFrame = 0;
+  int explosionAnim[] = {0,1,0,2};
 
 #define IDLE_ANIMATIONS_COUNT 4
   int idleAnim1[] = {0,1,2,1};
@@ -343,6 +349,28 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       heroIdleTimer = 0;
     }
 
+    if (explosionIsActive) {
+      explosionFrameTimer += dt;
+      if (explosionFrameTimer >= EXPLOSION_FRAME_DURATION) {
+        explosionFrameTimer -= EXPLOSION_FRAME_DURATION;
+        explosionFrame++;
+
+        if (explosionFrame >= ARRAY_LENGTH(explosionAnim)) {
+          explosionFrameTimer = 0;
+          explosionFrame = 0;
+          explosionIsActive = false;
+          for (int row = 0; row < mapHeight; ++row) {
+            for (int col = 0; col < mapWidth; ++col) {
+              int i = row*mapWidth + col;
+              if (map[i].type == TILE_TYPE_EXPLOSION) {
+                map[i].type = TILE_TYPE_EMPTY;
+              }
+            }
+          }
+        }
+      }
+    }
+
     turnTimer += dt;
     if (turnTimer >= TURN_DURATION) {
       turnTimer -= TURN_DURATION;
@@ -379,6 +407,26 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                 map[current].type = TILE_TYPE_EMPTY;
                 map[below].type = TILE_TYPE_EMPTY;
                 heroIsAlive = false;
+                explosionIsActive = true;
+
+                // center
+                map[(row+1)*mapWidth + (col+0)].type = TILE_TYPE_EXPLOSION;
+                // right
+                map[(row+1)*mapWidth + (col+1)].type = TILE_TYPE_EXPLOSION;
+                // left
+                map[(row+1)*mapWidth + (col-1)].type = TILE_TYPE_EXPLOSION;
+                // above center
+                map[(row+0)*mapWidth + (col+0)].type = TILE_TYPE_EXPLOSION;
+                // above right
+                map[(row+0)*mapWidth + (col+1)].type = TILE_TYPE_EXPLOSION;
+                // above left
+                map[(row+0)*mapWidth + (col-1)].type = TILE_TYPE_EXPLOSION;
+                // below center
+                map[(row+2)*mapWidth + (col+0)].type = TILE_TYPE_EXPLOSION;
+                // below right
+                map[(row+2)*mapWidth + (col+1)].type = TILE_TYPE_EXPLOSION;
+                // below left
+                map[(row+2)*mapWidth + (col-1)].type = TILE_TYPE_EXPLOSION;
               }
             } else if (map[below].type == TILE_TYPE_ROCK) {
               if (map[left].type == TILE_TYPE_EMPTY && map[belowLeft].type == TILE_TYPE_EMPTY) {
@@ -488,6 +536,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           case TILE_TYPE_WALL:
             atlX = 0;
             atlY = 16;
+            break;
+
+          case TILE_TYPE_EXPLOSION:
+            atlX = explosionAnim[explosionFrame]*16;
+            atlY = 32;
             break;
         }
 
