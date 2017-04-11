@@ -398,21 +398,24 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         }
       }
 
-      // Move rocks (processing order: top to bottom, left to right).
+      // Move entities (processing order: top to bottom, left to right).
       // Move only one tile per turn.
       for (int row = 0; row < mapHeight; ++row) {
         for (int col = 0; col < mapWidth; ++col) {
           int current = row*mapWidth + col;
-          if (map[current].type == TILE_TYPE_ROCK && !map[current].moved) {
+          if (map[current].moved) {
+            continue;
+          }
+          if (map[current].type == TILE_TYPE_ROCK || map[current].type == TILE_TYPE_GEM) {
             int below = (row+1)*mapWidth + col;
             int left = row*mapWidth + (col-1);
             int right = row*mapWidth + (col+1);
             int belowLeft = (row+1)*mapWidth + (col-1);
             int belowRight = (row+1)*mapWidth + (col+1);
             if (map[below].type == TILE_TYPE_EMPTY) {
-              map[current].type = TILE_TYPE_EMPTY;
-              map[below].type = TILE_TYPE_ROCK;
+              map[below].type = map[current].type;
               map[below].moved = true;
+              map[current].type = TILE_TYPE_EMPTY;
             } else if (map[below].type == TILE_TYPE_HERO) {
               if (map[current].movedInPreviousFrame) {
                 map[current].type = TILE_TYPE_EMPTY;
@@ -439,15 +442,15 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                 // below left
                 map[(row+2)*mapWidth + (col-1)].type = TILE_TYPE_EXPLOSION;
               }
-            } else if (map[below].type == TILE_TYPE_ROCK) {
+            } else if (map[below].type == TILE_TYPE_ROCK || map[below].type == TILE_TYPE_GEM) {
               if (map[left].type == TILE_TYPE_EMPTY && map[belowLeft].type == TILE_TYPE_EMPTY) {
-                map[current].type = TILE_TYPE_EMPTY;
-                map[left].type = TILE_TYPE_ROCK;
+                map[left].type = map[current].type;
                 map[left].moved = true;
-              } else if (map[right].type == TILE_TYPE_EMPTY && map[belowRight].type == TILE_TYPE_EMPTY) {
                 map[current].type = TILE_TYPE_EMPTY;
-                map[right].type = TILE_TYPE_ROCK;
+              } else if (map[right].type == TILE_TYPE_EMPTY && map[belowRight].type == TILE_TYPE_EMPTY) {
+                map[right].type = map[current].type;
                 map[right].moved = true;
+                map[current].type = TILE_TYPE_EMPTY;
               }
             }
           }
