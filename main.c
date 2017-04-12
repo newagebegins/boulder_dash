@@ -54,16 +54,16 @@ LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 
 char *level1 =
   "################"
-  "#$$   oRo    ..#"
-  "#$$............#"
-  "#...         ..#"
-  "#...    o    ..#"
-  "#...... .o   ..#"
-  "#...... ..o  ..#"
-  "#..........  ..#"
-  "#..............#"
-  "#..............#"
-  "#..............#"
+  "#$$   oRo o  ..#"
+  "#$$.......o....#"
+  "#...  $$  $  ..#"
+  "#...  oo     ..#"
+  "#.....ooo    ..#"
+  "#......oo    ..#"
+  "#......oo    ..#"
+  "#......oo   ...#"
+  "#.......oo  ...#"
+  "#........o.....#"
   "################";
 
 int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdShow) {
@@ -95,7 +95,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   DWORD wndStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
   AdjustWindowRect(&crect, wndStyle, 0);
 
-  HWND wnd = CreateWindowEx(0, wndClass.lpszClassName, "Boulder Dash", wndStyle, 300, 0,
+  HWND wnd = CreateWindowEx(0, wndClass.lpszClassName, "Boulder Dash", wndStyle, 300, 100,
                             crect.right - crect.left, crect.bottom - crect.top,
                             0, 0, inst, 0);
   ShowWindow(wnd, cmdShow);
