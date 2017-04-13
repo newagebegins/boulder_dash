@@ -53,18 +53,28 @@ LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 }
 
 char *level1 =
-  "################"
-  "#$$   oRo o  ..#"
-  "#$$.......o....#"
-  "#...  $$  $  ..#"
-  "#...  oo     ..#"
-  "#.....ooo    ..#"
-  "#......oo    ..#"
-  "#......oo    ..#"
-  "#......oo   ...#"
-  "#.......oo  ...#"
-  "#........o.....#"
-  "################";
+  "###############################################"
+  "#$$   oRo o  .................................#"
+  "#$$.......o...................................#"
+  "#...  $$  $  .................................#"
+  "#...  oo     .................................#"
+  "#.....ooo    .................................#"
+  "#......oo    .................................#"
+  "#......oo    .................................#"
+  "#......oo   ..................................#"
+  "#.......oo  ..................................#"
+  "#........o....................................#"
+  "#.......oo  ..................................#"
+  "#........o....................................#"
+  "#.......oo  ..................................#"
+  "#........o....................................#"
+  "#.......oo  ..................................#"
+  "#........o....................................#"
+  "#.......oo  ..................................#"
+  "#........o....................................#"
+  "#.......oo  ..................................#"
+  "#........o....................................#"
+  "###############################################";
 
 int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdShow) {
   uint32_t *backbuffer = malloc(BACKBUFFER_BYTES);
@@ -182,8 +192,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int currentIdleAnimNumFrames = 0;
   float currentIdleAnimFrameDuration = 0;
 
-  int mapWidth = 16;
-  int mapHeight = 12;
+  int mapWidth = 47;
+  int mapHeight = 22;
   int mapTiles = mapWidth * mapHeight;
   Tile map[MAX_MAP_TILES];
   for (int i = 0; i < mapTiles; ++i) {
@@ -501,6 +511,39 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             break;
         }
       }
+
+      // Move camera
+      {
+        #define CAMERA_BORDER_X 4*TILE_WIDTH
+        #define CAMERA_BORDER_Y 4*TILE_HEIGHT
+        #define CAMERA_STEP TILE_WIDTH/2
+        int maxCameraX = mapWidth*TILE_WIDTH - BACKBUFFER_WIDTH;
+        int maxCameraY = mapHeight*TILE_HEIGHT - BACKBUFFER_HEIGHT;
+        int heroScreenX = heroCol * TILE_WIDTH - cameraX;
+        int heroScreenY = heroRow * TILE_HEIGHT - cameraY;
+        if (heroScreenX >= BACKBUFFER_WIDTH - CAMERA_BORDER_X) {
+          cameraX += CAMERA_STEP;
+        }
+        if (heroScreenX <= CAMERA_BORDER_X) {
+          cameraX -= CAMERA_STEP;
+        }
+        if (heroScreenY >= BACKBUFFER_HEIGHT - CAMERA_BORDER_Y) {
+          cameraY += CAMERA_STEP;
+        }
+        if (heroScreenY <= CAMERA_BORDER_Y) {
+          cameraY -= CAMERA_STEP;
+        }
+        if (cameraX < 0) {
+          cameraX = 0;
+        } else if (cameraX > maxCameraX) {
+          cameraX = maxCameraX;
+        }
+        if (cameraY < 0) {
+          cameraY = 0;
+        } else if (cameraY > maxCameraY) {
+          cameraY = maxCameraY;
+        }
+      }
     }
 
     // Clear back buffer
@@ -578,9 +621,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             int srcY = atlY + y;
             int dstX = bbX + x;
             int dstY = bbY + y;
-            int dstOffset = dstY*BACKBUFFER_WIDTH + dstX;
-            assert(dstOffset >= 0 && dstOffset < BACKBUFFER_PIXEL_COUNT);
-            backbuffer[dstOffset] = spriteAtlas[srcY*SPRITE_ATLAS_WIDTH + srcX];
+            if (dstX >= 0 && dstX < BACKBUFFER_WIDTH && dstY >= 0 && dstY < BACKBUFFER_HEIGHT) {
+              backbuffer[dstY*BACKBUFFER_WIDTH + dstX] = spriteAtlas[srcY*SPRITE_ATLAS_WIDTH + srcX];
+            }
           }
         }
       }
