@@ -8,7 +8,9 @@
 #define ARRAY_LENGTH(array) (sizeof(array)/sizeof(*array))
 #define PI 3.14159265358979323846f
 
-#define TILE_WIDTH 16
+#define TILE_SIZE 16
+#define HALF_TILE_SIZE TILE_SIZE/2
+#define TILE_WIDTH TILE_SIZE
 #define TILE_HEIGHT TILE_WIDTH
 #define BACKBUFFER_WIDTH 256
 #define BACKBUFFER_HEIGHT 192
@@ -22,6 +24,19 @@
 #define EXPLOSION_FRAME_DURATION 0.1f
 #define GEM_FRAME_DURATION 0.2f
 #define GEM_FRAME_COUNT 8
+
+#define CAMERA_STEP HALF_TILE_SIZE
+#define HERO_SIZE TILE_SIZE
+
+#define CAMERA_START_RIGHT_HERO_X BACKBUFFER_WIDTH - 4*HALF_TILE_SIZE - HERO_SIZE
+#define CAMERA_STOP_RIGHT_HERO_X BACKBUFFER_WIDTH - 13*HALF_TILE_SIZE - HERO_SIZE
+#define CAMERA_START_LEFT_HERO_X 4*HALF_TILE_SIZE
+#define CAMERA_STOP_LEFT_HERO_X 14*HALF_TILE_SIZE
+
+#define CAMERA_START_DOWN_HERO_Y BACKBUFFER_HEIGHT - 3*HALF_TILE_SIZE - HERO_SIZE
+#define CAMERA_STOP_DOWN_HERO_Y BACKBUFFER_HEIGHT - 9*HALF_TILE_SIZE - HERO_SIZE
+#define CAMERA_START_UP_HERO_Y 3*HALF_TILE_SIZE
+#define CAMERA_STOP_UP_HERO_Y 9*HALF_TILE_SIZE
 
 typedef enum {
   TILE_TYPE_EMPTY,
@@ -224,6 +239,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       heroCol = i % mapWidth;
     }
   }
+
+  int cameraVelX = 0;
+  int cameraVelY = 0;
+  int maxCameraX = mapWidth*TILE_WIDTH - BACKBUFFER_WIDTH;
+  int maxCameraY = mapHeight*TILE_HEIGHT - BACKBUFFER_HEIGHT;
 
   while (running) {
     prefcPrev = perfc;
@@ -514,30 +534,36 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
       // Move camera
       {
-        #define CAMERA_BORDER_X 4*TILE_WIDTH
-        #define CAMERA_BORDER_Y 4*TILE_HEIGHT
-        #define CAMERA_STEP TILE_WIDTH/2
-        int maxCameraX = mapWidth*TILE_WIDTH - BACKBUFFER_WIDTH;
-        int maxCameraY = mapHeight*TILE_HEIGHT - BACKBUFFER_HEIGHT;
         int heroScreenX = heroCol * TILE_WIDTH - cameraX;
         int heroScreenY = heroRow * TILE_HEIGHT - cameraY;
-        if (heroScreenX >= BACKBUFFER_WIDTH - CAMERA_BORDER_X) {
-          cameraX += CAMERA_STEP;
+
+        if (heroScreenX >= CAMERA_START_RIGHT_HERO_X) {
+          cameraVelX = CAMERA_STEP;
+        } else if (heroScreenX <= CAMERA_START_LEFT_HERO_X) {
+          cameraVelX = -CAMERA_STEP;
         }
-        if (heroScreenX <= CAMERA_BORDER_X) {
-          cameraX -= CAMERA_STEP;
+        if (heroScreenY >= CAMERA_START_DOWN_HERO_Y) {
+          cameraVelY = CAMERA_STEP;
+        } else if (heroScreenY <= CAMERA_START_UP_HERO_Y) {
+          cameraVelY = -CAMERA_STEP;
         }
-        if (heroScreenY >= BACKBUFFER_HEIGHT - CAMERA_BORDER_Y) {
-          cameraY += CAMERA_STEP;
+
+        if (heroScreenX >= CAMERA_STOP_LEFT_HERO_X && heroScreenX <= CAMERA_STOP_RIGHT_HERO_X) {
+          cameraVelX = 0;
         }
-        if (heroScreenY <= CAMERA_BORDER_Y) {
-          cameraY -= CAMERA_STEP;
+        if (heroScreenY >= CAMERA_STOP_UP_HERO_Y && heroScreenY <= CAMERA_STOP_DOWN_HERO_Y) {
+          cameraVelY = 0;
         }
+
+        cameraX += cameraVelX;
+        cameraY += cameraVelY;
+
         if (cameraX < 0) {
           cameraX = 0;
         } else if (cameraX > maxCameraX) {
           cameraX = maxCameraX;
         }
+
         if (cameraY < 0) {
           cameraY = 0;
         } else if (cameraY > maxCameraY) {
