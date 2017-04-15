@@ -24,6 +24,8 @@
 #define EXPLOSION_FRAME_DURATION 0.1f
 #define GEM_FRAME_DURATION 0.2f
 #define GEM_FRAME_COUNT 8
+#define SCREEN_WIDTH_IN_TILES BACKBUFFER_WIDTH / TILE_SIZE
+#define SCREEN_HEIGHT_IN_TILES BACKBUFFER_HEIGHT / TILE_SIZE
 
 #define CAMERA_STEP HALF_TILE_SIZE
 #define HERO_SIZE TILE_SIZE
@@ -197,6 +199,10 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int explosionAnim[] = {0,1,0,2};
   int gemFrame = 0;
   float gemTimer = 0;
+
+  float backgroundOffsetTimer = 0;
+  float backgroundOffsetDuration = 0.1f;
+  int backgroundOffset = 0;
 
 #define IDLE_ANIMATIONS_COUNT 4
   int idleAnim1[] = {0,1,2,1};
@@ -645,6 +651,47 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               srcX = atlX + x;
             }
             int srcY = atlY + y;
+            int dstX = bbX + x;
+            int dstY = bbY + y;
+            if (dstX >= 0 && dstX < BACKBUFFER_WIDTH && dstY >= 0 && dstY < BACKBUFFER_HEIGHT) {
+              backbuffer[dstY*BACKBUFFER_WIDTH + dstX] = spriteAtlas[srcY*SPRITE_ATLAS_WIDTH + srcX];
+            }
+          }
+        }
+      }
+    }
+
+    //
+    // Background animation
+    //
+
+    backgroundOffsetTimer += dt;
+    if (backgroundOffsetTimer > backgroundOffsetDuration) {
+      backgroundOffsetTimer -= backgroundOffsetDuration;
+      backgroundOffset++;
+      if (backgroundOffset == TILE_SIZE) {
+        backgroundOffset = 0;
+      }
+    }
+
+    for (int row = 0; row < SCREEN_HEIGHT_IN_TILES; ++row) {
+      for (int col = 0; col < SCREEN_WIDTH_IN_TILES; ++col) {
+        int srcMinY = 16; // Wall sprite Y
+        int srcMaxY = srcMinY + TILE_SIZE - 1;
+
+        int atlX = 0;
+        int atlY = srcMinY + backgroundOffset;
+
+        int bbX = col * TILE_WIDTH - cameraX;
+        int bbY = row * TILE_HEIGHT - cameraY;
+
+        for (int y = 0; y < TILE_HEIGHT; ++y) {
+          for (int x = 0; x < TILE_WIDTH; ++x) {
+            int srcX = atlX + x;
+            int srcY = atlY + y;
+            if (srcY > srcMaxY) {
+              srcY = srcMinY + (srcY - srcMaxY) - 1;
+            }
             int dstX = bbX + x;
             int dstY = bbY + y;
             if (dstX >= 0 && dstX < BACKBUFFER_WIDTH && dstY >= 0 && dstY < BACKBUFFER_HEIGHT) {
