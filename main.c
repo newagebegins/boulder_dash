@@ -21,7 +21,6 @@
 #define HERO_ANIM_FRAME_COUNT 6
 #define TURN_DURATION 0.15f
 #define MAX_MAP_TILES 100*100
-#define EXPLOSION_FRAME_DURATION 0.1f
 #define GEM_FRAME_COUNT 8
 #define SCREEN_WIDTH_IN_TILES BACKBUFFER_WIDTH / TILE_SIZE
 #define SCREEN_HEIGHT_IN_TILES BACKBUFFER_HEIGHT / TILE_SIZE
@@ -192,7 +191,6 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int currentIdleAnimation = 0;
   bool idleAnimOnce = false;
   bool heroIsAlive = true;
-  float explosionFrameTimer = 0;
   bool explosionIsActive = false;
   int explosionFrame = 0;
   int explosionAnim[] = {0,1,0,2};
@@ -395,28 +393,6 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       heroIdleTimer = 0;
     }
 
-    if (explosionIsActive) {
-      explosionFrameTimer += dt;
-      if (explosionFrameTimer >= EXPLOSION_FRAME_DURATION) {
-        explosionFrameTimer -= EXPLOSION_FRAME_DURATION;
-        explosionFrame++;
-
-        if (explosionFrame >= ARRAY_LENGTH(explosionAnim)) {
-          explosionFrameTimer = 0;
-          explosionFrame = 0;
-          explosionIsActive = false;
-          for (int row = 0; row < mapHeight; ++row) {
-            for (int col = 0; col < mapWidth; ++col) {
-              int i = row*mapWidth + col;
-              if (map[i].type == TILE_TYPE_EXPLOSION) {
-                map[i].type = TILE_TYPE_EMPTY;
-              }
-            }
-          }
-        }
-      }
-    }
-
     turnTimer += dt;
     if (turnTimer >= TURN_DURATION) {
       turnTimer -= TURN_DURATION;
@@ -428,6 +404,24 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       gemFrame++;
       if (gemFrame == GEM_FRAME_COUNT) {
         gemFrame = 0;
+      }
+
+
+      if (explosionIsActive) {
+        explosionFrame++;
+
+        if (explosionFrame >= ARRAY_LENGTH(explosionAnim)) {
+          explosionFrame = 0;
+          explosionIsActive = false;
+          for (int row = 0; row < mapHeight; ++row) {
+            for (int col = 0; col < mapWidth; ++col) {
+              int i = row*mapWidth + col;
+              if (map[i].type == TILE_TYPE_EXPLOSION) {
+                map[i].type = TILE_TYPE_EMPTY;
+              }
+            }
+          }
+        }
       }
 
       for (int row = 0; row < mapHeight; ++row) {
