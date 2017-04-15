@@ -22,7 +22,6 @@
 #define TURN_DURATION 0.15f
 #define MAX_MAP_TILES 100*100
 #define EXPLOSION_FRAME_DURATION 0.1f
-#define GEM_FRAME_DURATION 0.2f
 #define GEM_FRAME_COUNT 8
 #define SCREEN_WIDTH_IN_TILES BACKBUFFER_WIDTH / TILE_SIZE
 #define SCREEN_HEIGHT_IN_TILES BACKBUFFER_HEIGHT / TILE_SIZE
@@ -198,9 +197,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int explosionFrame = 0;
   int explosionAnim[] = {0,1,0,2};
   int gemFrame = 0;
-  float gemTimer = 0;
 
-  int foregroundVisibilityTurns = 50;
+  int foregroundVisibilityTurns = 0;//50;
   int foregroundOffset = 0;
 
 #define IDLE_ANIMATIONS_COUNT 4
@@ -325,9 +323,6 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
     heroMoveFrame = (int)(heroAnimTimer / HERO_ANIM_FRAME_DURATION) % HERO_ANIM_FRAME_COUNT;
 
-    gemTimer += dt;
-    gemFrame = (int)(gemTimer / GEM_FRAME_DURATION) % GEM_FRAME_COUNT;
-
     // Idle animation
     if (!heroIsMoving) {
       nextIdleAnimTimer -= dt;
@@ -429,6 +424,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       //
       // Do turn
       //
+
+      gemFrame++;
+      if (gemFrame == GEM_FRAME_COUNT) {
+        gemFrame = 0;
+      }
 
       for (int row = 0; row < mapHeight; ++row) {
         for (int col = 0; col < mapWidth; ++col) {
