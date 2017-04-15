@@ -200,9 +200,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int gemFrame = 0;
   float gemTimer = 0;
 
-  float foregroundVisibilityTimer = 6.0f;
-  float foregroundOffsetTimer = 0;
-  float foregroundOffsetDuration = 0.1f;
+  int foregroundVisibilityTurns = 50;
   int foregroundOffset = 0;
 
 #define IDLE_ANIMATIONS_COUNT 4
@@ -582,6 +580,33 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           cameraY = maxCameraY;
         }
       }
+
+      // Foreground
+
+      if (foregroundVisibilityTurns > 0) {
+        foregroundVisibilityTurns--;
+
+        foregroundOffset++;
+        if (foregroundOffset == TILE_SIZE) {
+          foregroundOffset = 0;
+        }
+
+        int cameraRow = cameraY / TILE_SIZE;
+        int cameraCol = cameraX / TILE_SIZE;
+
+        // Hide some foreground tiles every turn
+        for (int tile = 0; tile < 4; ++tile) {
+          for (int try = 0; try < 100; ++try) {
+            int row = rand() % SCREEN_HEIGHT_IN_TILES + cameraRow;
+            int col = rand() % SCREEN_WIDTH_IN_TILES + cameraCol;
+            int cell = row*mapWidth + col;
+            if (foreground[cell]) {
+              foreground[cell] = false;
+              break;
+            }
+          }
+        }
+      }
     }
 
     // Clear back buffer
@@ -668,28 +693,10 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     }
 
     //
-    // Foreground
+    // Draw foreground
     //
 
-    if (foregroundVisibilityTimer > 0) {
-      foregroundVisibilityTimer -= dt;
-
-      foregroundOffsetTimer += dt;
-      if (foregroundOffsetTimer > foregroundOffsetDuration) {
-        foregroundOffsetTimer -= foregroundOffsetDuration;
-        foregroundOffset++;
-        if (foregroundOffset == TILE_SIZE) {
-          foregroundOffset = 0;
-        }
-      }
-
-      {
-        // Hide foreground tiles
-        int row = rand() % mapHeight;
-        int col = rand() % mapWidth;
-        foreground[row*mapWidth + col] = false;
-      }
-
+    if (foregroundVisibilityTurns > 0) {
       for (int row = 0; row < mapHeight; ++row) {
         for (int col = 0; col < mapWidth; ++col) {
           bool isVisible = foreground[row*mapWidth + col];
