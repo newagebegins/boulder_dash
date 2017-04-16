@@ -17,6 +17,7 @@
 #define BACKBUFFER_PIXEL_COUNT BACKBUFFER_WIDTH*BACKBUFFER_HEIGHT
 #define BACKBUFFER_BYTES BACKBUFFER_PIXEL_COUNT*sizeof(int)
 #define SPRITE_ATLAS_WIDTH 256
+#define SPRITE_ATLAS_WIDTH_TILES (SPRITE_ATLAS_WIDTH / TILE_SIZE)
 #define HERO_ANIM_FRAME_DURATION 0.05f
 #define HERO_ANIM_FRAME_COUNT 6
 #define TURN_DURATION 0.15f
@@ -55,6 +56,17 @@ typedef struct {
   bool moved;
   bool movedInPreviousFrame;
 } Tile;
+
+// Sprite index = row*16 + col
+typedef enum {
+  SPRITE_TYPE_ENTRANCE = 20,
+  SPRITE_TYPE_WALL = 16,
+  SPRITE_TYPE_EXPLOSION_1 = 34,
+  SPRITE_TYPE_EXPLOSION_2 = 32,
+  SPRITE_TYPE_EXPLOSION_3 = 33,
+  SPRITE_TYPE_HERO_RUN_1 = 7,
+  SPRITE_TYPE_HERO_IDLE_1 = 0,
+} SpriteType;
 
 LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
   switch (msg) {
@@ -181,10 +193,10 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int heroMoveRockTurns = 0;
   int heroMoveFrame = 0;
   float heroAnimTimer = 0;
+  bool heroIsAppearing = true;
   bool heroIsMoving = false;
   bool heroIsFacingRight = false;
   bool heroIsFacingRightOld = false;
-  bool heroIsRunning = false;
   float heroIdleTimer = 0;
   int heroIdleFrame = 0;
   float nextIdleAnimTimer = 0;
@@ -207,6 +219,27 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int *currentIdleAnim = 0;
   int currentIdleAnimNumFrames = 0;
   float currentIdleAnimFrameDuration = 0;
+
+  SpriteType appearanceAnim[] = {
+    SPRITE_TYPE_ENTRANCE,
+    SPRITE_TYPE_WALL,
+    SPRITE_TYPE_ENTRANCE,
+    SPRITE_TYPE_WALL,
+    SPRITE_TYPE_ENTRANCE,
+    SPRITE_TYPE_WALL,
+    SPRITE_TYPE_ENTRANCE,
+    SPRITE_TYPE_WALL,
+    SPRITE_TYPE_ENTRANCE,
+    SPRITE_TYPE_WALL,
+    SPRITE_TYPE_ENTRANCE,
+    SPRITE_TYPE_WALL,
+    SPRITE_TYPE_EXPLOSION_1,
+    SPRITE_TYPE_EXPLOSION_2,
+    SPRITE_TYPE_EXPLOSION_3,
+    SPRITE_TYPE_HERO_RUN_1,
+    SPRITE_TYPE_HERO_IDLE_1
+  };
+  int appearanceAnimFrame = 0;
 
   int mapWidth = 47;
   int mapHeight = 22;
@@ -562,8 +595,17 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           }
         }
 
-        // Move hero
-        if (heroIsAlive) {
+        //
+        // Update hero
+        //
+
+        if (heroIsAppearing) {
+          appearanceAnimFrame++;
+          if (appearanceAnimFrame == ARRAY_LENGTH(appearanceAnim)) {
+            appearanceAnimFrame = 0;
+            heroIsAppearing = false;
+          }
+        } else if (heroIsAlive) {
           int newRow = heroRow;
           int newCol = heroCol;
 
@@ -639,7 +681,12 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             break;
 
           case TILE_TYPE_HERO:
-            if (heroIsMoving) {
+            if (heroIsAppearing) {
+              int atlCol = appearanceAnim[appearanceAnimFrame] % SPRITE_ATLAS_WIDTH_TILES;
+              int atlRow = appearanceAnim[appearanceAnimFrame] / SPRITE_ATLAS_WIDTH_TILES;
+              atlX = atlCol * TILE_SIZE;
+              atlY = atlRow * TILE_SIZE;
+            } else if (heroIsMoving) {
               atlX = 112 + heroMoveFrame * 16;
               atlY = 0;
               flipHorizontally = heroIsFacingRight;
