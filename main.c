@@ -689,7 +689,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             } else if (heroIsMoving) {
               atlX = 112 + heroMoveFrame * 16;
               atlY = 0;
-              flipHorizontally = heroIsFacingRight;
+              flipHorizontally = !heroIsFacingRight;
             } else {
               atlX = heroIdleFrame * 16;
               atlY = 0;
