@@ -9,13 +9,13 @@
 #define PI 3.14159265358979323846f
 
 #define TILE_SIZE 16
-#define HALF_TILE_SIZE TILE_SIZE/2
+#define HALF_TILE_SIZE (TILE_SIZE/2)
 #define TILE_WIDTH TILE_SIZE
 #define TILE_HEIGHT TILE_WIDTH
 #define BACKBUFFER_WIDTH 256
 #define BACKBUFFER_HEIGHT 192
-#define BACKBUFFER_PIXEL_COUNT BACKBUFFER_WIDTH*BACKBUFFER_HEIGHT
-#define BACKBUFFER_BYTES BACKBUFFER_PIXEL_COUNT*sizeof(int)
+#define BACKBUFFER_PIXEL_COUNT (BACKBUFFER_WIDTH*BACKBUFFER_HEIGHT)
+#define BACKBUFFER_BYTES (BACKBUFFER_PIXEL_COUNT*sizeof(int))
 #define SPRITE_ATLAS_WIDTH 256
 #define SPRITE_ATLAS_WIDTH_TILES (SPRITE_ATLAS_WIDTH / TILE_SIZE)
 #define HERO_ANIM_FRAME_DURATION 0.05f
@@ -23,14 +23,18 @@
 #define TURN_DURATION 0.15f
 #define MAX_MAP_TILES 100*100
 #define GEM_FRAME_COUNT 8
-#define SCREEN_WIDTH_IN_TILES BACKBUFFER_WIDTH / TILE_SIZE
-#define SCREEN_HEIGHT_IN_TILES BACKBUFFER_HEIGHT / TILE_SIZE
+#define SCREEN_WIDTH_IN_TILES (BACKBUFFER_WIDTH / TILE_SIZE)
+#define SCREEN_HEIGHT_IN_TILES (BACKBUFFER_HEIGHT / TILE_SIZE)
+
+#define SCREEN_WIDTH_IN_HALF_TILES (SCREEN_WIDTH_IN_TILES*2)
+#define SCREEN_HEIGHT_IN_HALF_TILES (SCREEN_HEIGHT_IN_TILES*2)
+#define SCREEN_HALF_TILES_COUNT (SCREEN_WIDTH_IN_HALF_TILES*SCREEN_HEIGHT_IN_HALF_TILES)
 
 #define CAMERA_STEP HALF_TILE_SIZE
 #define HERO_SIZE TILE_SIZE
 
-#define CAMERA_START_RIGHT_HERO_X BACKBUFFER_WIDTH - 4*HALF_TILE_SIZE - HERO_SIZE
-#define CAMERA_STOP_RIGHT_HERO_X BACKBUFFER_WIDTH - 13*HALF_TILE_SIZE - HERO_SIZE
+#define CAMERA_START_RIGHT_HERO_X (BACKBUFFER_WIDTH - 4*HALF_TILE_SIZE - HERO_SIZE)
+#define CAMERA_STOP_RIGHT_HERO_X (BACKBUFFER_WIDTH - 13*HALF_TILE_SIZE - HERO_SIZE)
 #define CAMERA_START_LEFT_HERO_X 4*HALF_TILE_SIZE
 #define CAMERA_STOP_LEFT_HERO_X 14*HALF_TILE_SIZE
 
@@ -211,6 +215,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int foregroundVisibilityTurns = 50;
   int foregroundOffset = 0;
 
+  bool deathForegroundIsActive = false;
+  int deathForegroundOffset = 0;
+
 #define IDLE_ANIMATIONS_COUNT 4
   int idleAnim1[] = {0,1,2,1};
   int idleAnim2[] = {3,4};
@@ -277,6 +284,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   bool foreground[MAX_MAP_TILES];
   for (int i = 0; i < mapTiles; ++i) {
     foreground[i] = true;
+  }
+
+  bool deathForeground[SCREEN_HALF_TILES_COUNT];
+  for (int i = 0; i < SCREEN_HALF_TILES_COUNT; ++i) {
+    deathForeground[i] = false;
   }
 
   int cameraVelX = 0;
@@ -446,6 +458,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         if (explosionFrame >= ARRAY_LENGTH(explosionAnim)) {
           explosionFrame = 0;
           explosionIsActive = false;
+          deathForegroundIsActive = true;
           for (int row = 0; row < mapHeight; ++row) {
             for (int col = 0; col < mapWidth; ++col) {
               int i = row*mapWidth + col;
@@ -649,6 +662,25 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           }
         }
       }
+
+      if (deathForegroundIsActive) {
+        deathForegroundOffset++;
+        if (deathForegroundOffset == HALF_TILE_SIZE) {
+          deathForegroundOffset = 0;
+        }
+
+        for (int tile = 0; tile < 8; ++tile) {
+          for (int try = 0; try < 100; ++try) {
+            int row = rand() % SCREEN_HEIGHT_IN_HALF_TILES;
+            int col = rand() % SCREEN_WIDTH_IN_HALF_TILES;
+            int cell = row*SCREEN_WIDTH_IN_HALF_TILES + col;
+            if (!deathForeground[cell]) {
+              deathForeground[cell] = true;
+              break;
+            }
+          }
+        }
+      }
     }
 
     // Clear back buffer
@@ -763,6 +795,42 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
           for (int y = 0; y < TILE_HEIGHT; ++y) {
             for (int x = 0; x < TILE_WIDTH; ++x) {
+              int srcX = atlX + x;
+              int srcY = atlY + y;
+              if (srcY > srcMaxY) {
+                srcY = srcMinY + (srcY - srcMaxY) - 1;
+              }
+              int dstX = bbX + x;
+              int dstY = bbY + y;
+              if (dstX >= 0 && dstX < BACKBUFFER_WIDTH && dstY >= 0 && dstY < BACKBUFFER_HEIGHT) {
+                backbuffer[dstY*BACKBUFFER_WIDTH + dstX] = spriteAtlas[srcY*SPRITE_ATLAS_WIDTH + srcX];
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (deathForegroundIsActive) {
+      for (int row = 0; row < SCREEN_HEIGHT_IN_HALF_TILES; ++row) {
+        for (int col = 0; col < SCREEN_WIDTH_IN_HALF_TILES; ++col) {
+          bool isVisible = deathForeground[row*SCREEN_WIDTH_IN_HALF_TILES + col];
+
+          if (!isVisible) {
+            continue;
+          }
+
+          int srcMinY = 16; // Wall sprite Y
+          int srcMaxY = srcMinY + HALF_TILE_SIZE - 1;
+
+          int atlX = 0;
+          int atlY = srcMinY + deathForegroundOffset;
+
+          int bbX = col * HALF_TILE_SIZE;
+          int bbY = row * HALF_TILE_SIZE;
+
+          for (int y = 0; y < HALF_TILE_SIZE; ++y) {
+            for (int x = 0; x < HALF_TILE_SIZE; ++x) {
               int srcX = atlX + x;
               int srcY = atlY + y;
               if (srcY > srcMaxY) {
