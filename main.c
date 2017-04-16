@@ -196,7 +196,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int explosionAnim[] = {0,1,0,2};
   int gemFrame = 0;
 
-  int foregroundVisibilityTurns = 0;//50;
+  int foregroundVisibilityTurns = 50;
   int foregroundOffset = 0;
 
 #define IDLE_ANIMATIONS_COUNT 4
@@ -424,118 +424,6 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         }
       }
 
-      for (int row = 0; row < mapHeight; ++row) {
-        for (int col = 0; col < mapWidth; ++col) {
-          int i = row*mapWidth + col;
-          map[i].movedInPreviousFrame = map[i].moved;
-          map[i].moved = false;
-        }
-      }
-
-      // Move entities (processing order: top to bottom, left to right).
-      // Move only one tile per turn.
-      for (int row = 0; row < mapHeight; ++row) {
-        for (int col = 0; col < mapWidth; ++col) {
-          int current = row*mapWidth + col;
-          if (map[current].moved) {
-            continue;
-          }
-          if (map[current].type == TILE_TYPE_ROCK || map[current].type == TILE_TYPE_GEM) {
-            int below = (row+1)*mapWidth + col;
-            int left = row*mapWidth + (col-1);
-            int right = row*mapWidth + (col+1);
-            int belowLeft = (row+1)*mapWidth + (col-1);
-            int belowRight = (row+1)*mapWidth + (col+1);
-            if (map[below].type == TILE_TYPE_EMPTY) {
-              map[below].type = map[current].type;
-              map[below].moved = true;
-              map[current].type = TILE_TYPE_EMPTY;
-            } else if (map[below].type == TILE_TYPE_HERO) {
-              if (map[current].movedInPreviousFrame) {
-                map[current].type = TILE_TYPE_EMPTY;
-                map[below].type = TILE_TYPE_EMPTY;
-                heroIsAlive = false;
-                explosionIsActive = true;
-
-                // center
-                map[(row+1)*mapWidth + (col+0)].type = TILE_TYPE_EXPLOSION;
-                // right
-                map[(row+1)*mapWidth + (col+1)].type = TILE_TYPE_EXPLOSION;
-                // left
-                map[(row+1)*mapWidth + (col-1)].type = TILE_TYPE_EXPLOSION;
-                // above center
-                map[(row+0)*mapWidth + (col+0)].type = TILE_TYPE_EXPLOSION;
-                // above right
-                map[(row+0)*mapWidth + (col+1)].type = TILE_TYPE_EXPLOSION;
-                // above left
-                map[(row+0)*mapWidth + (col-1)].type = TILE_TYPE_EXPLOSION;
-                // below center
-                map[(row+2)*mapWidth + (col+0)].type = TILE_TYPE_EXPLOSION;
-                // below right
-                map[(row+2)*mapWidth + (col+1)].type = TILE_TYPE_EXPLOSION;
-                // below left
-                map[(row+2)*mapWidth + (col-1)].type = TILE_TYPE_EXPLOSION;
-              }
-            } else if (map[below].type == TILE_TYPE_ROCK || map[below].type == TILE_TYPE_GEM) {
-              if (map[left].type == TILE_TYPE_EMPTY && map[belowLeft].type == TILE_TYPE_EMPTY) {
-                map[left].type = map[current].type;
-                map[left].moved = true;
-                map[current].type = TILE_TYPE_EMPTY;
-              } else if (map[right].type == TILE_TYPE_EMPTY && map[belowRight].type == TILE_TYPE_EMPTY) {
-                map[right].type = map[current].type;
-                map[right].moved = true;
-                map[current].type = TILE_TYPE_EMPTY;
-              }
-            }
-          }
-        }
-      }
-
-      // Move hero
-      if (heroIsAlive) {
-        int newRow = heroRow;
-        int newCol = heroCol;
-
-        if (rightIsDown) {
-          ++newCol;
-        } else if (leftIsDown) {
-          --newCol;
-        } else if (upIsDown) {
-          --newRow;
-        } else if (downIsDown) {
-          ++newRow;
-        }
-
-        int deltaCol = newCol - heroCol;
-        int newCell = newRow*mapWidth + newCol;
-
-        switch (map[newCell].type) {
-          case TILE_TYPE_EMPTY:
-          case TILE_TYPE_EARTH:
-          case TILE_TYPE_GEM:
-            map[heroRow*mapWidth + heroCol].type = TILE_TYPE_EMPTY;
-            heroRow = newRow;
-            heroCol = newCol;
-            map[heroRow*mapWidth + heroCol].type = TILE_TYPE_HERO;
-            break;
-
-          case TILE_TYPE_ROCK:
-            int targetRockCell = newRow*mapWidth + newCol + deltaCol;
-            if (deltaCol != 0 && map[targetRockCell].type == TILE_TYPE_EMPTY) {
-              heroMoveRockTurns++;
-              if (heroMoveRockTurns == 3) {
-                heroMoveRockTurns = 0;
-                map[heroRow*mapWidth + heroCol].type = TILE_TYPE_EMPTY;
-                heroRow = newRow;
-                heroCol = newCol;
-                map[heroRow*mapWidth + heroCol].type = TILE_TYPE_HERO;
-                map[targetRockCell].type = TILE_TYPE_ROCK;
-              }
-            }
-            break;
-        }
-      }
-
       // Move camera
       {
         int heroScreenX = heroCol * TILE_WIDTH - cameraX;
@@ -575,9 +463,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         }
       }
 
-      // Foreground
-
       if (foregroundVisibilityTurns > 0) {
+        //
+        // Foreground is active
+        //
+
         foregroundVisibilityTurns--;
 
         foregroundOffset++;
@@ -598,6 +488,122 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               foreground[cell] = false;
               break;
             }
+          }
+        }
+      } else {
+        //
+        // Foreground is not active
+        //
+
+        for (int row = 0; row < mapHeight; ++row) {
+          for (int col = 0; col < mapWidth; ++col) {
+            int i = row*mapWidth + col;
+            map[i].movedInPreviousFrame = map[i].moved;
+            map[i].moved = false;
+          }
+        }
+
+        // Move entities (processing order: top to bottom, left to right).
+        // Move only one tile per turn.
+        for (int row = 0; row < mapHeight; ++row) {
+          for (int col = 0; col < mapWidth; ++col) {
+            int current = row*mapWidth + col;
+            if (map[current].moved) {
+              continue;
+            }
+            if (map[current].type == TILE_TYPE_ROCK || map[current].type == TILE_TYPE_GEM) {
+              int below = (row+1)*mapWidth + col;
+              int left = row*mapWidth + (col-1);
+              int right = row*mapWidth + (col+1);
+              int belowLeft = (row+1)*mapWidth + (col-1);
+              int belowRight = (row+1)*mapWidth + (col+1);
+              if (map[below].type == TILE_TYPE_EMPTY) {
+                map[below].type = map[current].type;
+                map[below].moved = true;
+                map[current].type = TILE_TYPE_EMPTY;
+              } else if (map[below].type == TILE_TYPE_HERO) {
+                if (map[current].movedInPreviousFrame) {
+                  map[current].type = TILE_TYPE_EMPTY;
+                  map[below].type = TILE_TYPE_EMPTY;
+                  heroIsAlive = false;
+                  explosionIsActive = true;
+
+                  // center
+                  map[(row+1)*mapWidth + (col+0)].type = TILE_TYPE_EXPLOSION;
+                  // right
+                  map[(row+1)*mapWidth + (col+1)].type = TILE_TYPE_EXPLOSION;
+                  // left
+                  map[(row+1)*mapWidth + (col-1)].type = TILE_TYPE_EXPLOSION;
+                  // above center
+                  map[(row+0)*mapWidth + (col+0)].type = TILE_TYPE_EXPLOSION;
+                  // above right
+                  map[(row+0)*mapWidth + (col+1)].type = TILE_TYPE_EXPLOSION;
+                  // above left
+                  map[(row+0)*mapWidth + (col-1)].type = TILE_TYPE_EXPLOSION;
+                  // below center
+                  map[(row+2)*mapWidth + (col+0)].type = TILE_TYPE_EXPLOSION;
+                  // below right
+                  map[(row+2)*mapWidth + (col+1)].type = TILE_TYPE_EXPLOSION;
+                  // below left
+                  map[(row+2)*mapWidth + (col-1)].type = TILE_TYPE_EXPLOSION;
+                }
+              } else if (map[below].type == TILE_TYPE_ROCK || map[below].type == TILE_TYPE_GEM) {
+                if (map[left].type == TILE_TYPE_EMPTY && map[belowLeft].type == TILE_TYPE_EMPTY) {
+                  map[left].type = map[current].type;
+                  map[left].moved = true;
+                  map[current].type = TILE_TYPE_EMPTY;
+                } else if (map[right].type == TILE_TYPE_EMPTY && map[belowRight].type == TILE_TYPE_EMPTY) {
+                  map[right].type = map[current].type;
+                  map[right].moved = true;
+                  map[current].type = TILE_TYPE_EMPTY;
+                }
+              }
+            }
+          }
+        }
+
+        // Move hero
+        if (heroIsAlive) {
+          int newRow = heroRow;
+          int newCol = heroCol;
+
+          if (rightIsDown) {
+            ++newCol;
+          } else if (leftIsDown) {
+            --newCol;
+          } else if (upIsDown) {
+            --newRow;
+          } else if (downIsDown) {
+            ++newRow;
+          }
+
+          int deltaCol = newCol - heroCol;
+          int newCell = newRow*mapWidth + newCol;
+
+          switch (map[newCell].type) {
+            case TILE_TYPE_EMPTY:
+            case TILE_TYPE_EARTH:
+            case TILE_TYPE_GEM:
+              map[heroRow*mapWidth + heroCol].type = TILE_TYPE_EMPTY;
+              heroRow = newRow;
+              heroCol = newCol;
+              map[heroRow*mapWidth + heroCol].type = TILE_TYPE_HERO;
+              break;
+
+            case TILE_TYPE_ROCK:
+              int targetRockCell = newRow*mapWidth + newCol + deltaCol;
+              if (deltaCol != 0 && map[targetRockCell].type == TILE_TYPE_EMPTY) {
+                heroMoveRockTurns++;
+                if (heroMoveRockTurns == 3) {
+                  heroMoveRockTurns = 0;
+                  map[heroRow*mapWidth + heroCol].type = TILE_TYPE_EMPTY;
+                  heroRow = newRow;
+                  heroCol = newCol;
+                  map[heroRow*mapWidth + heroCol].type = TILE_TYPE_HERO;
+                  map[targetRockCell].type = TILE_TYPE_ROCK;
+                }
+              }
+              break;
           }
         }
       }
