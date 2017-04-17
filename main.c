@@ -212,10 +212,12 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int explosionAnim[] = {0,1,0,2};
   int gemFrame = 0;
 
-  int foregroundVisibilityTurns = 50;
+  int foregroundVisibilityTurnMax = 50;
+  int foregroundVisibilityTurn = foregroundVisibilityTurnMax;
   int foregroundOffset = 0;
 
-  bool deathForegroundIsActive = false;
+  int deathForegroundVisibilityTurn = 0;
+  int deathForegroundVisibilityTurnMax = 50;
   int deathForegroundOffset = 0;
 
 #define IDLE_ANIMATIONS_COUNT 4
@@ -252,44 +254,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int mapHeight = 22;
   int mapTiles = mapWidth * mapHeight;
   Tile map[MAX_MAP_TILES];
-  for (int i = 0; i < mapTiles; ++i) {
-    switch (level1[i]) {
-      case '#':
-        map[i].type = TILE_TYPE_WALL;
-        break;
-      case '.':
-        map[i].type = TILE_TYPE_EARTH;
-        break;
-      case 'o':
-        map[i].type = TILE_TYPE_ROCK;
-        break;
-      case 'R':
-        map[i].type = TILE_TYPE_HERO;
-        break;
-      case '=':
-        map[i].type = TILE_TYPE_BRICK;
-        break;
-      case '$':
-        map[i].type = TILE_TYPE_GEM;
-        break;
-      default:
-        assert("Unhandled type!");
-    }
-    if (map[i].type == TILE_TYPE_HERO) {
-      heroRow = i / mapWidth;
-      heroCol = i % mapWidth;
-    }
-  }
-
   bool foreground[MAX_MAP_TILES];
-  for (int i = 0; i < mapTiles; ++i) {
-    foreground[i] = true;
-  }
-
   bool deathForeground[SCREEN_HALF_TILES_COUNT];
-  for (int i = 0; i < SCREEN_HALF_TILES_COUNT; ++i) {
-    deathForeground[i] = false;
-  }
+  bool isInit = true;
 
   int cameraVelX = 0;
   int cameraVelY = 0;
@@ -341,6 +308,54 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           TranslateMessage(&msg);
           DispatchMessage(&msg);
           break;
+      }
+    }
+
+    if (isInit) {
+      isInit = false;
+
+      heroIsAppearing = true;
+      heroIsAlive = true;
+      foregroundVisibilityTurn = foregroundVisibilityTurnMax;
+      foregroundOffset = 0;
+      deathForegroundVisibilityTurn = 0;
+      deathForegroundOffset = 0;
+
+      for (int i = 0; i < mapTiles; ++i) {
+        switch (level1[i]) {
+          case '#':
+            map[i].type = TILE_TYPE_WALL;
+            break;
+          case '.':
+            map[i].type = TILE_TYPE_EARTH;
+            break;
+          case 'o':
+            map[i].type = TILE_TYPE_ROCK;
+            break;
+          case 'R':
+            map[i].type = TILE_TYPE_HERO;
+            break;
+          case '=':
+            map[i].type = TILE_TYPE_BRICK;
+            break;
+          case '$':
+            map[i].type = TILE_TYPE_GEM;
+            break;
+          default:
+            assert("Unhandled type!");
+        }
+        if (map[i].type == TILE_TYPE_HERO) {
+          heroRow = i / mapWidth;
+          heroCol = i % mapWidth;
+        }
+      }
+
+      for (int i = 0; i < mapTiles; ++i) {
+        foreground[i] = true;
+      }
+
+      for (int i = 0; i < SCREEN_HALF_TILES_COUNT; ++i) {
+        deathForeground[i] = false;
       }
     }
 
@@ -458,7 +473,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         if (explosionFrame >= ARRAY_LENGTH(explosionAnim)) {
           explosionFrame = 0;
           explosionIsActive = false;
-          deathForegroundIsActive = true;
+          deathForegroundVisibilityTurn = deathForegroundVisibilityTurnMax;
           for (int row = 0; row < mapHeight; ++row) {
             for (int col = 0; col < mapWidth; ++col) {
               int i = row*mapWidth + col;
@@ -509,12 +524,12 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         }
       }
 
-      if (foregroundVisibilityTurns > 0) {
+      if (foregroundVisibilityTurn > 0) {
         //
         // Foreground is active
         //
 
-        foregroundVisibilityTurns--;
+        foregroundVisibilityTurn--;
 
         foregroundOffset++;
         if (foregroundOffset == TILE_SIZE) {
@@ -663,7 +678,12 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         }
       }
 
-      if (deathForegroundIsActive) {
+      if (deathForegroundVisibilityTurn > 0) {
+        deathForegroundVisibilityTurn--;
+        if (deathForegroundVisibilityTurn == 0) {
+          isInit = true;
+        }
+
         deathForegroundOffset++;
         if (deathForegroundOffset == HALF_TILE_SIZE) {
           deathForegroundOffset = 0;
@@ -775,7 +795,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     // Draw foreground
     //
 
-    if (foregroundVisibilityTurns > 0) {
+    if (foregroundVisibilityTurn > 0) {
       for (int row = 0; row < mapHeight; ++row) {
         for (int col = 0; col < mapWidth; ++col) {
           bool isVisible = foreground[row*mapWidth + col];
@@ -811,7 +831,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       }
     }
 
-    if (deathForegroundIsActive) {
+    if (deathForegroundVisibilityTurn > 0) {
       for (int row = 0; row < SCREEN_HEIGHT_IN_HALF_TILES; ++row) {
         for (int col = 0; col < SCREEN_WIDTH_IN_HALF_TILES; ++col) {
           bool isVisible = deathForeground[row*SCREEN_WIDTH_IN_HALF_TILES + col];
