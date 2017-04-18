@@ -869,7 +869,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
     // Draw text
     {
-      char *text = "0123456789 5566";
+      char *text = "()*+,-./01234567890ABCDEFGHIJKL";
       int outRow = 0;
       int outCol = 3;
       for (int i = 0; text[i] != 0; ++i) {
@@ -877,9 +877,19 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           continue;
         }
 
-        int indexInAtlas = text[i] - '0';
+        int indexInAtlas = 0;
+        int atlY = 0;
+        if ('0' <= text[i] && text[i] <= ':') {
+          indexInAtlas = text[i] - '0';
+          atlY = 104;
+        } else if ('A' <= text[i] && text[i] <= 'Z') {
+          indexInAtlas = text[i] - 'A';
+          atlY = 104 + HALF_TILE_SIZE;
+        } else if ('(' <= text[i] && text[i] <= '/') {
+          indexInAtlas = text[i] - '(';
+          atlY = 104 + HALF_TILE_SIZE*2;
+        }
         int atlX = indexInAtlas * HALF_TILE_SIZE;
-        int atlY = 104;
 
         int bbX = (outCol + i) * HALF_TILE_SIZE;
         int bbY = outRow * HALF_TILE_SIZE;
