@@ -867,6 +867,37 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       }
     }
 
+    // Draw text
+    {
+      char *text = "0123456789 5566";
+      int outRow = 0;
+      int outCol = 3;
+      for (int i = 0; text[i] != 0; ++i) {
+        if (text[i] == ' ') {
+          continue;
+        }
+
+        int indexInAtlas = text[i] - '0';
+        int atlX = indexInAtlas * HALF_TILE_SIZE;
+        int atlY = 104;
+
+        int bbX = (outCol + i) * HALF_TILE_SIZE;
+        int bbY = outRow * HALF_TILE_SIZE;
+
+        for (int y = 0; y < HALF_TILE_SIZE; ++y) {
+          for (int x = 0; x < HALF_TILE_SIZE; ++x) {
+            int srcX = atlX + x;
+            int srcY = atlY + y;
+            int dstX = bbX + x;
+            int dstY = bbY + y;
+            if (dstX >= 0 && dstX < BACKBUFFER_WIDTH && dstY >= 0 && dstY < BACKBUFFER_HEIGHT) {
+              backbuffer[dstY*BACKBUFFER_WIDTH + dstX] = spriteAtlas[srcY*SPRITE_ATLAS_WIDTH + srcX];
+            }
+          }
+        }
+      }
+    }
+
     StretchDIBits(deviceContext, 0, 0, windowWidth, windowHeight,
                   0, 0, BACKBUFFER_WIDTH, BACKBUFFER_HEIGHT, backbuffer,
                   &backbufferBmpInf, DIB_RGB_COLORS, SRCCOPY);
