@@ -24,6 +24,7 @@
 #define TURN_DURATION 0.15f
 #define MAX_MAP_TILES 100*100
 #define GEM_FRAME_COUNT 8
+#define MAX_SCORE_DIGITS 6
 #define SCREEN_WIDTH_IN_TILES (BACKBUFFER_WIDTH / TILE_SIZE)
 #define SCREEN_HEIGHT_IN_TILES ((BACKBUFFER_HEIGHT - TEXT_AREA_HEIGHT) / TILE_SIZE)
 
@@ -109,6 +110,9 @@ char *level1 =
   "###############################################";
 
 int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdShow) {
+  UNREFERENCED_PARAMETER(prevInst);
+  UNREFERENCED_PARAMETER(cmdLine);
+
   uint32_t *backbuffer = malloc(BACKBUFFER_BYTES);
 
   BITMAPINFO backbufferBmpInf = {0};
@@ -212,6 +216,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int explosionFrame = 0;
   int explosionAnim[] = {0,1,0,2};
   int gemFrame = 0;
+  int score = 0;
 
   int foregroundVisibilityTurnMax = 28;
   int foregroundVisibilityTurn = foregroundVisibilityTurnMax;
@@ -657,6 +662,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             case TILE_TYPE_EMPTY:
             case TILE_TYPE_EARTH:
             case TILE_TYPE_GEM:
+              if (map[newCell].type == TILE_TYPE_GEM) {
+                score += 10;
+              }
               map[heroRow*mapWidth + heroCol].type = TILE_TYPE_EMPTY;
               heroRow = newRow;
               heroCol = newCol;
@@ -872,7 +880,10 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
     // Draw text
     {
-      char *text = "12*10   00   136   000010";
+      char text[MAX_SCORE_DIGITS + 1];
+      sprintf_s(text, sizeof(text), "%0*d", MAX_SCORE_DIGITS, score);
+
+      //char *text = "12*10   00   136   000010";
       int outRow = 1;
       int outCol = 3;
       for (int i = 0; text[i] != 0; ++i) {
