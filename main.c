@@ -213,13 +213,15 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int explosionAnim[] = {0,1,0,2};
   int gemFrame = 0;
 
-  int foregroundVisibilityTurnMax = 50;
+  int foregroundVisibilityTurnMax = 28;
   int foregroundVisibilityTurn = foregroundVisibilityTurnMax;
   int foregroundOffset = 0;
+  int foregroundTilesPerTurn = 6;
 
   int deathForegroundVisibilityTurn = 0;
-  int deathForegroundVisibilityTurnMax = 50;
+  int deathForegroundVisibilityTurnMax = 25;
   int deathForegroundOffset = 0;
+  int deathForegroundTilesPerTurn = 18;
 
 #define IDLE_ANIMATIONS_COUNT 4
   int idleAnim1[] = {0,1,2,1};
@@ -541,7 +543,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         int cameraCol = cameraX / TILE_SIZE;
 
         // Hide some foreground tiles every turn
-        for (int tile = 0; tile < 4; ++tile) {
+        for (int tile = 0; tile < foregroundTilesPerTurn; ++tile) {
           for (int try = 0; try < 100; ++try) {
             int row = rand() % SCREEN_HEIGHT_IN_TILES + cameraRow;
             int col = rand() % SCREEN_WIDTH_IN_TILES + cameraCol;
@@ -690,7 +692,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           deathForegroundOffset = 0;
         }
 
-        for (int tile = 0; tile < 8; ++tile) {
+        for (int tile = 0; tile < deathForegroundTilesPerTurn; ++tile) {
           for (int try = 0; try < 100; ++try) {
             int row = rand() % SCREEN_HEIGHT_IN_HALF_TILES;
             int col = rand() % SCREEN_WIDTH_IN_HALF_TILES;
