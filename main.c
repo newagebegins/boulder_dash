@@ -12,6 +12,7 @@
 #define HALF_TILE_SIZE (TILE_SIZE/2)
 #define TILE_WIDTH TILE_SIZE
 #define TILE_HEIGHT TILE_WIDTH
+#define TEXT_AREA_HEIGHT TILE_SIZE
 #define BACKBUFFER_WIDTH 256
 #define BACKBUFFER_HEIGHT 192
 #define BACKBUFFER_PIXEL_COUNT (BACKBUFFER_WIDTH*BACKBUFFER_HEIGHT)
@@ -24,7 +25,7 @@
 #define MAX_MAP_TILES 100*100
 #define GEM_FRAME_COUNT 8
 #define SCREEN_WIDTH_IN_TILES (BACKBUFFER_WIDTH / TILE_SIZE)
-#define SCREEN_HEIGHT_IN_TILES (BACKBUFFER_HEIGHT / TILE_SIZE)
+#define SCREEN_HEIGHT_IN_TILES ((BACKBUFFER_HEIGHT - TEXT_AREA_HEIGHT) / TILE_SIZE)
 
 #define SCREEN_WIDTH_IN_HALF_TILES (SCREEN_WIDTH_IN_TILES*2)
 #define SCREEN_HEIGHT_IN_HALF_TILES (SCREEN_HEIGHT_IN_TILES*2)
@@ -38,8 +39,8 @@
 #define CAMERA_START_LEFT_HERO_X 4*HALF_TILE_SIZE
 #define CAMERA_STOP_LEFT_HERO_X 14*HALF_TILE_SIZE
 
-#define CAMERA_START_DOWN_HERO_Y BACKBUFFER_HEIGHT - 3*HALF_TILE_SIZE - HERO_SIZE
-#define CAMERA_STOP_DOWN_HERO_Y BACKBUFFER_HEIGHT - 9*HALF_TILE_SIZE - HERO_SIZE
+#define CAMERA_START_DOWN_HERO_Y BACKBUFFER_HEIGHT - 3*HALF_TILE_SIZE - HERO_SIZE - TEXT_AREA_HEIGHT
+#define CAMERA_STOP_DOWN_HERO_Y BACKBUFFER_HEIGHT - 9*HALF_TILE_SIZE - HERO_SIZE - TEXT_AREA_HEIGHT
 #define CAMERA_START_UP_HERO_Y 3*HALF_TILE_SIZE
 #define CAMERA_STOP_UP_HERO_Y 9*HALF_TILE_SIZE
 
@@ -261,7 +262,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int cameraVelX = 0;
   int cameraVelY = 0;
   int maxCameraX = mapWidth*TILE_WIDTH - BACKBUFFER_WIDTH;
-  int maxCameraY = mapHeight*TILE_HEIGHT - BACKBUFFER_HEIGHT;
+  int maxCameraY = mapHeight*TILE_HEIGHT - BACKBUFFER_HEIGHT + TEXT_AREA_HEIGHT;
 
   while (running) {
     prefcPrev = perfc;
@@ -770,7 +771,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         }
 
         int bbX = col * TILE_WIDTH - cameraX;
-        int bbY = row * TILE_HEIGHT - cameraY;
+        int bbY = row * TILE_HEIGHT - cameraY + TEXT_AREA_HEIGHT;
 
         for (int y = 0; y < TILE_HEIGHT; ++y) {
           for (int x = 0; x < TILE_WIDTH; ++x) {
@@ -783,7 +784,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             int srcY = atlY + y;
             int dstX = bbX + x;
             int dstY = bbY + y;
-            if (dstX >= 0 && dstX < BACKBUFFER_WIDTH && dstY >= 0 && dstY < BACKBUFFER_HEIGHT) {
+            if (dstX >= 0 && dstX < BACKBUFFER_WIDTH && dstY >= TEXT_AREA_HEIGHT && dstY < BACKBUFFER_HEIGHT) {
               backbuffer[dstY*BACKBUFFER_WIDTH + dstX] = spriteAtlas[srcY*SPRITE_ATLAS_WIDTH + srcX];
             }
           }
@@ -811,7 +812,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           int atlY = srcMinY + foregroundOffset;
 
           int bbX = col * TILE_WIDTH - cameraX;
-          int bbY = row * TILE_HEIGHT - cameraY;
+          int bbY = row * TILE_HEIGHT - cameraY + TEXT_AREA_HEIGHT;
 
           for (int y = 0; y < TILE_HEIGHT; ++y) {
             for (int x = 0; x < TILE_WIDTH; ++x) {
@@ -822,7 +823,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               }
               int dstX = bbX + x;
               int dstY = bbY + y;
-              if (dstX >= 0 && dstX < BACKBUFFER_WIDTH && dstY >= 0 && dstY < BACKBUFFER_HEIGHT) {
+              if (dstX >= 0 && dstX < BACKBUFFER_WIDTH && dstY >= TEXT_AREA_HEIGHT && dstY < BACKBUFFER_HEIGHT) {
                 backbuffer[dstY*BACKBUFFER_WIDTH + dstX] = spriteAtlas[srcY*SPRITE_ATLAS_WIDTH + srcX];
               }
             }
@@ -847,7 +848,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           int atlY = srcMinY + deathForegroundOffset;
 
           int bbX = col * HALF_TILE_SIZE;
-          int bbY = row * HALF_TILE_SIZE;
+          int bbY = row * HALF_TILE_SIZE + TEXT_AREA_HEIGHT;
 
           for (int y = 0; y < HALF_TILE_SIZE; ++y) {
             for (int x = 0; x < HALF_TILE_SIZE; ++x) {
@@ -858,7 +859,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               }
               int dstX = bbX + x;
               int dstY = bbY + y;
-              if (dstX >= 0 && dstX < BACKBUFFER_WIDTH && dstY >= 0 && dstY < BACKBUFFER_HEIGHT) {
+              if (dstX >= 0 && dstX < BACKBUFFER_WIDTH && dstY >= TEXT_AREA_HEIGHT && dstY < BACKBUFFER_HEIGHT) {
                 backbuffer[dstY*BACKBUFFER_WIDTH + dstX] = spriteAtlas[srcY*SPRITE_ATLAS_WIDTH + srcX];
               }
             }
@@ -869,8 +870,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
     // Draw text
     {
-      char *text = "()*+,-./01234567890ABCDEFGHIJKL";
-      int outRow = 0;
+      char *text = "12*10   00   136   000010";
+      int outRow = 1;
       int outCol = 3;
       for (int i = 0; text[i] != 0; ++i) {
         if (text[i] == ' ') {
