@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdint.h>
+#include "decodeCaves.h"
 
 #define ARRAY_LENGTH(array) (sizeof(array)/sizeof(*array))
 #define PI 3.14159265358979323846f
@@ -85,33 +86,11 @@ LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
   return 0;
 }
 
-char *level1 =
-  "###############################################"
-  "#$$   oRo o  .................................#"
-  "#$$.......o...................................#"
-  "#...  $$  $  .................................#"
-  "#...  oo     .................................#"
-  "#.....ooo    .................................#"
-  "#......oo    .................................#"
-  "#......oo    .................................#"
-  "#......oo   ..................................#"
-  "#.......oo  ..................................#"
-  "#........o....................................#"
-  "#.......oo  ..................................#"
-  "#........o....................................#"
-  "#.......oo  ..................................#"
-  "#........o....................................#"
-  "#.......oo  ..................................#"
-  "#........o....................................#"
-  "#.......oo  ..................................#"
-  "#........o....................................#"
-  "#.......oo  ..................................#"
-  "#........o....................................#"
-  "###############################################";
-
 int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdShow) {
   UNREFERENCED_PARAMETER(prevInst);
   UNREFERENCED_PARAMETER(cmdLine);
+
+  DecodeCave(1);
 
   uint32_t *backbuffer = malloc(BACKBUFFER_BYTES);
 
@@ -258,7 +237,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   };
   int appearanceAnimFrame = 0;
 
-  int mapWidth = 47;
+  int mapWidth = 40;
   int mapHeight = 22;
   int mapTiles = mapWidth * mapHeight;
   Tile map[MAX_MAP_TILES];
@@ -329,32 +308,38 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       deathForegroundVisibilityTurn = 0;
       deathForegroundOffset = 0;
 
-      for (int i = 0; i < mapTiles; ++i) {
-        switch (level1[i]) {
-          case '#':
-            map[i].type = TILE_TYPE_WALL;
-            break;
-          case '.':
-            map[i].type = TILE_TYPE_EARTH;
-            break;
-          case 'o':
-            map[i].type = TILE_TYPE_ROCK;
-            break;
-          case 'R':
-            map[i].type = TILE_TYPE_HERO;
-            break;
-          case '=':
-            map[i].type = TILE_TYPE_BRICK;
-            break;
-          case '$':
-            map[i].type = TILE_TYPE_GEM;
-            break;
-          default:
-            assert("Unhandled type!");
-        }
-        if (map[i].type == TILE_TYPE_HERO) {
-          heroRow = i / mapWidth;
-          heroCol = i % mapWidth;
+      for (int y = 2, i = 0; y <= 23; y++) {
+        for(int x = 0; x <= 39; x++, i++) {
+          switch (caveData[x][y]) {
+            case 'W':
+              map[i].type = TILE_TYPE_WALL;
+              break;
+            case '.':
+              map[i].type = TILE_TYPE_EARTH;
+              break;
+            case 'r':
+              map[i].type = TILE_TYPE_ROCK;
+              break;
+            case 'X':
+              map[i].type = TILE_TYPE_HERO;
+              break;
+            case 'w':
+              map[i].type = TILE_TYPE_BRICK;
+              break;
+            case 'd':
+              map[i].type = TILE_TYPE_GEM;
+              break;
+            case ' ':
+            case 'P':
+              map[i].type = TILE_TYPE_EMPTY;
+              break;
+            default:
+              assert(!"Unhandled type!");
+          }
+          if (map[i].type == TILE_TYPE_HERO) {
+            heroRow = y - 2;
+            heroCol = x;
+          }
         }
       }
 
