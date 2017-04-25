@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdint.h>
-#include "cave.c"
+#include "cave.h"
 
 #define ARRAY_LENGTH(array) (sizeof(array)/sizeof(*array))
 #define PI 3.14159265358979323846f

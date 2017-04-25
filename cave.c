@@ -1,6 +1,6 @@
-typedef struct {
-  uint8_t data[24][40];
-} Cave;
+#include <assert.h>
+#include <stdint.h>
+#include "cave.h"
 
 uint8_t cave1[]=
 {
