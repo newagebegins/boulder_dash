@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdint.h>
-#include "decodeCaves.h"
+#include "decodeCaves.c"
 
 #define ARRAY_LENGTH(array) (sizeof(array)/sizeof(*array))
 #define PI 3.14159265358979323846f
@@ -331,6 +331,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               break;
             case ' ':
             case 'P':
+            case 'q':
               map[i].type = TILE_TYPE_EMPTY;
               break;
             default:
