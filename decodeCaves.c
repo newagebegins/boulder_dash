@@ -1,6 +1,6 @@
 typedef short objectType;
 
-uint8_t caveData[40][24];
+uint8_t caveData[24][40];
 
 uint8_t cave1[]=
 {
@@ -334,7 +334,7 @@ void StoreObject(int x, int y, objectType anObject)
     assert(((y >= 0) && (y <= 23)));
     assert(((anObject >= 0) && (anObject <= 63)));
 
-    caveData[x][y] = creatureCode[anObject];
+    caveData[y][x] = creatureCode[anObject];
 }
 
 void DrawLine(objectType anObject, int x, int y, int aLength, int aDirection)
