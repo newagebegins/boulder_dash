@@ -5,6 +5,6 @@ typedef struct {
   uint8_t data[24][40];
 } Cave;
 
-Cave DecodeCave(int caveIndex);
+Cave getCave(int caveIndex);
 
 #endif

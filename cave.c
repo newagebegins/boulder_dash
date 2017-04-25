@@ -224,9 +224,8 @@ void NextRandom(int *RandSeed1, int *RandSeed2);
 
 uint8_t* caves[] = { 0, cave1, cave2, cave3, cave4, cave5, cave6, cave7, cave8, cave9, cave10, cave11, cave12, cave13, cave14, cave15, cave16, cave17, cave18, cave19, cave20 };
 
-Cave DecodeCave(int caveIndex) {
+Cave DecodeCave(uint8_t *aCaveData) {
   Cave cave;
-  uint8_t *aCaveData = caves[caveIndex];
   int RandSeed1, RandSeed2;
   int theWidth, theHeight, theFill, theLength, theDirection;
   int x, y;
@@ -401,4 +400,8 @@ void NextRandom(int *RandSeed1, int *RandSeed2) {
 
   assert(((*RandSeed1 >= 0x00) && (*RandSeed1 <= 0xFF)));
   assert(((*RandSeed2 >= 0x00) && (*RandSeed2 <= 0xFF)));
+}
+
+Cave getCave(int caveIndex) {
+  return DecodeCave(caves[caveIndex]);
 }

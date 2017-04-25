@@ -90,7 +90,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   UNREFERENCED_PARAMETER(prevInst);
   UNREFERENCED_PARAMETER(cmdLine);
 
-  Cave cave = DecodeCave(1);
+  Cave cave = getCave(1);
 
   uint32_t *backbuffer = malloc(BACKBUFFER_BYTES);
 
