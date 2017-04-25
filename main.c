@@ -90,7 +90,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   UNREFERENCED_PARAMETER(prevInst);
   UNREFERENCED_PARAMETER(cmdLine);
 
-  DecodeCave(1);
+  Cave cave = DecodeCave(1);
 
   uint32_t *backbuffer = malloc(BACKBUFFER_BYTES);
 
@@ -310,7 +310,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
       for (int y = 2, i = 0; y <= 23; y++) {
         for(int x = 0; x <= 39; x++, i++) {
-          switch (caveData[y][x]) {
+          switch (cave.data[y][x]) {
             case 'W':
               map[i].type = TILE_TYPE_WALL;
               break;

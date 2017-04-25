@@ -1,4 +1,6 @@
-uint8_t caveData[24][40];
+typedef struct {
+  uint8_t data[24][40];
+} Cave;
 
 uint8_t cave1[]=
 {
@@ -238,17 +240,18 @@ uint8_t creatureCode[64]=
 int ldx[8]={ 0,  1, 1, 1, 0, -1, -1, -1};
 int ldy[8]={-1, -1, 0, 1, 1,  1,  0, -1};
 
-void StoreObject(int x, int y, int anObject);
-void DrawLine(int anObject, int x, int y, int aLength, int aDirection);
-void DrawFilledRect(int anObject, int x, int y, int aWidth, int aHeight, int aFillObject);
-void DrawRect(int anObject, int x, int y, int aWidth, int aHeight);
+void StoreObject(Cave *cave, int x, int y, int anObject);
+void DrawLine(Cave *cave, int anObject, int x, int y, int aLength, int aDirection);
+void DrawFilledRect(Cave *cave, int anObject, int x, int y, int aWidth, int aHeight, int aFillObject);
+void DrawRect(Cave *cave, int anObject, int x, int y, int aWidth, int aHeight);
 void NextRandom(int *RandSeed1, int *RandSeed2);
 
 uint8_t* caves[] = { 0, cave1, cave2, cave3, cave4, cave5, cave6, cave7, cave8, cave9, cave10, cave11, cave12, cave13, cave14, cave15, cave16, cave17, cave18, cave19, cave20 };
 
 /* **************************************** */
-void DecodeCave(int caveIndex)
+Cave DecodeCave(int caveIndex)
 {
+    Cave cave;
     uint8_t *aCaveData = caves[caveIndex];
     int RandSeed1, RandSeed2;
     int theWidth, theHeight, theFill, theLength, theDirection;
@@ -263,7 +266,7 @@ void DecodeCave(int caveIndex)
 /* Clear out the cave data to a null value */
     for(x = 0; x < 40; x++) {
         for (y = 0; y <= 23; y++) {
-            StoreObject(x, y, 0x07);
+            StoreObject(&cave, x, y, 0x07);
         }
     }
 
@@ -277,7 +280,7 @@ void DecodeCave(int caveIndex)
                     theObject = aCaveData[0x18 + caveDataIndex];
                 }
             }
-            StoreObject(x, y, theObject);
+            StoreObject(&cave, x, y, theObject);
         }     
     }  
 
@@ -290,7 +293,7 @@ void DecodeCave(int caveIndex)
         case 0: /* PLOT */
             x = aCaveData[++caveDataIndex];
             y = aCaveData[++caveDataIndex];
-            StoreObject(x, y, theObject);
+            StoreObject(&cave, x, y, theObject);
             break;
 
         case 1: /* LINE */
@@ -298,7 +301,7 @@ void DecodeCave(int caveIndex)
             y = aCaveData[++caveDataIndex];
             theLength = aCaveData[++caveDataIndex];
             theDirection = aCaveData[++caveDataIndex];
-            DrawLine(theObject, x, y, theLength, theDirection);
+            DrawLine(&cave, theObject, x, y, theLength, theDirection);
             break;
 
         case 2: /* FILLED RECTANGLE */
@@ -307,7 +310,7 @@ void DecodeCave(int caveIndex)
             theWidth = aCaveData[++caveDataIndex];
             theHeight = aCaveData[++caveDataIndex];
             theFill = aCaveData[++caveDataIndex];
-            DrawFilledRect(theObject, x, y, theWidth, theHeight, theFill);
+            DrawFilledRect(&cave, theObject, x, y, theWidth, theHeight, theFill);
             break;
 
         case 3: /* OPEN RECTANGLE */
@@ -315,27 +318,29 @@ void DecodeCave(int caveIndex)
             y = aCaveData[++caveDataIndex];
             theWidth = aCaveData[++caveDataIndex];
             theHeight = aCaveData[++caveDataIndex];
-            DrawRect(theObject, x, y, theWidth, theHeight);
+            DrawRect(&cave, theObject, x, y, theWidth, theHeight);
             break;
         }
     }
 
 /* SteelBounds */
-    DrawRect(0x07, 0, 2, 40, 22);
+    DrawRect(&cave, 0x07, 0, 2, 40, 22);
+
+    return cave;
 }
 
 
 
-void StoreObject(int x, int y, int anObject)
+void StoreObject(Cave *cave, int x, int y, int anObject)
 {
     assert(((x >= 0) && (x <= 39)));
     assert(((y >= 0) && (y <= 23)));
     assert(((anObject >= 0) && (anObject <= 63)));
 
-    caveData[y][x] = creatureCode[anObject];
+    cave->data[y][x] = creatureCode[anObject];
 }
 
-void DrawLine(int anObject, int x, int y, int aLength, int aDirection)
+void DrawLine(Cave *cave, int anObject, int x, int y, int aLength, int aDirection)
 {
     int counter;
 
@@ -346,13 +351,13 @@ void DrawLine(int anObject, int x, int y, int aLength, int aDirection)
     assert(((aDirection >= 0) && (aDirection <= 7)));
 
     for(counter = 1; counter <= aLength; counter++) {
-        StoreObject(x, y, anObject);
+        StoreObject(cave, x, y, anObject);
         x += ldx[aDirection];
         y += ldy[aDirection];
     }
 }
 
-void DrawFilledRect(int anObject, int x, int y, int aWidth, int aHeight, int aFillObject)
+void DrawFilledRect(Cave *cave, int anObject, int x, int y, int aWidth, int aHeight, int aFillObject)
 {
     int counter1;
     int counter2;
@@ -367,17 +372,17 @@ void DrawFilledRect(int anObject, int x, int y, int aWidth, int aHeight, int aFi
     for(counter1 = 0; counter1 < aWidth; counter1++) {
         for(counter2 = 0; counter2 < aHeight; counter2++) {
             if ((counter2 == 0) || (counter2 == aHeight-1)) {
-                StoreObject(x+counter1, y+counter2, anObject);
+                StoreObject(cave, x+counter1, y+counter2, anObject);
             } else {
-                StoreObject(x+counter1, y+counter2, aFillObject);
+                StoreObject(cave, x+counter1, y+counter2, aFillObject);
             }
         }
-        StoreObject(x+counter1, y, anObject);
-        StoreObject(x+counter1, y+aHeight-1, anObject);
+        StoreObject(cave, x+counter1, y, anObject);
+        StoreObject(cave, x+counter1, y+aHeight-1, anObject);
     }
 }
 
-void DrawRect(int anObject, int x, int y, int aWidth, int aHeight)
+void DrawRect(Cave *cave, int anObject, int x, int y, int aWidth, int aHeight)
 {
     int counter1;
 
@@ -388,12 +393,12 @@ void DrawRect(int anObject, int x, int y, int aWidth, int aHeight)
     assert(((aHeight >= 1) && (aHeight <= 24)));
 
     for(counter1 = 0; counter1 < aWidth; counter1++) {
-        StoreObject(x + counter1, y, anObject);
-        StoreObject(x + counter1, y + aHeight-1, anObject);
+        StoreObject(cave, x + counter1, y, anObject);
+        StoreObject(cave, x + counter1, y + aHeight-1, anObject);
     }
     for(counter1 = 0; counter1 < aHeight; counter1++) {
-        StoreObject(x, y + counter1, anObject);
-        StoreObject(x + aWidth-1, y + counter1, anObject);
+        StoreObject(cave, x, y + counter1, anObject);
+        StoreObject(cave, x + aWidth-1, y + counter1, anObject);
     }
 }
 
