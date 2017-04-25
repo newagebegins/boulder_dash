@@ -5,21 +5,12 @@
 #include <assert.h>
 #include <stdint.h>
 #include "cave.h"
+#include "graphics.h"
 
 #define ARRAY_LENGTH(array) (sizeof(array)/sizeof(*array))
 #define PI 3.14159265358979323846f
 
-#define TILE_SIZE 16
-#define HALF_TILE_SIZE (TILE_SIZE/2)
-#define TILE_WIDTH TILE_SIZE
-#define TILE_HEIGHT TILE_WIDTH
 #define TEXT_AREA_HEIGHT TILE_SIZE
-#define BACKBUFFER_WIDTH 256
-#define BACKBUFFER_HEIGHT 192
-#define BACKBUFFER_PIXEL_COUNT (BACKBUFFER_WIDTH*BACKBUFFER_HEIGHT)
-#define BACKBUFFER_BYTES (BACKBUFFER_PIXEL_COUNT*sizeof(int))
-#define SPRITE_ATLAS_WIDTH 256
-#define SPRITE_ATLAS_WIDTH_TILES (SPRITE_ATLAS_WIDTH / TILE_SIZE)
 #define HERO_ANIM_FRAME_DURATION 0.05f
 #define HERO_ANIM_FRAME_COUNT 6
 #define TURN_DURATION 0.15f
@@ -90,9 +81,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   UNREFERENCED_PARAMETER(prevInst);
   UNREFERENCED_PARAMETER(cmdLine);
 
-  Cave cave = getCave(1);
+  initGraphics();
 
-  uint32_t *backbuffer = malloc(BACKBUFFER_BYTES);
+  Cave cave = getCave(1);
 
   BITMAPINFO backbufferBmpInf = {0};
   backbufferBmpInf.bmiHeader.biSize = sizeof(backbufferBmpInf.bmiHeader);
@@ -138,36 +129,6 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
   bool running = true;
   HDC deviceContext = GetDC(wnd);
-
-  HANDLE fileHandle = CreateFile("sprites.bmp", GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-  assert(fileHandle != INVALID_HANDLE_VALUE);
-  LARGE_INTEGER fileSize;
-  GetFileSizeEx(fileHandle, &fileSize);
-  uint8_t *fileContents = malloc(fileSize.LowPart);
-  DWORD bytesRead;
-  ReadFile(fileHandle, fileContents, fileSize.LowPart, &bytesRead, NULL);
-  assert(bytesRead == fileSize.LowPart);
-  CloseHandle(fileHandle);
-
-  int pixelsOffset = *(int*)(fileContents + 10);
-  int imageWidth = *(int*)(fileContents + 18);
-  int imageHeight = *(int*)(fileContents + 22);
-  uint8_t *pixels = fileContents + pixelsOffset;
-
-  uint32_t *spriteAtlas = malloc(imageWidth * imageHeight * sizeof(*spriteAtlas));
-
-  for (int dstRow = 0; dstRow < imageHeight; ++dstRow) {
-    int srcRow = imageHeight - dstRow - 1;
-    uint32_t *dst = spriteAtlas + dstRow*imageWidth;
-    uint8_t *src = pixels + srcRow*imageWidth*3;
-    for (int i = 0, j = 0; i < imageWidth*3; i += 3, ++j) {
-      int red   = *(src + i + 0) << 0;
-      int green = *(src + i + 1) << 8;
-      int blue  = *(src + i + 2) << 16;
-      int color = red | green | blue;
-      *(dst + j) = color;
-    }
-  }
 
   int cameraX = 0;
   int cameraY = 0;
@@ -244,8 +205,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
   int cameraVelX = 0;
   int cameraVelY = 0;
-  int maxCameraX = CAVE_WIDTH*TILE_WIDTH - BACKBUFFER_WIDTH;
-  int maxCameraY = CAVE_HEIGHT*TILE_HEIGHT - BACKBUFFER_HEIGHT + TEXT_AREA_HEIGHT;
+  int maxCameraX = CAVE_WIDTH*TILE_SIZE - BACKBUFFER_WIDTH;
+  int maxCameraY = CAVE_HEIGHT*TILE_SIZE - BACKBUFFER_HEIGHT + TEXT_AREA_HEIGHT;
 
   while (running) {
     prefcPrev = perfc;
@@ -478,8 +439,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
       // Move camera
       {
-        int heroScreenX = heroCol * TILE_WIDTH - cameraX;
-        int heroScreenY = heroRow * TILE_HEIGHT - cameraY;
+        int heroScreenX = heroCol * TILE_SIZE - cameraX;
+        int heroScreenY = heroRow * TILE_SIZE - cameraY;
 
         if (heroScreenX >= CAMERA_START_RIGHT_HERO_X) {
           cameraVelX = CAMERA_STEP;
@@ -763,14 +724,14 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             break;
         }
 
-        int bbX = col * TILE_WIDTH - cameraX;
-        int bbY = row * TILE_HEIGHT - cameraY + TEXT_AREA_HEIGHT;
+        int bbX = col * TILE_SIZE - cameraX;
+        int bbY = row * TILE_SIZE - cameraY + TEXT_AREA_HEIGHT;
 
-        for (int y = 0; y < TILE_HEIGHT; ++y) {
-          for (int x = 0; x < TILE_WIDTH; ++x) {
+        for (int y = 0; y < TILE_SIZE; ++y) {
+          for (int x = 0; x < TILE_SIZE; ++x) {
             int srcX;
             if (flipHorizontally) {
-              srcX = atlX + TILE_WIDTH - x - 1;
+              srcX = atlX + TILE_SIZE - x - 1;
             } else {
               srcX = atlX + x;
             }
@@ -804,11 +765,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           int atlX = 0;
           int atlY = srcMinY + foregroundOffset;
 
-          int bbX = col * TILE_WIDTH - cameraX;
-          int bbY = row * TILE_HEIGHT - cameraY + TEXT_AREA_HEIGHT;
+          int bbX = col * TILE_SIZE - cameraX;
+          int bbY = row * TILE_SIZE - cameraY + TEXT_AREA_HEIGHT;
 
-          for (int y = 0; y < TILE_HEIGHT; ++y) {
-            for (int x = 0; x < TILE_WIDTH; ++x) {
+          for (int y = 0; y < TILE_SIZE; ++y) {
+            for (int x = 0; x < TILE_SIZE; ++x) {
               int srcX = atlX + x;
               int srcY = atlY + y;
               if (srcY > srcMaxY) {
@@ -861,48 +822,10 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       }
     }
 
-    // Draw text
     {
-      char text[MAX_SCORE_DIGITS + 1];
+      static char text[MAX_SCORE_DIGITS + 1];
       sprintf_s(text, sizeof(text), "%0*d", MAX_SCORE_DIGITS, score);
-
-      //char *text = "12*10   00   136   000010";
-      int outRow = 1;
-      int outCol = 3;
-      for (int i = 0; text[i] != 0; ++i) {
-        if (text[i] == ' ') {
-          continue;
-        }
-
-        int indexInAtlas = 0;
-        int atlY = 0;
-        if ('0' <= text[i] && text[i] <= ':') {
-          indexInAtlas = text[i] - '0';
-          atlY = 104;
-        } else if ('A' <= text[i] && text[i] <= 'Z') {
-          indexInAtlas = text[i] - 'A';
-          atlY = 104 + HALF_TILE_SIZE;
-        } else if ('(' <= text[i] && text[i] <= '/') {
-          indexInAtlas = text[i] - '(';
-          atlY = 104 + HALF_TILE_SIZE*2;
-        }
-        int atlX = indexInAtlas * HALF_TILE_SIZE;
-
-        int bbX = (outCol + i) * HALF_TILE_SIZE;
-        int bbY = outRow * HALF_TILE_SIZE;
-
-        for (int y = 0; y < HALF_TILE_SIZE; ++y) {
-          for (int x = 0; x < HALF_TILE_SIZE; ++x) {
-            int srcX = atlX + x;
-            int srcY = atlY + y;
-            int dstX = bbX + x;
-            int dstY = bbY + y;
-            if (dstX >= 0 && dstX < BACKBUFFER_WIDTH && dstY >= 0 && dstY < BACKBUFFER_HEIGHT) {
-              backbuffer[dstY*BACKBUFFER_WIDTH + dstX] = spriteAtlas[srcY*SPRITE_ATLAS_WIDTH + srcX];
-            }
-          }
-        }
-      }
+      drawText(text, 1, 3);
     }
 
     StretchDIBits(deviceContext, 0, 0, windowWidth, windowHeight,
