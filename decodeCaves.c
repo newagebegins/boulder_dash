@@ -1,5 +1,3 @@
-typedef short objectType;
-
 uint8_t caveData[24][40];
 
 uint8_t cave1[]=
@@ -240,10 +238,10 @@ uint8_t creatureCode[64]=
 int ldx[8]={ 0,  1, 1, 1, 0, -1, -1, -1};
 int ldy[8]={-1, -1, 0, 1, 1,  1,  0, -1};
 
-void StoreObject(int x, int y, objectType anObject);
-void DrawLine(objectType anObject, int x, int y, int aLength, int aDirection);
-void DrawFilledRect(objectType anObject, int x, int y, int aWidth, int aHeight, objectType aFillObject);
-void DrawRect(objectType anObject, int x, int y, int aWidth, int aHeight);
+void StoreObject(int x, int y, int anObject);
+void DrawLine(int anObject, int x, int y, int aLength, int aDirection);
+void DrawFilledRect(int anObject, int x, int y, int aWidth, int aHeight, int aFillObject);
+void DrawRect(int anObject, int x, int y, int aWidth, int aHeight);
 void NextRandom(int *RandSeed1, int *RandSeed2);
 
 uint8_t* caves[] = { 0, cave1, cave2, cave3, cave4, cave5, cave6, cave7, cave8, cave9, cave10, cave11, cave12, cave13, cave14, cave15, cave16, cave17, cave18, cave19, cave20 };
@@ -256,7 +254,7 @@ void DecodeCave(int caveIndex)
     int theWidth, theHeight, theFill, theLength, theDirection;
     int x, y;
     int caveDataIndex;
-    objectType theObject;
+    int theObject;
     int theCode;
 
     RandSeed1 = 0;
@@ -309,7 +307,7 @@ void DecodeCave(int caveIndex)
             theWidth = aCaveData[++caveDataIndex];
             theHeight = aCaveData[++caveDataIndex];
             theFill = aCaveData[++caveDataIndex];
-            DrawFilledRect(theObject, x, y, theWidth, theHeight, (objectType)theFill);
+            DrawFilledRect(theObject, x, y, theWidth, theHeight, theFill);
             break;
 
         case 3: /* OPEN RECTANGLE */
@@ -328,7 +326,7 @@ void DecodeCave(int caveIndex)
 
 
 
-void StoreObject(int x, int y, objectType anObject)
+void StoreObject(int x, int y, int anObject)
 {
     assert(((x >= 0) && (x <= 39)));
     assert(((y >= 0) && (y <= 23)));
@@ -337,7 +335,7 @@ void StoreObject(int x, int y, objectType anObject)
     caveData[y][x] = creatureCode[anObject];
 }
 
-void DrawLine(objectType anObject, int x, int y, int aLength, int aDirection)
+void DrawLine(int anObject, int x, int y, int aLength, int aDirection)
 {
     int counter;
 
@@ -354,7 +352,7 @@ void DrawLine(objectType anObject, int x, int y, int aLength, int aDirection)
     }
 }
 
-void DrawFilledRect(objectType anObject, int x, int y, int aWidth, int aHeight, objectType aFillObject)
+void DrawFilledRect(int anObject, int x, int y, int aWidth, int aHeight, int aFillObject)
 {
     int counter1;
     int counter2;
@@ -379,7 +377,7 @@ void DrawFilledRect(objectType anObject, int x, int y, int aWidth, int aHeight, 
     }
 }
 
-void DrawRect(objectType anObject, int x, int y, int aWidth, int aHeight)
+void DrawRect(int anObject, int x, int y, int aWidth, int aHeight)
 {
     int counter1;
 
