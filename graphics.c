@@ -39,9 +39,7 @@ void drawText(char *text, int outRow, int outCol) {
   }
 }
 
-void initGraphics() {
-  backbuffer = malloc(BACKBUFFER_BYTES);
-
+static void initSpriteAtlas() {
   HANDLE fileHandle = CreateFile("sprites.bmp", GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
   assert(fileHandle != INVALID_HANDLE_VALUE);
   LARGE_INTEGER fileSize;
@@ -71,4 +69,11 @@ void initGraphics() {
       *(dst + j) = color;
     }
   }
+
+  free(fileContents);
+}
+
+void initGraphics() {
+  backbuffer = malloc(BACKBUFFER_BYTES);
+  initSpriteAtlas();
 }
