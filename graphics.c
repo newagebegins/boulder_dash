@@ -2,6 +2,59 @@
 #include <windows.h>
 #include <assert.h>
 
+inline void setPixel(int x, int y, int color) {
+  if (x >= 0 && x < BACKBUFFER_WIDTH && y >= 0 && y < BACKBUFFER_HEIGHT) {
+    backbuffer[y*BACKBUFFER_WIDTH + x] = color;
+  }
+}
+
+void drawLine(int x1, int y1, int x2, int y2, int color) {
+  if (x1 == x2 && y1 == y2) {
+    setPixel(x1, y1, color);
+    return;
+  }
+
+  int xStart, xEnd, yStart, yEnd;
+  int dx = x2 - x1;
+  int dy = y2 - y1;
+
+  if (abs(dx) > abs(dy)) {
+    float m = (float)dy / (float)dx;
+    if (x1 < x2) {
+      xStart = x1;
+      yStart = y1;
+      xEnd = x2;
+      yEnd = y2;
+    } else {
+      xStart = x2;
+      yStart = y2;
+      xEnd = x1;
+      yEnd = y1;
+    }
+    for (int x = xStart; x <= xEnd; ++x) {
+      int y = (int)(m * (x - xStart) + yStart);
+      setPixel(x, y, color);
+    }
+  } else {
+    float m = (float)dx / (float)dy;
+    if (y1 < y2) {
+      xStart = x1;
+      yStart = y1;
+      xEnd = x2;
+      yEnd = y2;
+    } else {
+      xStart = x2;
+      yStart = y2;
+      xEnd = x1;
+      yEnd = y1;
+    }
+    for (int y = yStart; y <= yEnd; ++y) {
+      int x = (int)(m * (y - yStart) + xStart);
+      setPixel(x, y, color);
+    }
+  }
+}
+
 void drawText(char *text, int outRow, int outCol) {
   for (int i = 0; text[i] != 0; ++i) {
     if (text[i] == ' ') {

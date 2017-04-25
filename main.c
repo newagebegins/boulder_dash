@@ -7,6 +7,9 @@
 #include "cave.h"
 #include "graphics.h"
 
+#define HERO_SUPERPOWER true
+#define NO_ANIMATIONS true
+
 #define ARRAY_LENGTH(array) (sizeof(array)/sizeof(*array))
 #define PI 3.14159265358979323846f
 
@@ -158,13 +161,14 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int gemFrame = 0;
   int score = 0;
 
-  int foregroundVisibilityTurnMax = 28;
+  int foregroundVisibilityTurnMax = NO_ANIMATIONS ? 1 : 28;
+  int deathForegroundVisibilityTurnMax = NO_ANIMATIONS ? 1 : 25;
+
   int foregroundVisibilityTurn = foregroundVisibilityTurnMax;
   int foregroundOffset = 0;
   int foregroundTilesPerTurn = 6;
 
   int deathForegroundVisibilityTurn = 0;
-  int deathForegroundVisibilityTurnMax = 25;
   int deathForegroundOffset = 0;
   int deathForegroundTilesPerTurn = 18;
 
@@ -259,7 +263,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     if (isInit) {
       isInit = false;
 
-      heroIsAppearing = true;
+      heroIsAppearing = !NO_ANIMATIONS;
       heroIsAlive = true;
       foregroundVisibilityTurn = foregroundVisibilityTurnMax;
       foregroundOffset = 0;
@@ -535,7 +539,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                 map[below].moved = true;
                 map[current].type = TILE_TYPE_EMPTY;
               } else if (map[below].type == TILE_TYPE_HERO) {
-                if (map[current].movedInPreviousFrame) {
+                if (map[current].movedInPreviousFrame && !HERO_SUPERPOWER) {
                   map[current].type = TILE_TYPE_EMPTY;
                   map[below].type = TILE_TYPE_EMPTY;
                   heroIsAlive = false;
@@ -599,13 +603,16 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             ++newRow;
           }
 
-          int deltaCol = newCol - heroCol;
           int newCell = newRow*CAVE_WIDTH + newCol;
 
           switch (map[newCell].type) {
             case TILE_TYPE_EMPTY:
             case TILE_TYPE_EARTH:
             case TILE_TYPE_GEM:
+#if HERO_SUPERPOWER
+            case TILE_TYPE_BRICK:
+            case TILE_TYPE_ROCK:
+#endif
               if (map[newCell].type == TILE_TYPE_GEM) {
                 score += 10;
               }
@@ -615,7 +622,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               map[heroRow*CAVE_WIDTH + heroCol].type = TILE_TYPE_HERO;
               break;
 
+#if !HERO_SUPERPOWER
             case TILE_TYPE_ROCK:
+              int deltaCol = newCol - heroCol;
               int targetRockCell = newRow*CAVE_WIDTH + newCol + deltaCol;
               if (deltaCol != 0 && map[targetRockCell].type == TILE_TYPE_EMPTY) {
                 heroMoveRockTurns++;
@@ -629,6 +638,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                 }
               }
               break;
+#endif
           }
         }
       }
@@ -826,6 +836,21 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       static char text[MAX_SCORE_DIGITS + 1];
       sprintf_s(text, sizeof(text), "%0*d", MAX_SCORE_DIGITS, score);
       drawText(text, 1, 3);
+    }
+
+    // Camera debug drawing
+    {
+      /* drawLine(CAMERA_START_RIGHT_HERO_X, 0, CAMERA_START_RIGHT_HERO_X, BACKBUFFER_HEIGHT - 1, COLOR_PINK); */
+      /* drawLine(CAMERA_STOP_RIGHT_HERO_X, 0, CAMERA_STOP_RIGHT_HERO_X, BACKBUFFER_HEIGHT - 1, COLOR_GREEN); */
+
+      /* drawLine(CAMERA_START_LEFT_HERO_X, 0, CAMERA_START_LEFT_HERO_X, BACKBUFFER_HEIGHT - 1, COLOR_PINK); */
+      /* drawLine(CAMERA_STOP_LEFT_HERO_X, 0, CAMERA_STOP_LEFT_HERO_X, BACKBUFFER_HEIGHT - 1, COLOR_GREEN); */
+
+      /* drawLine(0, CAMERA_START_DOWN_HERO_Y, BACKBUFFER_WIDTH - 1, CAMERA_START_DOWN_HERO_Y, COLOR_PINK); */
+      /* drawLine(0, CAMERA_STOP_DOWN_HERO_Y, BACKBUFFER_WIDTH - 1, CAMERA_STOP_DOWN_HERO_Y, COLOR_GREEN); */
+
+      /* drawLine(0, CAMERA_START_UP_HERO_Y, BACKBUFFER_WIDTH - 1, CAMERA_START_UP_HERO_Y, COLOR_PINK); */
+      /* drawLine(0, CAMERA_STOP_UP_HERO_Y, BACKBUFFER_WIDTH - 1, CAMERA_STOP_UP_HERO_Y, COLOR_GREEN); */
     }
 
     StretchDIBits(deviceContext, 0, 0, windowWidth, windowHeight,
