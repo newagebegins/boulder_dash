@@ -237,9 +237,6 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   };
   int appearanceAnimFrame = 0;
 
-  int mapWidth = 40;
-  int mapHeight = 22;
-  int mapTiles = mapWidth * mapHeight;
   Tile map[MAX_MAP_TILES];
   bool foreground[MAX_MAP_TILES];
   bool deathForeground[SCREEN_HALF_TILES_COUNT];
@@ -247,8 +244,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
   int cameraVelX = 0;
   int cameraVelY = 0;
-  int maxCameraX = mapWidth*TILE_WIDTH - BACKBUFFER_WIDTH;
-  int maxCameraY = mapHeight*TILE_HEIGHT - BACKBUFFER_HEIGHT + TEXT_AREA_HEIGHT;
+  int maxCameraX = CAVE_WIDTH*TILE_WIDTH - BACKBUFFER_WIDTH;
+  int maxCameraY = CAVE_HEIGHT*TILE_HEIGHT - BACKBUFFER_HEIGHT + TEXT_AREA_HEIGHT;
 
   while (running) {
     prefcPrev = perfc;
@@ -344,7 +341,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         }
       }
 
-      for (int i = 0; i < mapTiles; ++i) {
+      for (int i = 0; i < CAVE_WIDTH * CAVE_HEIGHT; ++i) {
         foreground[i] = true;
       }
 
@@ -468,9 +465,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           explosionFrame = 0;
           explosionIsActive = false;
           deathForegroundVisibilityTurn = deathForegroundVisibilityTurnMax;
-          for (int row = 0; row < mapHeight; ++row) {
-            for (int col = 0; col < mapWidth; ++col) {
-              int i = row*mapWidth + col;
+          for (int row = 0; row < CAVE_HEIGHT; ++row) {
+            for (int col = 0; col < CAVE_WIDTH; ++col) {
+              int i = row*CAVE_WIDTH + col;
               if (map[i].type == TILE_TYPE_EXPLOSION) {
                 map[i].type = TILE_TYPE_EMPTY;
               }
@@ -538,7 +535,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           for (int try = 0; try < 100; ++try) {
             int row = rand() % SCREEN_HEIGHT_IN_TILES + cameraRow;
             int col = rand() % SCREEN_WIDTH_IN_TILES + cameraCol;
-            int cell = row*mapWidth + col;
+            int cell = row*CAVE_WIDTH + col;
             if (foreground[cell]) {
               foreground[cell] = false;
               break;
@@ -550,9 +547,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         // Foreground is not active
         //
 
-        for (int row = 0; row < mapHeight; ++row) {
-          for (int col = 0; col < mapWidth; ++col) {
-            int i = row*mapWidth + col;
+        for (int row = 0; row < CAVE_HEIGHT; ++row) {
+          for (int col = 0; col < CAVE_WIDTH; ++col) {
+            int i = row*CAVE_WIDTH + col;
             map[i].movedInPreviousFrame = map[i].moved;
             map[i].moved = false;
           }
@@ -560,18 +557,18 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
         // Move entities (processing order: top to bottom, left to right).
         // Move only one tile per turn.
-        for (int row = 0; row < mapHeight; ++row) {
-          for (int col = 0; col < mapWidth; ++col) {
-            int current = row*mapWidth + col;
+        for (int row = 0; row < CAVE_HEIGHT; ++row) {
+          for (int col = 0; col < CAVE_WIDTH; ++col) {
+            int current = row*CAVE_WIDTH + col;
             if (map[current].moved) {
               continue;
             }
             if (map[current].type == TILE_TYPE_ROCK || map[current].type == TILE_TYPE_GEM) {
-              int below = (row+1)*mapWidth + col;
-              int left = row*mapWidth + (col-1);
-              int right = row*mapWidth + (col+1);
-              int belowLeft = (row+1)*mapWidth + (col-1);
-              int belowRight = (row+1)*mapWidth + (col+1);
+              int below = (row+1)*CAVE_WIDTH + col;
+              int left = row*CAVE_WIDTH + (col-1);
+              int right = row*CAVE_WIDTH + (col+1);
+              int belowLeft = (row+1)*CAVE_WIDTH + (col-1);
+              int belowRight = (row+1)*CAVE_WIDTH + (col+1);
               if (map[below].type == TILE_TYPE_EMPTY) {
                 map[below].type = map[current].type;
                 map[below].moved = true;
@@ -584,23 +581,23 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                   explosionIsActive = true;
 
                   // center
-                  map[(row+1)*mapWidth + (col+0)].type = TILE_TYPE_EXPLOSION;
+                  map[(row+1)*CAVE_WIDTH + (col+0)].type = TILE_TYPE_EXPLOSION;
                   // right
-                  map[(row+1)*mapWidth + (col+1)].type = TILE_TYPE_EXPLOSION;
+                  map[(row+1)*CAVE_WIDTH + (col+1)].type = TILE_TYPE_EXPLOSION;
                   // left
-                  map[(row+1)*mapWidth + (col-1)].type = TILE_TYPE_EXPLOSION;
+                  map[(row+1)*CAVE_WIDTH + (col-1)].type = TILE_TYPE_EXPLOSION;
                   // above center
-                  map[(row+0)*mapWidth + (col+0)].type = TILE_TYPE_EXPLOSION;
+                  map[(row+0)*CAVE_WIDTH + (col+0)].type = TILE_TYPE_EXPLOSION;
                   // above right
-                  map[(row+0)*mapWidth + (col+1)].type = TILE_TYPE_EXPLOSION;
+                  map[(row+0)*CAVE_WIDTH + (col+1)].type = TILE_TYPE_EXPLOSION;
                   // above left
-                  map[(row+0)*mapWidth + (col-1)].type = TILE_TYPE_EXPLOSION;
+                  map[(row+0)*CAVE_WIDTH + (col-1)].type = TILE_TYPE_EXPLOSION;
                   // below center
-                  map[(row+2)*mapWidth + (col+0)].type = TILE_TYPE_EXPLOSION;
+                  map[(row+2)*CAVE_WIDTH + (col+0)].type = TILE_TYPE_EXPLOSION;
                   // below right
-                  map[(row+2)*mapWidth + (col+1)].type = TILE_TYPE_EXPLOSION;
+                  map[(row+2)*CAVE_WIDTH + (col+1)].type = TILE_TYPE_EXPLOSION;
                   // below left
-                  map[(row+2)*mapWidth + (col-1)].type = TILE_TYPE_EXPLOSION;
+                  map[(row+2)*CAVE_WIDTH + (col-1)].type = TILE_TYPE_EXPLOSION;
                 }
               } else if (map[below].type == TILE_TYPE_ROCK || map[below].type == TILE_TYPE_GEM) {
                 if (map[left].type == TILE_TYPE_EMPTY && map[belowLeft].type == TILE_TYPE_EMPTY) {
@@ -642,7 +639,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           }
 
           int deltaCol = newCol - heroCol;
-          int newCell = newRow*mapWidth + newCol;
+          int newCell = newRow*CAVE_WIDTH + newCol;
 
           switch (map[newCell].type) {
             case TILE_TYPE_EMPTY:
@@ -651,22 +648,22 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               if (map[newCell].type == TILE_TYPE_GEM) {
                 score += 10;
               }
-              map[heroRow*mapWidth + heroCol].type = TILE_TYPE_EMPTY;
+              map[heroRow*CAVE_WIDTH + heroCol].type = TILE_TYPE_EMPTY;
               heroRow = newRow;
               heroCol = newCol;
-              map[heroRow*mapWidth + heroCol].type = TILE_TYPE_HERO;
+              map[heroRow*CAVE_WIDTH + heroCol].type = TILE_TYPE_HERO;
               break;
 
             case TILE_TYPE_ROCK:
-              int targetRockCell = newRow*mapWidth + newCol + deltaCol;
+              int targetRockCell = newRow*CAVE_WIDTH + newCol + deltaCol;
               if (deltaCol != 0 && map[targetRockCell].type == TILE_TYPE_EMPTY) {
                 heroMoveRockTurns++;
                 if (heroMoveRockTurns == 3) {
                   heroMoveRockTurns = 0;
-                  map[heroRow*mapWidth + heroCol].type = TILE_TYPE_EMPTY;
+                  map[heroRow*CAVE_WIDTH + heroCol].type = TILE_TYPE_EMPTY;
                   heroRow = newRow;
                   heroCol = newCol;
-                  map[heroRow*mapWidth + heroCol].type = TILE_TYPE_HERO;
+                  map[heroRow*CAVE_WIDTH + heroCol].type = TILE_TYPE_HERO;
                   map[targetRockCell].type = TILE_TYPE_ROCK;
                 }
               }
@@ -706,9 +703,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     //
     // Draw tiles
     //
-    for (int row = 0; row < mapHeight; ++row) {
-      for (int col = 0; col < mapWidth; ++col) {
-        TileType tile = map[row*mapWidth + col].type;
+    for (int row = 0; row < CAVE_HEIGHT; ++row) {
+      for (int col = 0; col < CAVE_WIDTH; ++col) {
+        TileType tile = map[row*CAVE_WIDTH + col].type;
 
         if (tile == TILE_TYPE_EMPTY) {
           continue;
@@ -793,9 +790,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     //
 
     if (foregroundVisibilityTurn > 0) {
-      for (int row = 0; row < mapHeight; ++row) {
-        for (int col = 0; col < mapWidth; ++col) {
-          bool isVisible = foreground[row*mapWidth + col];
+      for (int row = 0; row < CAVE_HEIGHT; ++row) {
+        for (int col = 0; col < CAVE_WIDTH; ++col) {
+          bool isVisible = foreground[row*CAVE_WIDTH + col];
 
           if (!isVisible) {
             continue;
