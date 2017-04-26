@@ -27,7 +27,7 @@ void debugPrint(char *format, ...) {
 #define HERO_ANIM_FRAME_COUNT 6
 #define TURN_DURATION 0.15f
 #define MAX_MAP_TILES 100*100
-#define GEM_FRAME_COUNT 8
+#define DIAMOND_FRAME_COUNT 8
 #define SCREEN_WIDTH_IN_TILES (BACKBUFFER_WIDTH / TILE_SIZE)
 #define SCREEN_HEIGHT_IN_TILES ((BACKBUFFER_HEIGHT - TEXT_AREA_HEIGHT) / TILE_SIZE)
 
@@ -61,7 +61,7 @@ typedef enum {
   TILE_TYPE_BRICK,
   TILE_TYPE_EARTH,
   TILE_TYPE_EXPLOSION,
-  TILE_TYPE_GEM,
+  TILE_TYPE_DIAMOND,
   TILE_TYPE_COUNT,
 } TileType;
 
@@ -171,7 +171,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   bool explosionIsActive = false;
   int explosionFrame = 0;
   int explosionAnim[] = {0,1,0,2};
-  int gemFrame = 0;
+  int diamondFrame = 0;
   int score = 0;
 
   int foregroundVisibilityTurnMax = NO_ANIMATIONS ? 1 : 28;
@@ -300,7 +300,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               map[i].type = TILE_TYPE_BRICK;
               break;
             case 'd':
-              map[i].type = TILE_TYPE_GEM;
+              map[i].type = TILE_TYPE_DIAMOND;
               break;
             case ' ':
             case 'P':
@@ -433,9 +433,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       // Do turn
       //
 
-      gemFrame++;
-      if (gemFrame == GEM_FRAME_COUNT) {
-        gemFrame = 0;
+      diamondFrame++;
+      if (diamondFrame == DIAMOND_FRAME_COUNT) {
+        diamondFrame = 0;
       }
 
 
@@ -541,7 +541,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             if (map[current].moved) {
               continue;
             }
-            if (map[current].type == TILE_TYPE_ROCK || map[current].type == TILE_TYPE_GEM) {
+            if (map[current].type == TILE_TYPE_ROCK || map[current].type == TILE_TYPE_DIAMOND) {
               int below = (row+1)*CAVE_WIDTH + col;
               int left = row*CAVE_WIDTH + (col-1);
               int right = row*CAVE_WIDTH + (col+1);
@@ -577,7 +577,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                   // below left
                   map[(row+2)*CAVE_WIDTH + (col-1)].type = TILE_TYPE_EXPLOSION;
                 }
-              } else if (map[below].type == TILE_TYPE_ROCK || map[below].type == TILE_TYPE_GEM) {
+              } else if (map[below].type == TILE_TYPE_ROCK || map[below].type == TILE_TYPE_DIAMOND) {
                 if (map[left].type == TILE_TYPE_EMPTY && map[belowLeft].type == TILE_TYPE_EMPTY) {
                   map[left].type = map[current].type;
                   map[left].moved = true;
@@ -621,12 +621,12 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           switch (map[newCell].type) {
             case TILE_TYPE_EMPTY:
             case TILE_TYPE_EARTH:
-            case TILE_TYPE_GEM:
+            case TILE_TYPE_DIAMOND:
 #if HERO_SUPERPOWER
             case TILE_TYPE_BRICK:
             case TILE_TYPE_ROCK:
 #endif
-              if (map[newCell].type == TILE_TYPE_GEM) {
+              if (map[newCell].type == TILE_TYPE_DIAMOND) {
                 score += cave.initialDiamondValue;
               }
               map[heroRow*CAVE_WIDTH + heroCol].type = TILE_TYPE_EMPTY;
@@ -741,8 +741,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             atlY = 32;
             break;
 
-          case TILE_TYPE_GEM:
-            atlX = gemFrame*16;
+          case TILE_TYPE_DIAMOND:
+            atlX = diamondFrame*16;
             atlY = 48;
             break;
         }
