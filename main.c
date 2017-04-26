@@ -172,7 +172,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int explosionFrame = 0;
   int explosionAnim[] = {0,1,0,2};
   int diamondFrame = 0;
+
   int score = 0;
+  int diamondsCollected = 0;
 
   int foregroundVisibilityTurnMax = NO_ANIMATIONS ? 1 : 28;
   int deathForegroundVisibilityTurnMax = NO_ANIMATIONS ? 1 : 25;
@@ -627,7 +629,12 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             case TILE_TYPE_ROCK:
 #endif
               if (map[newCell].type == TILE_TYPE_DIAMOND) {
-                score += cave.initialDiamondValue;
+                if (diamondsCollected >= cave.diamondsNeeded) {
+                  score += cave.extraDiamondValue;
+                } else {
+                  score += cave.initialDiamondValue;
+                }
+                diamondsCollected++;
               }
               map[heroRow*CAVE_WIDTH + heroCol].type = TILE_TYPE_EMPTY;
               heroRow = newRow;
@@ -847,7 +854,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
     {
       static char text[64];
-      sprintf_s(text, sizeof(text), "   %d*%d   00   150   %06d", cave.diamondsNeeded, cave.initialDiamondValue, score);
+      if (diamondsCollected >= cave.diamondsNeeded) {
+        sprintf_s(text, sizeof(text), "   ***%d   00   150   %06d", cave.extraDiamondValue, score);
+      } else {
+        sprintf_s(text, sizeof(text), "   %d*%d   00   150   %06d", cave.diamondsNeeded, cave.initialDiamondValue, score);
+      }
       drawText(text, 1, 0);
     }
 
