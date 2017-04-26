@@ -17,7 +17,7 @@ void debugPrint(char *format, ...) {
 }
 
 #define HERO_SUPERPOWER false
-#define NO_ANIMATIONS false
+#define NO_ANIMATIONS true
 
 #define ARRAY_LENGTH(array) (sizeof(array)/sizeof(*array))
 #define PI 3.14159265358979323846f
@@ -28,7 +28,6 @@ void debugPrint(char *format, ...) {
 #define TURN_DURATION 0.15f
 #define MAX_MAP_TILES 100*100
 #define GEM_FRAME_COUNT 8
-#define MAX_SCORE_DIGITS 6
 #define SCREEN_WIDTH_IN_TILES (BACKBUFFER_WIDTH / TILE_SIZE)
 #define SCREEN_HEIGHT_IN_TILES ((BACKBUFFER_HEIGHT - TEXT_AREA_HEIGHT) / TILE_SIZE)
 
@@ -628,7 +627,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             case TILE_TYPE_ROCK:
 #endif
               if (map[newCell].type == TILE_TYPE_GEM) {
-                score += 10;
+                score += cave.initialDiamondValue;
               }
               map[heroRow*CAVE_WIDTH + heroCol].type = TILE_TYPE_EMPTY;
               heroRow = newRow;
@@ -847,9 +846,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     }
 
     {
-      static char text[MAX_SCORE_DIGITS + 1];
-      sprintf_s(text, sizeof(text), "%0*d", MAX_SCORE_DIGITS, score);
-      drawText(text, 1, 3);
+      static char text[64];
+      sprintf_s(text, sizeof(text), "   %d*%d   00   150   %06d", cave.diamondsNeeded, cave.initialDiamondValue, score);
+      drawText(text, 1, 0);
     }
 
     // Camera debugging

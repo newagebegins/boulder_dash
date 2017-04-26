@@ -173,6 +173,10 @@ static Cave DecodeCave(uint8_t *aCaveData) {
   /* SteelBounds */
   DrawRect(&cave, 0x07, 0, 2, 40, 22);
 
+  cave.initialDiamondValue = aCaveData[0x02];
+  cave.extraDiamondValue = aCaveData[0x02];
+  cave.diamondsNeeded = aCaveData[0x09];
+
   cave.backgroundColor1 = aCaveData[0x13];
   cave.backgroundColor2 = aCaveData[0x14];
   cave.foregroundColor = aCaveData[0x15];
