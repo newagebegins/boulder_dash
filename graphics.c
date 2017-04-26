@@ -55,6 +55,13 @@ void drawLine(int x1, int y1, int x2, int y2, int color) {
   }
 }
 
+void drawRect(int left, int top, int right, int bottom, int color) {
+  drawLine(left, top, right, top, color); // top
+  drawLine(left, bottom, right, bottom, color); // bottom
+  drawLine(left, top, left, bottom, color); // left
+  drawLine(right, top, right, bottom, color); // right
+}
+
 void drawText(char *text, int outRow, int outCol) {
   for (int i = 0; text[i] != 0; ++i) {
     if (text[i] == ' ') {

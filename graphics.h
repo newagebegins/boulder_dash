@@ -26,6 +26,7 @@
 
 void drawLine(int x1, int y1, int x2, int y2, int color);
 void drawText(char *text, int outRow, int outCol);
+void drawRect(int left, int top, int right, int bottom, int color);
 void initGraphics();
 
 // TODO: make private

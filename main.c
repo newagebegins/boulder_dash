@@ -7,8 +7,17 @@
 #include "cave.h"
 #include "graphics.h"
 
-#define HERO_SUPERPOWER true
-#define NO_ANIMATIONS true
+void debugPrint(char *format, ...) {
+  va_list argptr;
+  va_start(argptr, format);
+  char str[1024];
+  vsprintf_s(str, sizeof(str), format, argptr);
+  va_end(argptr);
+  OutputDebugString(str);
+}
+
+#define HERO_SUPERPOWER false
+#define NO_ANIMATIONS false
 
 #define ARRAY_LENGTH(array) (sizeof(array)/sizeof(*array))
 #define PI 3.14159265358979323846f
@@ -30,15 +39,20 @@
 #define CAMERA_STEP HALF_TILE_SIZE
 #define HERO_SIZE TILE_SIZE
 
-#define CAMERA_START_RIGHT_HERO_X (BACKBUFFER_WIDTH - 4*HALF_TILE_SIZE - HERO_SIZE)
-#define CAMERA_STOP_RIGHT_HERO_X (BACKBUFFER_WIDTH - 13*HALF_TILE_SIZE - HERO_SIZE)
-#define CAMERA_START_LEFT_HERO_X 4*HALF_TILE_SIZE
-#define CAMERA_STOP_LEFT_HERO_X 14*HALF_TILE_SIZE
+#define CAMERA_START_RIGHT_HERO_X (BACKBUFFER_WIDTH - 5*HALF_TILE_SIZE)
+#define CAMERA_STOP_RIGHT_HERO_X (BACKBUFFER_WIDTH - 13*HALF_TILE_SIZE)
+#define CAMERA_START_LEFT_HERO_X (6*HALF_TILE_SIZE)
+#define CAMERA_STOP_LEFT_HERO_X (14*HALF_TILE_SIZE)
 
-#define CAMERA_START_DOWN_HERO_Y BACKBUFFER_HEIGHT - 3*HALF_TILE_SIZE - HERO_SIZE - TEXT_AREA_HEIGHT
-#define CAMERA_STOP_DOWN_HERO_Y BACKBUFFER_HEIGHT - 9*HALF_TILE_SIZE - HERO_SIZE - TEXT_AREA_HEIGHT
-#define CAMERA_START_UP_HERO_Y 3*HALF_TILE_SIZE
-#define CAMERA_STOP_UP_HERO_Y 9*HALF_TILE_SIZE
+#define CAMERA_START_DOWN_HERO_Y (BACKBUFFER_HEIGHT - 4*HALF_TILE_SIZE)
+#define CAMERA_STOP_DOWN_HERO_Y (BACKBUFFER_HEIGHT - 9*HALF_TILE_SIZE)
+#define CAMERA_START_UP_HERO_Y (6*HALF_TILE_SIZE)
+#define CAMERA_STOP_UP_HERO_Y (11*HALF_TILE_SIZE)
+
+#define MIN_CAMERA_X 0
+#define MIN_CAMERA_Y 0
+#define MAX_CAMERA_X (CAVE_WIDTH*TILE_SIZE - BACKBUFFER_WIDTH)
+#define MAX_CAMERA_Y (CAVE_HEIGHT*TILE_SIZE - BACKBUFFER_HEIGHT - TEXT_AREA_HEIGHT)
 
 typedef enum {
   TILE_TYPE_EMPTY,
@@ -209,8 +223,6 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
   int cameraVelX = 0;
   int cameraVelY = 0;
-  int maxCameraX = CAVE_WIDTH*TILE_SIZE - BACKBUFFER_WIDTH;
-  int maxCameraY = CAVE_HEIGHT*TILE_SIZE - BACKBUFFER_HEIGHT + TEXT_AREA_HEIGHT;
 
   while (running) {
     prefcPrev = perfc;
@@ -409,6 +421,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       heroIdleTimer = 0;
     }
 
+    int heroScreenLeft = heroCol * TILE_SIZE - cameraX;
+    int heroScreenTop = heroRow * TILE_SIZE - cameraY + TEXT_AREA_HEIGHT;
+    int heroScreenRight = heroScreenLeft + TILE_SIZE;
+    int heroScreenBottom = heroScreenTop + TILE_SIZE;
+
     turnTimer += dt;
     if (turnTimer >= TURN_DURATION) {
       turnTimer -= TURN_DURATION;
@@ -443,40 +460,37 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
       // Move camera
       {
-        int heroScreenX = heroCol * TILE_SIZE - cameraX;
-        int heroScreenY = heroRow * TILE_SIZE - cameraY;
-
-        if (heroScreenX >= CAMERA_START_RIGHT_HERO_X) {
+        if (heroScreenRight > CAMERA_START_RIGHT_HERO_X) {
           cameraVelX = CAMERA_STEP;
-        } else if (heroScreenX <= CAMERA_START_LEFT_HERO_X) {
+        } else if (heroScreenLeft < CAMERA_START_LEFT_HERO_X) {
           cameraVelX = -CAMERA_STEP;
         }
-        if (heroScreenY >= CAMERA_START_DOWN_HERO_Y) {
+        if (heroScreenBottom > CAMERA_START_DOWN_HERO_Y) {
           cameraVelY = CAMERA_STEP;
-        } else if (heroScreenY <= CAMERA_START_UP_HERO_Y) {
+        } else if (heroScreenTop < CAMERA_START_UP_HERO_Y) {
           cameraVelY = -CAMERA_STEP;
         }
 
-        if (heroScreenX >= CAMERA_STOP_LEFT_HERO_X && heroScreenX <= CAMERA_STOP_RIGHT_HERO_X) {
+        if (heroScreenLeft >= CAMERA_STOP_LEFT_HERO_X && heroScreenRight <= CAMERA_STOP_RIGHT_HERO_X) {
           cameraVelX = 0;
         }
-        if (heroScreenY >= CAMERA_STOP_UP_HERO_Y && heroScreenY <= CAMERA_STOP_DOWN_HERO_Y) {
+        if (heroScreenTop >= CAMERA_STOP_UP_HERO_Y && heroScreenBottom <= CAMERA_STOP_DOWN_HERO_Y) {
           cameraVelY = 0;
         }
 
         cameraX += cameraVelX;
         cameraY += cameraVelY;
 
-        if (cameraX < 0) {
-          cameraX = 0;
-        } else if (cameraX > maxCameraX) {
-          cameraX = maxCameraX;
+        if (cameraX < MIN_CAMERA_X) {
+          cameraX = MIN_CAMERA_X;
+        } else if (cameraX > MAX_CAMERA_X) {
+          cameraX = MAX_CAMERA_X;
         }
 
-        if (cameraY < 0) {
-          cameraY = 0;
-        } else if (cameraY > maxCameraY) {
-          cameraY = maxCameraY;
+        if (cameraY < MIN_CAMERA_Y) {
+          cameraY = MIN_CAMERA_Y;
+        } else if (cameraY > MAX_CAMERA_Y) {
+          cameraY = MAX_CAMERA_Y;
         }
       }
 
@@ -838,20 +852,26 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       drawText(text, 1, 3);
     }
 
-    // Camera debug drawing
+    // Camera debugging
+    /*
     {
-      /* drawLine(CAMERA_START_RIGHT_HERO_X, 0, CAMERA_START_RIGHT_HERO_X, BACKBUFFER_HEIGHT - 1, COLOR_PINK); */
-      /* drawLine(CAMERA_STOP_RIGHT_HERO_X, 0, CAMERA_STOP_RIGHT_HERO_X, BACKBUFFER_HEIGHT - 1, COLOR_GREEN); */
+      debugPrint("x: %d, y: %d, mx: %d, my: %d\n", cameraX, cameraY, MAX_CAMERA_X, MAX_CAMERA_Y);
 
-      /* drawLine(CAMERA_START_LEFT_HERO_X, 0, CAMERA_START_LEFT_HERO_X, BACKBUFFER_HEIGHT - 1, COLOR_PINK); */
-      /* drawLine(CAMERA_STOP_LEFT_HERO_X, 0, CAMERA_STOP_LEFT_HERO_X, BACKBUFFER_HEIGHT - 1, COLOR_GREEN); */
+      drawLine(CAMERA_START_RIGHT_HERO_X, 0, CAMERA_START_RIGHT_HERO_X, BACKBUFFER_HEIGHT - 1, COLOR_PINK);
+      drawLine(CAMERA_STOP_RIGHT_HERO_X, 0, CAMERA_STOP_RIGHT_HERO_X, BACKBUFFER_HEIGHT - 1, COLOR_GREEN);
 
-      /* drawLine(0, CAMERA_START_DOWN_HERO_Y, BACKBUFFER_WIDTH - 1, CAMERA_START_DOWN_HERO_Y, COLOR_PINK); */
-      /* drawLine(0, CAMERA_STOP_DOWN_HERO_Y, BACKBUFFER_WIDTH - 1, CAMERA_STOP_DOWN_HERO_Y, COLOR_GREEN); */
+      drawLine(CAMERA_START_LEFT_HERO_X, 0, CAMERA_START_LEFT_HERO_X, BACKBUFFER_HEIGHT - 1, COLOR_WHITE);
+      drawLine(CAMERA_STOP_LEFT_HERO_X, 0, CAMERA_STOP_LEFT_HERO_X, BACKBUFFER_HEIGHT - 1, COLOR_YELLOW);
 
-      /* drawLine(0, CAMERA_START_UP_HERO_Y, BACKBUFFER_WIDTH - 1, CAMERA_START_UP_HERO_Y, COLOR_PINK); */
-      /* drawLine(0, CAMERA_STOP_UP_HERO_Y, BACKBUFFER_WIDTH - 1, CAMERA_STOP_UP_HERO_Y, COLOR_GREEN); */
+      drawLine(0, CAMERA_START_DOWN_HERO_Y, BACKBUFFER_WIDTH - 1, CAMERA_START_DOWN_HERO_Y, COLOR_PINK);
+      drawLine(0, CAMERA_STOP_DOWN_HERO_Y, BACKBUFFER_WIDTH - 1, CAMERA_STOP_DOWN_HERO_Y, COLOR_GREEN);
+
+      drawLine(0, CAMERA_START_UP_HERO_Y, BACKBUFFER_WIDTH - 1, CAMERA_START_UP_HERO_Y, COLOR_WHITE);
+      drawLine(0, CAMERA_STOP_UP_HERO_Y, BACKBUFFER_WIDTH - 1, CAMERA_STOP_UP_HERO_Y, COLOR_YELLOW);
+
+      drawRect(heroScreenLeft, heroScreenTop, heroScreenRight, heroScreenBottom, COLOR_GREEN);
     }
+    */
 
     StretchDIBits(deviceContext, 0, 0, windowWidth, windowHeight,
                   0, 0, BACKBUFFER_WIDTH, BACKBUFFER_HEIGHT, backbuffer,
