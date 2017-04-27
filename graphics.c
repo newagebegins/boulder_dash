@@ -62,6 +62,14 @@ void drawRect(int left, int top, int right, int bottom, int color) {
   drawLine(right, top, right, bottom, color); // right
 }
 
+void drawFilledRect(int left, int top, int right, int bottom, int color) {
+  for (int y = top; y <= bottom; ++y) {
+    for (int x = left; x <= right; ++x) {
+      backbuffer[y*BACKBUFFER_WIDTH + x] = color;
+    }
+  }
+}
+
 void drawText(char *text, int outRow, int outCol) {
   for (int i = 0; text[i] != 0; ++i) {
     if (text[i] == ' ') {

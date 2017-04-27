@@ -22,24 +22,11 @@ void debugPrint(char *format, ...) {
 #define ARRAY_LENGTH(array) (sizeof(array)/sizeof(*array))
 #define PI 3.14159265358979323846f
 
-#define TEXT_AREA_HEIGHT TILE_SIZE
 #define HERO_ANIM_FRAME_DURATION 0.05f
 #define HERO_ANIM_FRAME_COUNT 6
 #define TURN_DURATION 0.15f
 #define MAX_MAP_TILES 100*100
 #define DIAMOND_FRAME_COUNT 8
-
-#define PLAYFIELD_WIDTH VIEWPORT_WIDTH
-#define PLAYFIELD_HEIGHT (VIEWPORT_HEIGHT - TEXT_AREA_HEIGHT)
-#define PLAYFIELD_X_MIN BORDER_SIZE
-#define PLAYFIELD_Y_MIN (BORDER_SIZE + TEXT_AREA_HEIGHT)
-#define PLAYFIELD_X_MAX (PLAYFIELD_X_MIN + PLAYFIELD_WIDTH - 1)
-#define PLAYFIELD_Y_MAX (PLAYFIELD_Y_MIN + PLAYFIELD_HEIGHT - 1)
-#define PLAYFIELD_WIDTH_IN_TILES (PLAYFIELD_WIDTH / TILE_SIZE)
-#define PLAYFIELD_HEIGHT_IN_TILES (PLAYFIELD_HEIGHT / TILE_SIZE)
-#define PLAYFIELD_WIDTH_IN_HALF_TILES (PLAYFIELD_WIDTH_IN_TILES*2)
-#define PLAYFIELD_HEIGHT_IN_HALF_TILES (PLAYFIELD_HEIGHT_IN_TILES*2)
-#define PLAYFIELD_HALF_TILES_COUNT (PLAYFIELD_WIDTH_IN_HALF_TILES*PLAYFIELD_HEIGHT_IN_HALF_TILES)
 
 #define CAMERA_STEP HALF_TILE_SIZE
 #define HERO_SIZE TILE_SIZE
@@ -58,6 +45,9 @@ void debugPrint(char *format, ...) {
 #define MIN_CAMERA_Y 0
 #define MAX_CAMERA_X (CAVE_WIDTH*TILE_SIZE - PLAYFIELD_WIDTH)
 #define MAX_CAMERA_Y ((CAVE_HEIGHT-2)*TILE_SIZE - PLAYFIELD_HEIGHT)
+
+#define BORDER_COLOR_NORMAL COLOR_BLACK
+#define BORDER_COLOR_FLASH COLOR_WHITE
 
 typedef enum {
   TILE_TYPE_EMPTY,
@@ -106,6 +96,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   initGraphics();
 
   Cave cave = getCave(1);
+#if 0
+  cave.diamondsNeeded = 1;
+#endif
 
   BITMAPINFO backbufferBmpInf = {0};
   backbufferBmpInf.bmiHeader.biSize = sizeof(backbufferBmpInf.bmiHeader);
@@ -181,6 +174,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
   int score = 0;
   int diamondsCollected = 0;
+  int borderColor = COLOR_BLACK;
 
   int foregroundVisibilityTurnMax = NO_ANIMATIONS ? 1 : 28;
   int deathForegroundVisibilityTurnMax = NO_ANIMATIONS ? 1 : 25;
@@ -441,6 +435,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       // Do turn
       //
 
+      borderColor = BORDER_COLOR_NORMAL;
+
       diamondFrame++;
       if (diamondFrame == DIAMOND_FRAME_COUNT) {
         diamondFrame = 0;
@@ -641,6 +637,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                   score += cave.initialDiamondValue;
                 }
                 diamondsCollected++;
+                if (diamondsCollected == cave.diamondsNeeded) {
+                  borderColor = BORDER_COLOR_FLASH;
+                }
               }
               map[heroRow*CAVE_WIDTH + heroCol].type = TILE_TYPE_EMPTY;
               heroRow = newRow;
@@ -694,8 +693,10 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       }
     }
 
-    // Clear back buffer
-    memset(backbuffer, 0, BACKBUFFER_BYTES);
+    // Draw border
+    drawFilledRect(0, 0, BACKBUFFER_WIDTH-1, BACKBUFFER_HEIGHT-1, borderColor);
+    // Clear viewport
+    drawFilledRect(VIEWPORT_X_MIN, VIEWPORT_Y_MIN, VIEWPORT_X_MAX, VIEWPORT_Y_MAX, COLOR_BLACK);
 
     //
     // Draw tiles
