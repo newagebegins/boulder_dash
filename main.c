@@ -17,7 +17,7 @@ void debugPrint(char *format, ...) {
 }
 
 #define HERO_SUPERPOWER false
-#define NO_ANIMATIONS true
+#define NO_ANIMATIONS false
 
 #define ARRAY_LENGTH(array) (sizeof(array)/sizeof(*array))
 #define PI 3.14159265358979323846f
@@ -28,30 +28,36 @@ void debugPrint(char *format, ...) {
 #define TURN_DURATION 0.15f
 #define MAX_MAP_TILES 100*100
 #define DIAMOND_FRAME_COUNT 8
-#define SCREEN_WIDTH_IN_TILES (BACKBUFFER_WIDTH / TILE_SIZE)
-#define SCREEN_HEIGHT_IN_TILES ((BACKBUFFER_HEIGHT - TEXT_AREA_HEIGHT) / TILE_SIZE)
 
-#define SCREEN_WIDTH_IN_HALF_TILES (SCREEN_WIDTH_IN_TILES*2)
-#define SCREEN_HEIGHT_IN_HALF_TILES (SCREEN_HEIGHT_IN_TILES*2)
-#define SCREEN_HALF_TILES_COUNT (SCREEN_WIDTH_IN_HALF_TILES*SCREEN_HEIGHT_IN_HALF_TILES)
+#define PLAYFIELD_WIDTH VIEWPORT_WIDTH
+#define PLAYFIELD_HEIGHT (VIEWPORT_HEIGHT - TEXT_AREA_HEIGHT)
+#define PLAYFIELD_X_MIN BORDER_SIZE
+#define PLAYFIELD_Y_MIN (BORDER_SIZE + TEXT_AREA_HEIGHT)
+#define PLAYFIELD_X_MAX (PLAYFIELD_X_MIN + PLAYFIELD_WIDTH - 1)
+#define PLAYFIELD_Y_MAX (PLAYFIELD_Y_MIN + PLAYFIELD_HEIGHT - 1)
+#define PLAYFIELD_WIDTH_IN_TILES (PLAYFIELD_WIDTH / TILE_SIZE)
+#define PLAYFIELD_HEIGHT_IN_TILES (PLAYFIELD_HEIGHT / TILE_SIZE)
+#define PLAYFIELD_WIDTH_IN_HALF_TILES (PLAYFIELD_WIDTH_IN_TILES*2)
+#define PLAYFIELD_HEIGHT_IN_HALF_TILES (PLAYFIELD_HEIGHT_IN_TILES*2)
+#define PLAYFIELD_HALF_TILES_COUNT (PLAYFIELD_WIDTH_IN_HALF_TILES*PLAYFIELD_HEIGHT_IN_HALF_TILES)
 
 #define CAMERA_STEP HALF_TILE_SIZE
 #define HERO_SIZE TILE_SIZE
 
-#define CAMERA_START_RIGHT_HERO_X (BACKBUFFER_WIDTH - 5*HALF_TILE_SIZE)
-#define CAMERA_STOP_RIGHT_HERO_X (BACKBUFFER_WIDTH - 13*HALF_TILE_SIZE)
-#define CAMERA_START_LEFT_HERO_X (6*HALF_TILE_SIZE)
-#define CAMERA_STOP_LEFT_HERO_X (14*HALF_TILE_SIZE)
+#define CAMERA_START_RIGHT_HERO_X (PLAYFIELD_X_MAX - 6*HALF_TILE_SIZE + 1)
+#define CAMERA_STOP_RIGHT_HERO_X (PLAYFIELD_X_MAX - 13*HALF_TILE_SIZE + 1)
+#define CAMERA_START_LEFT_HERO_X (PLAYFIELD_X_MIN + 6*HALF_TILE_SIZE)
+#define CAMERA_STOP_LEFT_HERO_X (PLAYFIELD_X_MIN + 14*HALF_TILE_SIZE)
 
-#define CAMERA_START_DOWN_HERO_Y (BACKBUFFER_HEIGHT - 4*HALF_TILE_SIZE)
-#define CAMERA_STOP_DOWN_HERO_Y (BACKBUFFER_HEIGHT - 9*HALF_TILE_SIZE)
-#define CAMERA_START_UP_HERO_Y (6*HALF_TILE_SIZE)
-#define CAMERA_STOP_UP_HERO_Y (11*HALF_TILE_SIZE)
+#define CAMERA_START_DOWN_HERO_Y (PLAYFIELD_Y_MAX - 4*HALF_TILE_SIZE + 1)
+#define CAMERA_STOP_DOWN_HERO_Y (PLAYFIELD_Y_MAX - 9*HALF_TILE_SIZE + 1)
+#define CAMERA_START_UP_HERO_Y (PLAYFIELD_Y_MIN + 4*HALF_TILE_SIZE)
+#define CAMERA_STOP_UP_HERO_Y (PLAYFIELD_Y_MIN + 9*HALF_TILE_SIZE)
 
 #define MIN_CAMERA_X 0
 #define MIN_CAMERA_Y 0
-#define MAX_CAMERA_X (CAVE_WIDTH*TILE_SIZE - BACKBUFFER_WIDTH)
-#define MAX_CAMERA_Y (CAVE_HEIGHT*TILE_SIZE - BACKBUFFER_HEIGHT - TEXT_AREA_HEIGHT)
+#define MAX_CAMERA_X (CAVE_WIDTH*TILE_SIZE - PLAYFIELD_WIDTH)
+#define MAX_CAMERA_Y ((CAVE_HEIGHT-2)*TILE_SIZE - PLAYFIELD_HEIGHT)
 
 typedef enum {
   TILE_TYPE_EMPTY,
@@ -219,7 +225,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
   Tile map[MAX_MAP_TILES];
   bool foreground[MAX_MAP_TILES];
-  bool deathForeground[SCREEN_HALF_TILES_COUNT];
+  bool deathForeground[PLAYFIELD_HALF_TILES_COUNT];
   bool isInit = true;
 
   int cameraVelX = 0;
@@ -323,7 +329,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         foreground[i] = true;
       }
 
-      for (int i = 0; i < SCREEN_HALF_TILES_COUNT; ++i) {
+      for (int i = 0; i < PLAYFIELD_HALF_TILES_COUNT; ++i) {
         deathForeground[i] = false;
       }
     }
@@ -422,8 +428,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       heroIdleTimer = 0;
     }
 
-    int heroScreenLeft = heroCol * TILE_SIZE - cameraX;
-    int heroScreenTop = heroRow * TILE_SIZE - cameraY + TEXT_AREA_HEIGHT;
+    int heroScreenLeft = PLAYFIELD_X_MIN + heroCol * TILE_SIZE - cameraX;
+    int heroScreenTop = PLAYFIELD_Y_MIN + heroRow * TILE_SIZE - cameraY;
     int heroScreenRight = heroScreenLeft + TILE_SIZE;
     int heroScreenBottom = heroScreenTop + TILE_SIZE;
 
@@ -513,8 +519,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         // Hide some foreground tiles every turn
         for (int tile = 0; tile < foregroundTilesPerTurn; ++tile) {
           for (int try = 0; try < 100; ++try) {
-            int row = rand() % SCREEN_HEIGHT_IN_TILES + cameraRow;
-            int col = rand() % SCREEN_WIDTH_IN_TILES + cameraCol;
+            int row = rand() % PLAYFIELD_HEIGHT_IN_TILES + cameraRow;
+            int col = rand() % PLAYFIELD_WIDTH_IN_TILES + cameraCol;
             int cell = row*CAVE_WIDTH + col;
             if (foreground[cell]) {
               foreground[cell] = false;
@@ -676,9 +682,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
         for (int tile = 0; tile < deathForegroundTilesPerTurn; ++tile) {
           for (int try = 0; try < 100; ++try) {
-            int row = rand() % SCREEN_HEIGHT_IN_HALF_TILES;
-            int col = rand() % SCREEN_WIDTH_IN_HALF_TILES;
-            int cell = row*SCREEN_WIDTH_IN_HALF_TILES + col;
+            int row = rand() % PLAYFIELD_HEIGHT_IN_HALF_TILES;
+            int col = rand() % PLAYFIELD_WIDTH_IN_HALF_TILES;
+            int cell = row*PLAYFIELD_WIDTH_IN_HALF_TILES + col;
             if (!deathForeground[cell]) {
               deathForeground[cell] = true;
               break;
@@ -754,8 +760,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             break;
         }
 
-        int bbX = col * TILE_SIZE - cameraX;
-        int bbY = row * TILE_SIZE - cameraY + TEXT_AREA_HEIGHT;
+        int bbX = PLAYFIELD_X_MIN + col * TILE_SIZE - cameraX;
+        int bbY = PLAYFIELD_Y_MIN + row * TILE_SIZE - cameraY;
 
         for (int y = 0; y < TILE_SIZE; ++y) {
           for (int x = 0; x < TILE_SIZE; ++x) {
@@ -768,7 +774,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             int srcY = atlY + y;
             int dstX = bbX + x;
             int dstY = bbY + y;
-            if (dstX >= 0 && dstX < BACKBUFFER_WIDTH && dstY >= TEXT_AREA_HEIGHT && dstY < BACKBUFFER_HEIGHT) {
+            if (dstX >= PLAYFIELD_X_MIN && dstX <= PLAYFIELD_X_MAX &&
+                dstY >= PLAYFIELD_Y_MIN && dstY <= PLAYFIELD_Y_MAX) {
               backbuffer[dstY*BACKBUFFER_WIDTH + dstX] = spriteAtlas[srcY*SPRITE_ATLAS_WIDTH + srcX];
             }
           }
@@ -795,8 +802,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           int atlX = 0;
           int atlY = srcMinY + foregroundOffset;
 
-          int bbX = col * TILE_SIZE - cameraX;
-          int bbY = row * TILE_SIZE - cameraY + TEXT_AREA_HEIGHT;
+          int bbX = PLAYFIELD_X_MIN + col * TILE_SIZE - cameraX;
+          int bbY = PLAYFIELD_Y_MIN + row * TILE_SIZE - cameraY;
 
           for (int y = 0; y < TILE_SIZE; ++y) {
             for (int x = 0; x < TILE_SIZE; ++x) {
@@ -807,7 +814,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               }
               int dstX = bbX + x;
               int dstY = bbY + y;
-              if (dstX >= 0 && dstX < BACKBUFFER_WIDTH && dstY >= TEXT_AREA_HEIGHT && dstY < BACKBUFFER_HEIGHT) {
+              if (dstX >= PLAYFIELD_X_MIN && dstX <= PLAYFIELD_X_MAX &&
+                  dstY >= PLAYFIELD_Y_MIN && dstY <= PLAYFIELD_Y_MAX) {
                 backbuffer[dstY*BACKBUFFER_WIDTH + dstX] = spriteAtlas[srcY*SPRITE_ATLAS_WIDTH + srcX];
               }
             }
@@ -817,9 +825,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     }
 
     if (deathForegroundVisibilityTurn > 0) {
-      for (int row = 0; row < SCREEN_HEIGHT_IN_HALF_TILES; ++row) {
-        for (int col = 0; col < SCREEN_WIDTH_IN_HALF_TILES; ++col) {
-          bool isVisible = deathForeground[row*SCREEN_WIDTH_IN_HALF_TILES + col];
+      for (int row = 0; row < PLAYFIELD_HEIGHT_IN_HALF_TILES; ++row) {
+        for (int col = 0; col < PLAYFIELD_WIDTH_IN_HALF_TILES; ++col) {
+          bool isVisible = deathForeground[row*PLAYFIELD_WIDTH_IN_HALF_TILES + col];
 
           if (!isVisible) {
             continue;
@@ -831,8 +839,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           int atlX = 0;
           int atlY = srcMinY + deathForegroundOffset;
 
-          int bbX = col * HALF_TILE_SIZE;
-          int bbY = row * HALF_TILE_SIZE + TEXT_AREA_HEIGHT;
+          int bbX = PLAYFIELD_X_MIN + col * HALF_TILE_SIZE;
+          int bbY = PLAYFIELD_Y_MIN + row * HALF_TILE_SIZE;
 
           for (int y = 0; y < HALF_TILE_SIZE; ++y) {
             for (int x = 0; x < HALF_TILE_SIZE; ++x) {
@@ -843,7 +851,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               }
               int dstX = bbX + x;
               int dstY = bbY + y;
-              if (dstX >= 0 && dstX < BACKBUFFER_WIDTH && dstY >= TEXT_AREA_HEIGHT && dstY < BACKBUFFER_HEIGHT) {
+              if (dstX >= PLAYFIELD_X_MIN && dstX <= PLAYFIELD_X_MAX &&
+                  dstY >= PLAYFIELD_Y_MIN && dstY <= PLAYFIELD_Y_MAX) {
                 backbuffer[dstY*BACKBUFFER_WIDTH + dstX] = spriteAtlas[srcY*SPRITE_ATLAS_WIDTH + srcX];
               }
             }
@@ -859,29 +868,27 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       } else {
         sprintf_s(text, sizeof(text), "   %d*%d   00   150   %06d", cave.diamondsNeeded, cave.initialDiamondValue, score);
       }
-      drawText(text, 1, 0);
+      drawText(text, 3, 2);
     }
 
     // Camera debugging
-    /*
-    {
-      debugPrint("x: %d, y: %d, mx: %d, my: %d\n", cameraX, cameraY, MAX_CAMERA_X, MAX_CAMERA_Y);
+#if 0
+    debugPrint("x: %d, y: %d, mx: %d, my: %d\n", cameraX, cameraY, MAX_CAMERA_X, MAX_CAMERA_Y);
 
-      drawLine(CAMERA_START_RIGHT_HERO_X, 0, CAMERA_START_RIGHT_HERO_X, BACKBUFFER_HEIGHT - 1, COLOR_PINK);
-      drawLine(CAMERA_STOP_RIGHT_HERO_X, 0, CAMERA_STOP_RIGHT_HERO_X, BACKBUFFER_HEIGHT - 1, COLOR_GREEN);
+    drawLine(CAMERA_START_RIGHT_HERO_X, 0, CAMERA_START_RIGHT_HERO_X, BACKBUFFER_HEIGHT - 1, COLOR_PINK);
+    drawLine(CAMERA_STOP_RIGHT_HERO_X, 0, CAMERA_STOP_RIGHT_HERO_X, BACKBUFFER_HEIGHT - 1, COLOR_GREEN);
 
-      drawLine(CAMERA_START_LEFT_HERO_X, 0, CAMERA_START_LEFT_HERO_X, BACKBUFFER_HEIGHT - 1, COLOR_WHITE);
-      drawLine(CAMERA_STOP_LEFT_HERO_X, 0, CAMERA_STOP_LEFT_HERO_X, BACKBUFFER_HEIGHT - 1, COLOR_YELLOW);
+    drawLine(CAMERA_START_LEFT_HERO_X, 0, CAMERA_START_LEFT_HERO_X, BACKBUFFER_HEIGHT - 1, COLOR_PINK);
+    drawLine(CAMERA_STOP_LEFT_HERO_X, 0, CAMERA_STOP_LEFT_HERO_X, BACKBUFFER_HEIGHT - 1, COLOR_GREEN);
 
-      drawLine(0, CAMERA_START_DOWN_HERO_Y, BACKBUFFER_WIDTH - 1, CAMERA_START_DOWN_HERO_Y, COLOR_PINK);
-      drawLine(0, CAMERA_STOP_DOWN_HERO_Y, BACKBUFFER_WIDTH - 1, CAMERA_STOP_DOWN_HERO_Y, COLOR_GREEN);
+    drawLine(0, CAMERA_START_DOWN_HERO_Y, BACKBUFFER_WIDTH - 1, CAMERA_START_DOWN_HERO_Y, COLOR_PINK);
+    drawLine(0, CAMERA_STOP_DOWN_HERO_Y, BACKBUFFER_WIDTH - 1, CAMERA_STOP_DOWN_HERO_Y, COLOR_GREEN);
 
-      drawLine(0, CAMERA_START_UP_HERO_Y, BACKBUFFER_WIDTH - 1, CAMERA_START_UP_HERO_Y, COLOR_WHITE);
-      drawLine(0, CAMERA_STOP_UP_HERO_Y, BACKBUFFER_WIDTH - 1, CAMERA_STOP_UP_HERO_Y, COLOR_YELLOW);
+    drawLine(0, CAMERA_START_UP_HERO_Y, BACKBUFFER_WIDTH - 1, CAMERA_START_UP_HERO_Y, COLOR_PINK);
+    drawLine(0, CAMERA_STOP_UP_HERO_Y, BACKBUFFER_WIDTH - 1, CAMERA_STOP_UP_HERO_Y, COLOR_GREEN);
 
-      drawRect(heroScreenLeft, heroScreenTop, heroScreenRight, heroScreenBottom, COLOR_GREEN);
-    }
-    */
+    drawRect(heroScreenLeft, heroScreenTop, heroScreenRight, heroScreenBottom, COLOR_YELLOW);
+#endif
 
     StretchDIBits(deviceContext, 0, 0, windowWidth, windowHeight,
                   0, 0, BACKBUFFER_WIDTH, BACKBUFFER_HEIGHT, backbuffer,
