@@ -1,4 +1,3 @@
-#include <windows.h>
 #include <assert.h>
 #include <stdint.h>
 #include "cave.h"
@@ -104,10 +103,8 @@ static void DrawRect(Cave *cave, int anObject, int x, int y, int aWidth, int aHe
 }
 
 static Cave DecodeCave(uint8_t *aCaveData) {
-  CaveHeader *caveHeader = (CaveHeader *) aCaveData;
-
   Cave cave;
-  CopyMemory(&cave.header, caveHeader, sizeof(*caveHeader));
+  cave.header = (CaveHeader *) aCaveData;
 
   int theWidth, theHeight, theFill, theLength, theDirection;
   int x, y;

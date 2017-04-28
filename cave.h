@@ -23,7 +23,7 @@ typedef struct {
 } CaveHeader;
 
 typedef struct {
-  CaveHeader header;
+  CaveHeader *header;
   uint8_t data[CAVE_HEIGHT][CAVE_WIDTH];
 } Cave;
 

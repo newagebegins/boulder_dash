@@ -98,7 +98,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int difficultyLevel = 0;
   Cave cave = getCave(1);
 #if 0
-  cave.header.diamondsNeeded[difficultyLevel] = 1;
+  cave.header->diamondsNeeded[difficultyLevel] = 1;
 #endif
 
   BITMAPINFO backbufferBmpInf = {0};
@@ -632,13 +632,13 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             case TILE_TYPE_ROCK:
 #endif
               if (map[newCell].type == TILE_TYPE_DIAMOND) {
-                if (diamondsCollected >= cave.header.diamondsNeeded[difficultyLevel]) {
-                  score += cave.header.extraDiamondValue;
+                if (diamondsCollected >= cave.header->diamondsNeeded[difficultyLevel]) {
+                  score += cave.header->extraDiamondValue;
                 } else {
-                  score += cave.header.initialDiamondValue;
+                  score += cave.header->initialDiamondValue;
                 }
                 diamondsCollected++;
-                if (diamondsCollected == cave.header.diamondsNeeded[difficultyLevel]) {
+                if (diamondsCollected == cave.header->diamondsNeeded[difficultyLevel]) {
                   borderColor = BORDER_COLOR_FLASH;
                 }
               }
@@ -865,10 +865,10 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
     {
       static char text[64];
-      if (diamondsCollected >= cave.header.diamondsNeeded[difficultyLevel]) {
-        sprintf_s(text, sizeof(text), "   ***%d   00   150   %06d", cave.header.extraDiamondValue, score);
+      if (diamondsCollected >= cave.header->diamondsNeeded[difficultyLevel]) {
+        sprintf_s(text, sizeof(text), "   ***%d   00   150   %06d", cave.header->extraDiamondValue, score);
       } else {
-        sprintf_s(text, sizeof(text), "   %d*%d   00   150   %06d", cave.header.diamondsNeeded[difficultyLevel], cave.header.initialDiamondValue, score);
+        sprintf_s(text, sizeof(text), "   %d*%d   00   150   %06d", cave.header->diamondsNeeded[difficultyLevel], cave.header->initialDiamondValue, score);
       }
       drawText(text, 3, 2);
     }
