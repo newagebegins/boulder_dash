@@ -16,8 +16,8 @@ void debugPrint(char *format, ...) {
   OutputDebugString(str);
 }
 
-#define HERO_SUPERPOWER false
-#define NO_ANIMATIONS false
+#define HERO_SUPERPOWER true
+#define NO_ANIMATIONS true
 
 #define ARRAY_LENGTH(array) (sizeof(array)/sizeof(*array))
 #define PI 3.14159265358979323846f
@@ -58,6 +58,7 @@ typedef enum {
   TILE_TYPE_EARTH,
   TILE_TYPE_EXPLOSION,
   TILE_TYPE_DIAMOND,
+  TILE_TYPE_EXIT,
   TILE_TYPE_COUNT,
 } TileType;
 
@@ -101,7 +102,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   Cave *cave = getCave(1);
   decodeCaveData(cave, caveData);
 
-#if 0 
+#if 1
   cave->diamondsNeeded[difficultyLevel] = 1;
 #endif
 
@@ -222,6 +223,12 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   };
   int appearanceAnimFrame = 0;
 
+  SpriteType exitAnim[] = {
+    SPRITE_TYPE_WALL,
+    SPRITE_TYPE_ENTRANCE,
+  };
+  int exitAnimFrame = 0;
+
   Tile map[MAX_MAP_TILES];
   bool foreground[MAX_MAP_TILES];
   bool deathForeground[PLAYFIELD_HALF_TILES_COUNT];
@@ -310,9 +317,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               map[i].type = TILE_TYPE_DIAMOND;
               break;
             case ' ':
-            case 'P':
             case 'q':
               map[i].type = TILE_TYPE_EMPTY;
+              break;
+            case 'P':
+              map[i].type = TILE_TYPE_EXIT;
               break;
             default:
               assert(!"Unhandled type!");
@@ -598,6 +607,16 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                 }
               }
             }
+            if (map[current].type == TILE_TYPE_EXIT) {
+              if (diamondsCollected >= cave->diamondsNeeded[difficultyLevel]) {
+                exitAnimFrame++;
+                if (exitAnimFrame == ARRAY_LENGTH(exitAnim)) {
+                  exitAnimFrame = 0;
+                }
+              } else {
+                exitAnimFrame = 0;
+              }
+            }
           }
         }
 
@@ -645,6 +664,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                 if (diamondsCollected == cave->diamondsNeeded[difficultyLevel]) {
                   borderColor = BORDER_COLOR_FLASH;
                 }
+              } else if (map[newCell].type == TILE_TYPE_EXIT) {
+                // TODO: proceed to the next level
               }
               map[heroRow*CAVE_WIDTH + heroCol].type = TILE_TYPE_EMPTY;
               heroRow = newRow;
@@ -754,6 +775,14 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             atlX = 0;
             atlY = 16;
             break;
+
+          case TILE_TYPE_EXIT: {
+            int atlCol = exitAnim[exitAnimFrame] % SPRITE_ATLAS_WIDTH_TILES;
+            int atlRow = exitAnim[exitAnimFrame] / SPRITE_ATLAS_WIDTH_TILES;
+            atlX = atlCol * TILE_SIZE;
+            atlY = atlRow * TILE_SIZE;
+            break;
+          }
 
           case TILE_TYPE_EXPLOSION:
             atlX = explosionAnim[explosionFrame]*16;
