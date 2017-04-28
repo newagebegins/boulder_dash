@@ -20,13 +20,8 @@ typedef struct {
   uint8_t unused[2];
   uint8_t randomObject[NUM_RANDOM_OBJECTS];
   uint8_t objectProbability[NUM_RANDOM_OBJECTS];
-} CaveHeader;
+} CaveInfo;
 
-typedef struct {
-  CaveHeader *header;
-  uint8_t data[CAVE_HEIGHT][CAVE_WIDTH];
-} Cave;
-
-Cave getCave(int caveIndex);
+CaveInfo* getCave(int caveIndex, uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH]);
 
 #endif
