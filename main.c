@@ -98,10 +98,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int difficultyLevel = 0;
 
   uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH];
-  CaveInfo *caveInfo = getCave(1, caveData);
+  Cave *cave = getCave(1);
+  decodeCaveData(cave, caveData);
 
 #if 0 
-  caveInfo->diamondsNeeded[difficultyLevel] = 1;
+  cave->diamondsNeeded[difficultyLevel] = 1;
 #endif
 
   BITMAPINFO backbufferBmpInf = {0};
@@ -635,13 +636,13 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             case TILE_TYPE_ROCK:
 #endif
               if (map[newCell].type == TILE_TYPE_DIAMOND) {
-                if (diamondsCollected >= caveInfo->diamondsNeeded[difficultyLevel]) {
-                  score += caveInfo->extraDiamondValue;
+                if (diamondsCollected >= cave->diamondsNeeded[difficultyLevel]) {
+                  score += cave->extraDiamondValue;
                 } else {
-                  score += caveInfo->initialDiamondValue;
+                  score += cave->initialDiamondValue;
                 }
                 diamondsCollected++;
-                if (diamondsCollected == caveInfo->diamondsNeeded[difficultyLevel]) {
+                if (diamondsCollected == cave->diamondsNeeded[difficultyLevel]) {
                   borderColor = BORDER_COLOR_FLASH;
                 }
               }
@@ -868,10 +869,10 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
     {
       static char text[64];
-      if (diamondsCollected >= caveInfo->diamondsNeeded[difficultyLevel]) {
-        sprintf_s(text, sizeof(text), "   ***%d   00   150   %06d", caveInfo->extraDiamondValue, score);
+      if (diamondsCollected >= cave->diamondsNeeded[difficultyLevel]) {
+        sprintf_s(text, sizeof(text), "   ***%d   00   150   %06d", cave->extraDiamondValue, score);
       } else {
-        sprintf_s(text, sizeof(text), "   %d*%d   00   150   %06d", caveInfo->diamondsNeeded[difficultyLevel], caveInfo->initialDiamondValue, score);
+        sprintf_s(text, sizeof(text), "   %d*%d   00   150   %06d", cave->diamondsNeeded[difficultyLevel], cave->initialDiamondValue, score);
       }
       drawText(text, 3, 2);
     }

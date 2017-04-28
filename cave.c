@@ -102,7 +102,80 @@ static void DrawRect(uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH], int anObject, in
   }
 }
 
-CaveInfo* getCave(int caveIndex, uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH]) {
+void decodeCaveData(Cave *cave, uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH]) {
+  uint8_t *aCaveData = (uint8_t *)cave;
+
+  int theWidth, theHeight, theFill, theLength, theDirection;
+  int x, y;
+
+  int RandSeed1 = 0;
+  int RandSeed2 = aCaveData[4];
+
+  /* Clear out the cave data to a null value */
+  for(x = 0; x < 40; x++) {
+    for (y = 0; y <= 23; y++) {
+      StoreObject(caveData, x, y, 0x07);
+    }
+  }
+
+  /* Decode the random cave data */
+  for(y = 3; y <= 23; y++) {
+    for(x = 0; x <= 39; x++) {
+      int theObject = 1;  /* Dirt */
+      NextRandom(&RandSeed1, &RandSeed2);
+      for (int caveDataIndex = 0; caveDataIndex <= 3; caveDataIndex++) {
+        if (RandSeed1 < aCaveData[0x1C + caveDataIndex]) {
+          theObject = aCaveData[0x18 + caveDataIndex];
+        }
+      }
+      StoreObject(caveData, x, y, theObject);
+    }
+  }
+
+  /* Decode the explicit cave data */
+  for (int caveDataIndex = 0x20; aCaveData[caveDataIndex] != 0xFF; caveDataIndex++) {
+    int theCode = aCaveData[caveDataIndex];
+    int theObject = theCode & 0x3F;
+
+    switch(3 & (aCaveData[caveDataIndex] >> 6)) {
+      case 0: /* PLOT */
+        x = aCaveData[++caveDataIndex];
+        y = aCaveData[++caveDataIndex];
+        StoreObject(caveData, x, y, theObject);
+        break;
+
+      case 1: /* LINE */
+        x = aCaveData[++caveDataIndex];
+        y = aCaveData[++caveDataIndex];
+        theLength = aCaveData[++caveDataIndex];
+        theDirection = aCaveData[++caveDataIndex];
+        DrawLine(caveData, theObject, x, y, theLength, theDirection);
+        break;
+
+      case 2: /* FILLED RECTANGLE */
+        x = aCaveData[++caveDataIndex];
+        y = aCaveData[++caveDataIndex];
+        theWidth = aCaveData[++caveDataIndex];
+        theHeight = aCaveData[++caveDataIndex];
+        theFill = aCaveData[++caveDataIndex];
+        DrawFilledRect(caveData, theObject, x, y, theWidth, theHeight, theFill);
+        break;
+
+      case 3: /* OPEN RECTANGLE */
+        x = aCaveData[++caveDataIndex];
+        y = aCaveData[++caveDataIndex];
+        theWidth = aCaveData[++caveDataIndex];
+        theHeight = aCaveData[++caveDataIndex];
+        DrawRect(caveData, theObject, x, y, theWidth, theHeight);
+        break;
+    }
+  }
+
+  /* SteelBounds */
+  DrawRect(caveData, 0x07, 0, 2, 40, 22);
+}
+
+Cave* getCave(int caveIndex) {
   static uint8_t cave1[] = {
     0x01,0x14,0x0A,0x0F,0x0A,0x0B,0x0C,0x0D,0x0E,0x0C,0x0C,0x0C,0x0C,0x0C,0x96,0x6E,
     0x46,0x28,0x1E,0x08,0x0B,0x09,0xD4,0x20,0x00,0x10,0x14,0x00,0x3C,0x32,0x09,0x00,
@@ -288,76 +361,5 @@ CaveInfo* getCave(int caveIndex, uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH]) {
     cave12, cave13, cave14, cave15, cave16, cave17, cave18, cave19, cave20
   };
 
-  uint8_t *aCaveData = caves[caveIndex];
-
-  int theWidth, theHeight, theFill, theLength, theDirection;
-  int x, y;
-
-  int RandSeed1 = 0;
-  int RandSeed2 = aCaveData[4];
-
-  /* Clear out the cave data to a null value */
-  for(x = 0; x < 40; x++) {
-    for (y = 0; y <= 23; y++) {
-      StoreObject(caveData, x, y, 0x07);
-    }
-  }
-
-  /* Decode the random cave data */
-  for(y = 3; y <= 23; y++) {
-    for(x = 0; x <= 39; x++) {
-      int theObject = 1;  /* Dirt */
-      NextRandom(&RandSeed1, &RandSeed2);
-      for (int caveDataIndex = 0; caveDataIndex <= 3; caveDataIndex++) {
-        if (RandSeed1 < aCaveData[0x1C + caveDataIndex]) {
-          theObject = aCaveData[0x18 + caveDataIndex];
-        }
-      }
-      StoreObject(caveData, x, y, theObject);
-    }
-  }
-
-  /* Decode the explicit cave data */
-  for (int caveDataIndex = 0x20; aCaveData[caveDataIndex] != 0xFF; caveDataIndex++) {
-    int theCode = aCaveData[caveDataIndex];
-    int theObject = theCode & 0x3F;
-
-    switch(3 & (aCaveData[caveDataIndex] >> 6)) {
-      case 0: /* PLOT */
-        x = aCaveData[++caveDataIndex];
-        y = aCaveData[++caveDataIndex];
-        StoreObject(caveData, x, y, theObject);
-        break;
-
-      case 1: /* LINE */
-        x = aCaveData[++caveDataIndex];
-        y = aCaveData[++caveDataIndex];
-        theLength = aCaveData[++caveDataIndex];
-        theDirection = aCaveData[++caveDataIndex];
-        DrawLine(caveData, theObject, x, y, theLength, theDirection);
-        break;
-
-      case 2: /* FILLED RECTANGLE */
-        x = aCaveData[++caveDataIndex];
-        y = aCaveData[++caveDataIndex];
-        theWidth = aCaveData[++caveDataIndex];
-        theHeight = aCaveData[++caveDataIndex];
-        theFill = aCaveData[++caveDataIndex];
-        DrawFilledRect(caveData, theObject, x, y, theWidth, theHeight, theFill);
-        break;
-
-      case 3: /* OPEN RECTANGLE */
-        x = aCaveData[++caveDataIndex];
-        y = aCaveData[++caveDataIndex];
-        theWidth = aCaveData[++caveDataIndex];
-        theHeight = aCaveData[++caveDataIndex];
-        DrawRect(caveData, theObject, x, y, theWidth, theHeight);
-        break;
-    }
-  }
-
-  /* SteelBounds */
-  DrawRect(caveData, 0x07, 0, 2, 40, 22);
-
-  return (CaveInfo *) aCaveData;
+  return (Cave *)caves[caveIndex];
 }
