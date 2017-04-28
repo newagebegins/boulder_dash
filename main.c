@@ -16,8 +16,8 @@ void debugPrint(char *format, ...) {
   OutputDebugString(str);
 }
 
-#define HERO_SUPERPOWER true
-#define NO_ANIMATIONS true
+#define HERO_SUPERPOWER false
+#define NO_ANIMATIONS false
 
 #define ARRAY_LENGTH(array) (sizeof(array)/sizeof(*array))
 #define PI 3.14159265358979323846f
@@ -102,7 +102,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   Cave *cave = getCave(1);
   decodeCaveData(cave, caveData);
 
-#if 1
+#if 0
   cave->diamondsNeeded[difficultyLevel] = 1;
 #endif
 
@@ -606,8 +606,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                   map[current].type = TILE_TYPE_EMPTY;
                 }
               }
-            }
-            if (map[current].type == TILE_TYPE_EXIT) {
+            } else if (map[current].type == TILE_TYPE_EXIT) {
               if (diamondsCollected >= cave->diamondsNeeded[difficultyLevel]) {
                 exitAnimFrame++;
                 if (exitAnimFrame == ARRAY_LENGTH(exitAnim)) {
@@ -616,80 +615,78 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               } else {
                 exitAnimFrame = 0;
               }
-            }
-          }
-        }
+            } else if (map[current].type == TILE_TYPE_HERO) {
+              if (heroIsAppearing) {
+                appearanceAnimFrame++;
+                if (appearanceAnimFrame == ARRAY_LENGTH(appearanceAnim)) {
+                  appearanceAnimFrame = 0;
+                  heroIsAppearing = false;
+                }
+              } else if (heroIsAlive) {
+                int newRow = row;
+                int newCol = col;
 
-        //
-        // Update hero
-        //
+                if (rightIsDown) {
+                  ++newCol;
+                } else if (leftIsDown) {
+                  --newCol;
+                } else if (upIsDown) {
+                  --newRow;
+                } else if (downIsDown) {
+                  ++newRow;
+                }
 
-        if (heroIsAppearing) {
-          appearanceAnimFrame++;
-          if (appearanceAnimFrame == ARRAY_LENGTH(appearanceAnim)) {
-            appearanceAnimFrame = 0;
-            heroIsAppearing = false;
-          }
-        } else if (heroIsAlive) {
-          int newRow = heroRow;
-          int newCol = heroCol;
+                int newCell = newRow*CAVE_WIDTH + newCol;
 
-          if (rightIsDown) {
-            ++newCol;
-          } else if (leftIsDown) {
-            --newCol;
-          } else if (upIsDown) {
-            --newRow;
-          } else if (downIsDown) {
-            ++newRow;
-          }
-
-          int newCell = newRow*CAVE_WIDTH + newCol;
-
-          switch (map[newCell].type) {
-            case TILE_TYPE_EMPTY:
-            case TILE_TYPE_EARTH:
-            case TILE_TYPE_DIAMOND:
+                switch (map[newCell].type) {
+                  case TILE_TYPE_EMPTY:
+                  case TILE_TYPE_EARTH:
+                  case TILE_TYPE_DIAMOND:
 #if HERO_SUPERPOWER
-            case TILE_TYPE_BRICK:
-            case TILE_TYPE_ROCK:
+                  case TILE_TYPE_BRICK:
+                  case TILE_TYPE_ROCK:
 #endif
-              if (map[newCell].type == TILE_TYPE_DIAMOND) {
-                if (diamondsCollected >= cave->diamondsNeeded[difficultyLevel]) {
-                  score += cave->extraDiamondValue;
-                } else {
-                  score += cave->initialDiamondValue;
-                }
-                diamondsCollected++;
-                if (diamondsCollected == cave->diamondsNeeded[difficultyLevel]) {
-                  borderColor = BORDER_COLOR_FLASH;
-                }
-              } else if (map[newCell].type == TILE_TYPE_EXIT) {
-                // TODO: proceed to the next level
-              }
-              map[heroRow*CAVE_WIDTH + heroCol].type = TILE_TYPE_EMPTY;
-              heroRow = newRow;
-              heroCol = newCol;
-              map[heroRow*CAVE_WIDTH + heroCol].type = TILE_TYPE_HERO;
-              break;
+                    if (map[newCell].type == TILE_TYPE_DIAMOND) {
+                      if (diamondsCollected >= cave->diamondsNeeded[difficultyLevel]) {
+                        score += cave->extraDiamondValue;
+                      } else {
+                        score += cave->initialDiamondValue;
+                      }
+                      diamondsCollected++;
+                      if (diamondsCollected == cave->diamondsNeeded[difficultyLevel]) {
+                        borderColor = BORDER_COLOR_FLASH;
+                      }
+                    } else if (map[newCell].type == TILE_TYPE_EXIT) {
+                      // TODO: proceed to the next level
+                    }
+                    map[current].type = TILE_TYPE_EMPTY;
+                    heroRow = newRow; // TODO: remove
+                    heroCol = newCol; // TODO: remove
+                    map[newCell].type = TILE_TYPE_HERO;
+                    map[newCell].moved = true;
+                    break;
 
 #if !HERO_SUPERPOWER
-            case TILE_TYPE_ROCK:
-              int deltaCol = newCol - heroCol;
-              int targetRockCell = newRow*CAVE_WIDTH + newCol + deltaCol;
-              if (deltaCol != 0 && map[targetRockCell].type == TILE_TYPE_EMPTY) {
-                heroMoveRockTurns++;
-                if (heroMoveRockTurns == 3) {
-                  heroMoveRockTurns = 0;
-                  map[heroRow*CAVE_WIDTH + heroCol].type = TILE_TYPE_EMPTY;
-                  heroRow = newRow;
-                  heroCol = newCol;
-                  map[heroRow*CAVE_WIDTH + heroCol].type = TILE_TYPE_HERO;
-                  map[targetRockCell].type = TILE_TYPE_ROCK;
+                  case TILE_TYPE_ROCK:
+                    int deltaCol = newCol - col;
+                    int targetRockCell = newRow*CAVE_WIDTH + newCol + deltaCol;
+                    if (deltaCol != 0 && map[targetRockCell].type == TILE_TYPE_EMPTY) {
+                      heroMoveRockTurns++;
+                      if (heroMoveRockTurns == 3) {
+                        heroMoveRockTurns = 0;
+                        map[current].type = TILE_TYPE_EMPTY;
+                        heroRow = newRow; // TODO: remove
+                        heroCol = newCol; // TODO: remove
+                        map[newCell].type = TILE_TYPE_HERO;
+                        map[newCell].moved = true;
+                        map[targetRockCell].type = TILE_TYPE_ROCK;
+                      }
+                    }
+                    break;
+#endif
                 }
               }
-              break;
-#endif
+            }
           }
         }
       }
