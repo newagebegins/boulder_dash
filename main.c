@@ -580,25 +580,14 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                   map[below].type = TILE_TYPE_EMPTY;
                   heroIsAlive = false;
                   explosionIsActive = true;
-
-                  // center
-                  map[(row+1)*CAVE_WIDTH + (col+0)].type = TILE_TYPE_EXPLOSION;
-                  // right
-                  map[(row+1)*CAVE_WIDTH + (col+1)].type = TILE_TYPE_EXPLOSION;
-                  // left
-                  map[(row+1)*CAVE_WIDTH + (col-1)].type = TILE_TYPE_EXPLOSION;
-                  // above center
-                  map[(row+0)*CAVE_WIDTH + (col+0)].type = TILE_TYPE_EXPLOSION;
-                  // above right
-                  map[(row+0)*CAVE_WIDTH + (col+1)].type = TILE_TYPE_EXPLOSION;
-                  // above left
-                  map[(row+0)*CAVE_WIDTH + (col-1)].type = TILE_TYPE_EXPLOSION;
-                  // below center
-                  map[(row+2)*CAVE_WIDTH + (col+0)].type = TILE_TYPE_EXPLOSION;
-                  // below right
-                  map[(row+2)*CAVE_WIDTH + (col+1)].type = TILE_TYPE_EXPLOSION;
-                  // below left
-                  map[(row+2)*CAVE_WIDTH + (col-1)].type = TILE_TYPE_EXPLOSION;
+                  for (int expRow = row; expRow <= row+2; ++expRow) {
+                    for (int expCol = col-1; expCol <= col+1; ++expCol) {
+                      int expCell = expRow*CAVE_WIDTH + expCol;
+                      if (map[expCell].type != TILE_TYPE_WALL) {
+                        map[expCell].type = TILE_TYPE_EXPLOSION;
+                      }
+                    }
+                  }
                 }
               } else if (map[below].type == TILE_TYPE_ROCK || map[below].type == TILE_TYPE_DIAMOND || map[below].type == TILE_TYPE_BRICK) {
                 if (map[left].type == TILE_TYPE_EMPTY && map[belowLeft].type == TILE_TYPE_EMPTY) {
