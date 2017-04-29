@@ -454,30 +454,12 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       // Do turn
       //
 
+      explosionIsActive = false;
       borderColor = BORDER_COLOR_NORMAL;
 
       diamondFrame++;
       if (diamondFrame == DIAMOND_FRAME_COUNT) {
         diamondFrame = 0;
-      }
-
-
-      if (explosionIsActive) {
-        explosionFrame++;
-
-        if (explosionFrame >= ARRAY_LENGTH(explosionAnim)) {
-          explosionFrame = 0;
-          explosionIsActive = false;
-          deathForegroundVisibilityTurn = deathForegroundVisibilityTurnMax;
-          for (int row = 0; row < CAVE_HEIGHT; ++row) {
-            for (int col = 0; col < CAVE_WIDTH; ++col) {
-              int i = row*CAVE_WIDTH + col;
-              if (map[i].type == TILE_TYPE_EXPLOSION) {
-                map[i].type = TILE_TYPE_EMPTY;
-              }
-            }
-          }
-        }
       }
 
       // Move camera
@@ -564,7 +546,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             if (map[current].moved) {
               continue;
             }
-            if (map[current].type == TILE_TYPE_ROCK || map[current].type == TILE_TYPE_DIAMOND) {
+            if (map[current].type == TILE_TYPE_EXPLOSION) {
+              explosionIsActive = true;
+            } else if (map[current].type == TILE_TYPE_ROCK || map[current].type == TILE_TYPE_DIAMOND) {
               int below = (row+1)*CAVE_WIDTH + col;
               int left = row*CAVE_WIDTH + (col-1);
               int right = row*CAVE_WIDTH + (col+1);
@@ -579,7 +563,6 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                   map[current].type = TILE_TYPE_EMPTY;
                   map[below].type = TILE_TYPE_EMPTY;
                   heroIsAlive = false;
-                  explosionIsActive = true;
                   for (int expRow = row; expRow <= row+2; ++expRow) {
                     for (int expCol = col-1; expCol <= col+1; ++expCol) {
                       int expCell = expRow*CAVE_WIDTH + expCol;
@@ -690,6 +673,23 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                     }
                     break;
                 }
+              }
+            }
+          }
+        }
+      }
+
+      if (explosionIsActive) {
+        explosionFrame++;
+
+        if (explosionFrame >= ARRAY_LENGTH(explosionAnim)) {
+          explosionFrame = 0;
+          deathForegroundVisibilityTurn = deathForegroundVisibilityTurnMax;
+          for (int row = 0; row < CAVE_HEIGHT; ++row) {
+            for (int col = 0; col < CAVE_WIDTH; ++col) {
+              int i = row*CAVE_WIDTH + col;
+              if (map[i].type == TILE_TYPE_EXPLOSION) {
+                map[i].type = TILE_TYPE_EMPTY;
               }
             }
           }
