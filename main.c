@@ -96,16 +96,6 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
   initGraphics();
 
-  int difficultyLevel = 0;
-
-  uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH];
-  Cave *cave = getCave(1);
-  decodeCaveData(cave, caveData);
-
-#if 0
-  cave->diamondsNeeded[difficultyLevel] = 1;
-#endif
-
   BITMAPINFO backbufferBmpInf = {0};
   backbufferBmpInf.bmiHeader.biSize = sizeof(backbufferBmpInf.bmiHeader);
   backbufferBmpInf.bmiHeader.biWidth = BACKBUFFER_WIDTH;
@@ -150,6 +140,19 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
   bool running = true;
   HDC deviceContext = GetDC(wnd);
+
+  //////////////////////////////////
+
+  int difficultyLevel = 0;
+  int caveNumber = 1;
+
+  uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH];
+  Cave *cave = getCave(caveNumber);
+  decodeCaveData(cave, caveData);
+
+#if 0
+  cave->diamondsNeeded[difficultyLevel] = 1;
+#endif
 
   int cameraX = 0;
   int cameraY = 0;
@@ -294,6 +297,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       foregroundOffset = 0;
       deathForegroundVisibilityTurn = 0;
       deathForegroundOffset = 0;
+      diamondsCollected = 0;
+      exitAnimFrame = 0;
 
       for (int y = 2, i = 0; y <= 23; y++) {
         for(int x = 0; x <= 39; x++, i++) {
@@ -595,7 +600,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                   // below left
                   map[(row+2)*CAVE_WIDTH + (col-1)].type = TILE_TYPE_EXPLOSION;
                 }
-              } else if (map[below].type == TILE_TYPE_ROCK || map[below].type == TILE_TYPE_DIAMOND) {
+              } else if (map[below].type == TILE_TYPE_ROCK || map[below].type == TILE_TYPE_DIAMOND || map[below].type == TILE_TYPE_BRICK) {
                 if (map[left].type == TILE_TYPE_EMPTY && map[belowLeft].type == TILE_TYPE_EMPTY) {
                   map[left].type = map[current].type;
                   map[left].moved = true;
@@ -656,12 +661,10 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                       if (diamondsCollected == cave->diamondsNeeded[difficultyLevel]) {
                         borderColor = BORDER_COLOR_FLASH;
                       }
-                    } else if (map[newCell].type == TILE_TYPE_EXIT) {
-                      // TODO: proceed to the next level
                     }
                     map[current].type = TILE_TYPE_EMPTY;
-                    heroRow = newRow; // TODO: remove
-                    heroCol = newCol; // TODO: remove
+                    heroRow = newRow;
+                    heroCol = newCol;
                     map[newCell].type = TILE_TYPE_HERO;
                     map[newCell].moved = true;
                     break;
@@ -675,8 +678,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                       if (heroMoveRockTurns == 3) {
                         heroMoveRockTurns = 0;
                         map[current].type = TILE_TYPE_EMPTY;
-                        heroRow = newRow; // TODO: remove
-                        heroCol = newCol; // TODO: remove
+                        heroRow = newRow;
+                        heroCol = newCol;
                         map[newCell].type = TILE_TYPE_HERO;
                         map[newCell].moved = true;
                         map[targetRockCell].type = TILE_TYPE_ROCK;
@@ -684,6 +687,19 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                     }
                     break;
 #endif
+                  case TILE_TYPE_EXIT:
+                    if (diamondsCollected >= cave->diamondsNeeded[difficultyLevel]) {
+                      map[current].type = TILE_TYPE_EMPTY;
+                      heroRow = newRow;
+                      heroCol = newCol;
+                      map[newCell].type = TILE_TYPE_HERO;
+                      map[newCell].moved = true;
+
+                      cave = getCave(++caveNumber);
+                      decodeCaveData(cave, caveData);
+                      isInit = true;
+                    }
+                    break;
                 }
               }
             }
