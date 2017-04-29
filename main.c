@@ -154,6 +154,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   cave->diamondsNeeded[difficultyLevel] = 1;
 #endif
 
+  int caveTimeLeft = 0;
+  int caveTimeTurn = 0;
+  int caveTimeTurnMax = 7;
   int cameraX = 0;
   int cameraY = 0;
   float turnTimer = 0;
@@ -291,6 +294,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     if (isInit) {
       isInit = false;
 
+      caveTimeLeft = cave->caveTime[difficultyLevel];
+      caveTimeTurn = 0;
       heroIsAppearing = !NO_ANIMATIONS;
       heroIsAlive = true;
       foregroundVisibilityTurn = foregroundVisibilityTurnMax;
@@ -529,6 +534,15 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         //
         // Foreground is not active
         //
+
+        caveTimeTurn++;
+        if (caveTimeTurn == caveTimeTurnMax) {
+          caveTimeTurn = 0;
+          --caveTimeLeft;
+          if (caveTimeLeft == 0) {
+            isInit = true;
+          }
+        }
 
         for (int row = 0; row < CAVE_HEIGHT; ++row) {
           for (int col = 0; col < CAVE_WIDTH; ++col) {
@@ -901,9 +915,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     {
       static char text[64];
       if (diamondsCollected >= cave->diamondsNeeded[difficultyLevel]) {
-        sprintf_s(text, sizeof(text), "   ***%d   00   150   %06d", cave->extraDiamondValue, score);
+        sprintf_s(text, sizeof(text), "   ***%d   00   %03d   %06d", cave->extraDiamondValue, caveTimeLeft, score);
       } else {
-        sprintf_s(text, sizeof(text), "   %d*%d   00   150   %06d", cave->diamondsNeeded[difficultyLevel], cave->initialDiamondValue, score);
+        sprintf_s(text, sizeof(text), "   %d*%d   00   %03d   %06d", cave->diamondsNeeded[difficultyLevel], cave->initialDiamondValue, caveTimeLeft, score);
       }
       drawText(text, 3, 2);
     }
