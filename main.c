@@ -51,24 +51,39 @@ void debugPrint(char *format, ...) {
 #define BORDER_COLOR_FLASH COLOR_WHITE
 
 typedef enum {
-  TILE_TYPE_EMPTY,
-  TILE_TYPE_HERO,
-  TILE_TYPE_ROCK,
-  TILE_TYPE_WALL,
-  TILE_TYPE_BRICK,
-  TILE_TYPE_EARTH,
-  TILE_TYPE_EXPLOSION,
-  TILE_TYPE_DIAMOND,
-  TILE_TYPE_EXIT,
-  TILE_TYPE_FIREFLY,
-  TILE_TYPE_COUNT,
-} TileType;
+  OBJ_SPACE,
+  OBJ_ROCKFORD,
+  OBJ_AMOEBA,
+  OBJ_BOULDER,
+  OBJ_WALL,
+  OBJ_BRICK,
+  OBJ_EARTH,
+  OBJ_EXPLOSION,
+  OBJ_DIAMOND,
+  OBJ_EXIT,
+  OBJ_FIREFLY,
+  OBJ_COUNT,
+} ObjectType;
+
+typedef enum {
+  DIR_LEFT,
+  DIR_UP,
+  DIR_RIGHT,
+  DIR_DOWN,
+} Direction;
+
+typedef enum {
+  TURN_LEFT,
+  TURN_RIGHT,
+  STRAIGHT_AHEAD,
+} Turning;
 
 typedef struct {
-  TileType type;
+  ObjectType type;
   bool moved;
   bool movedInPreviousFrame;
-} Tile;
+  Direction direction;
+} Object;
 
 // Sprite index = row*16 + col
 typedef enum {
@@ -80,6 +95,112 @@ typedef enum {
   SPRITE_TYPE_HERO_RUN_1 = 7,
   SPRITE_TYPE_HERO_IDLE_1 = 0,
 } SpriteType;
+
+typedef struct {
+  int x;
+  int y;
+} Position;
+
+Object map[MAX_MAP_TILES];
+
+ObjectType getObjectTypeAtPosition(Position position) {
+  return map[position.y * CAVE_WIDTH + position.x].type;
+}
+
+Position getRelativePosition(Position position, Direction direction) {
+  Position result = {0};
+  switch (direction) {
+    case DIR_LEFT:
+      result.x = position.x - 1;
+      result.y = position.y;
+      break;
+    case DIR_UP:
+      result.x = position.x;
+      result.y = position.y - 1;
+      break;
+    case DIR_RIGHT:
+      result.x = position.x + 1;
+      result.y = position.y;
+      break;
+    case DIR_DOWN:
+      result.x = position.x;
+      result.y = position.y + 1;
+      break;
+    default:
+      assert(!"Unknown direction");
+  }
+  return result;
+}
+
+bool checkFireflyExplode(Position position) {
+  ObjectType type = getObjectTypeAtPosition(position);
+  return type == OBJ_ROCKFORD || type == OBJ_AMOEBA;
+}
+
+bool fireflyWillExplode(Position fireflyPosition) {
+  return
+    checkFireflyExplode(getRelativePosition(fireflyPosition, DIR_UP)) ||
+    checkFireflyExplode(getRelativePosition(fireflyPosition, DIR_LEFT)) ||
+    checkFireflyExplode(getRelativePosition(fireflyPosition, DIR_RIGHT)) ||
+    checkFireflyExplode(getRelativePosition(fireflyPosition, DIR_DOWN));
+}
+
+typedef enum {
+  EXPLODE_TO_SPACE,
+  EXPLODE_TO_DIAMONDS,
+} ExplodeTo;
+
+void explode(Position position, ExplodeTo to) {
+  UNREFERENCED_PARAMETER(position);
+  UNREFERENCED_PARAMETER(to);
+}
+
+Position getNewFireflyPosition(Position fireflyPosition, Direction fireflyDirection, Turning turning) {
+  UNREFERENCED_PARAMETER(fireflyPosition);
+  UNREFERENCED_PARAMETER(fireflyDirection);
+  UNREFERENCED_PARAMETER(turning);
+  return fireflyPosition;
+}
+
+Direction getNewDirection(Direction fireflyDirection, Turning turning) {
+  UNREFERENCED_PARAMETER(fireflyDirection);
+  UNREFERENCED_PARAMETER(turning);
+  return fireflyDirection;
+}
+
+void placeFirefly(Position position, Direction direction) {
+  UNREFERENCED_PARAMETER(position);
+  UNREFERENCED_PARAMETER(direction);
+}
+
+void placeSpace(Position position) {
+  UNREFERENCED_PARAMETER(position);
+}
+
+void scanFirefly(Position fireflyPosition, Direction fireflyDirection) {
+  Position newPosition;
+  Direction newDirection;
+
+  if (fireflyWillExplode(fireflyPosition)) {
+    explode(fireflyPosition, EXPLODE_TO_SPACE);
+  } else {
+    newPosition = getNewFireflyPosition(fireflyPosition, fireflyDirection, TURN_LEFT);
+    if (getObjectTypeAtPosition(newPosition) == OBJ_SPACE) {
+      newDirection = getNewDirection(fireflyDirection, TURN_LEFT);
+      placeFirefly(newPosition, newDirection);
+      placeSpace(fireflyPosition);
+    } else {
+      newPosition = getNewFireflyPosition(fireflyPosition, fireflyDirection, STRAIGHT_AHEAD);
+      if (getObjectTypeAtPosition(newPosition) == OBJ_SPACE) {
+        placeFirefly(newPosition, fireflyDirection);
+        placeSpace(fireflyPosition);
+      } else {
+        newDirection = getNewDirection(fireflyDirection, TURN_RIGHT);
+        placeFirefly(fireflyPosition, newDirection);
+      }
+    }
+  }
+}
 
 LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
   switch (msg) {
@@ -146,7 +267,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   //////////////////////////////////
 
   int difficultyLevel = 0;
-  int caveNumber = 2;
+  int caveNumber = 1;
 
   uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH];
   Cave *cave = getCave(caveNumber);
@@ -238,7 +359,6 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   };
   int exitAnimFrame = 0;
 
-  Tile map[MAX_MAP_TILES];
   bool foreground[MAX_MAP_TILES];
   bool deathForeground[PLAYFIELD_HALF_TILES_COUNT];
   bool isInit = true;
@@ -312,36 +432,37 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         for(int x = 0; x <= 39; x++, i++) {
           switch (caveData[y][x]) {
             case 'W':
-              map[i].type = TILE_TYPE_WALL;
+              map[i].type = OBJ_WALL;
               break;
             case '.':
-              map[i].type = TILE_TYPE_EARTH;
+              map[i].type = OBJ_EARTH;
               break;
             case 'r':
-              map[i].type = TILE_TYPE_ROCK;
+              map[i].type = OBJ_BOULDER;
               break;
             case 'X':
-              map[i].type = TILE_TYPE_HERO;
+              map[i].type = OBJ_ROCKFORD;
               break;
             case 'w':
-              map[i].type = TILE_TYPE_BRICK;
+              map[i].type = OBJ_BRICK;
               break;
             case 'd':
-              map[i].type = TILE_TYPE_DIAMOND;
+              map[i].type = OBJ_DIAMOND;
               break;
             case ' ':
-              map[i].type = TILE_TYPE_EMPTY;
+              map[i].type = OBJ_SPACE;
               break;
             case 'P':
-              map[i].type = TILE_TYPE_EXIT;
+              map[i].type = OBJ_EXIT;
               break;
             case 'q':
-              map[i].type = TILE_TYPE_FIREFLY;
+              map[i].type = OBJ_FIREFLY;
+              map[i].direction = DIR_LEFT;
               break;
             default:
               assert(!"Unhandled type!");
           }
-          if (map[i].type == TILE_TYPE_HERO) {
+          if (map[i].type == OBJ_ROCKFORD) {
             heroRow = y - 2;
             heroCol = x;
           }
@@ -570,44 +691,44 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             if (map[current].moved) {
               continue;
             }
-            if (map[current].type == TILE_TYPE_EXPLOSION) {
+            if (map[current].type == OBJ_EXPLOSION) {
               explosionIsActive = true;
-            } else if (map[current].type == TILE_TYPE_ROCK || map[current].type == TILE_TYPE_DIAMOND) {
+            } else if (map[current].type == OBJ_BOULDER || map[current].type == OBJ_DIAMOND) {
               int below = (row+1)*CAVE_WIDTH + col;
               int left = row*CAVE_WIDTH + (col-1);
               int right = row*CAVE_WIDTH + (col+1);
               int belowLeft = (row+1)*CAVE_WIDTH + (col-1);
               int belowRight = (row+1)*CAVE_WIDTH + (col+1);
-              if (map[below].type == TILE_TYPE_EMPTY) {
+              if (map[below].type == OBJ_SPACE) {
                 map[below].type = map[current].type;
                 map[below].moved = true;
-                map[current].type = TILE_TYPE_EMPTY;
-              } else if (map[below].type == TILE_TYPE_HERO) {
+                map[current].type = OBJ_SPACE;
+              } else if (map[below].type == OBJ_ROCKFORD) {
                 if (map[current].movedInPreviousFrame && !HERO_SUPERPOWER) {
-                  map[current].type = TILE_TYPE_EMPTY;
-                  map[below].type = TILE_TYPE_EMPTY;
+                  map[current].type = OBJ_SPACE;
+                  map[below].type = OBJ_SPACE;
                   heroIsAlive = false;
                   for (int expRow = row; expRow <= row+2; ++expRow) {
                     for (int expCol = col-1; expCol <= col+1; ++expCol) {
                       int expCell = expRow*CAVE_WIDTH + expCol;
-                      if (map[expCell].type != TILE_TYPE_WALL) {
-                        map[expCell].type = TILE_TYPE_EXPLOSION;
+                      if (map[expCell].type != OBJ_WALL) {
+                        map[expCell].type = OBJ_EXPLOSION;
                       }
                     }
                   }
                 }
-              } else if (map[below].type == TILE_TYPE_ROCK || map[below].type == TILE_TYPE_DIAMOND || map[below].type == TILE_TYPE_BRICK) {
-                if (map[left].type == TILE_TYPE_EMPTY && map[belowLeft].type == TILE_TYPE_EMPTY) {
+              } else if (map[below].type == OBJ_BOULDER || map[below].type == OBJ_DIAMOND || map[below].type == OBJ_BRICK) {
+                if (map[left].type == OBJ_SPACE && map[belowLeft].type == OBJ_SPACE) {
                   map[left].type = map[current].type;
                   map[left].moved = true;
-                  map[current].type = TILE_TYPE_EMPTY;
-                } else if (map[right].type == TILE_TYPE_EMPTY && map[belowRight].type == TILE_TYPE_EMPTY) {
+                  map[current].type = OBJ_SPACE;
+                } else if (map[right].type == OBJ_SPACE && map[belowRight].type == OBJ_SPACE) {
                   map[right].type = map[current].type;
                   map[right].moved = true;
-                  map[current].type = TILE_TYPE_EMPTY;
+                  map[current].type = OBJ_SPACE;
                 }
               }
-            } else if (map[current].type == TILE_TYPE_EXIT) {
+            } else if (map[current].type == OBJ_EXIT) {
               if (diamondsCollected >= cave->diamondsNeeded[difficultyLevel]) {
                 exitAnimFrame++;
                 if (exitAnimFrame == ARRAY_LENGTH(exitAnim)) {
@@ -616,7 +737,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               } else {
                 exitAnimFrame = 0;
               }
-            } else if (map[current].type == TILE_TYPE_HERO) {
+            } else if (map[current].type == OBJ_FIREFLY) {
+            } else if (map[current].type == OBJ_ROCKFORD) {
               if (heroIsAppearing) {
                 appearanceAnimFrame++;
                 if (appearanceAnimFrame == ARRAY_LENGTH(appearanceAnim)) {
@@ -640,14 +762,14 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                 int newCell = newRow*CAVE_WIDTH + newCol;
 
                 switch (map[newCell].type) {
-                  case TILE_TYPE_EMPTY:
-                  case TILE_TYPE_EARTH:
-                  case TILE_TYPE_DIAMOND:
+                  case OBJ_SPACE:
+                  case OBJ_EARTH:
+                  case OBJ_DIAMOND:
 #if HERO_SUPERPOWER
-                  case TILE_TYPE_BRICK:
-                  case TILE_TYPE_ROCK:
+                  case OBJ_BRICK:
+                  case OBJ_BOULDER:
 #endif
-                    if (map[newCell].type == TILE_TYPE_DIAMOND) {
+                    if (map[newCell].type == OBJ_DIAMOND) {
                       if (diamondsCollected >= cave->diamondsNeeded[difficultyLevel]) {
                         score += cave->extraDiamondValue;
                       } else {
@@ -658,37 +780,37 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                         borderColor = BORDER_COLOR_FLASH;
                       }
                     }
-                    map[current].type = TILE_TYPE_EMPTY;
+                    map[current].type = OBJ_SPACE;
                     heroRow = newRow;
                     heroCol = newCol;
-                    map[newCell].type = TILE_TYPE_HERO;
+                    map[newCell].type = OBJ_ROCKFORD;
                     map[newCell].moved = true;
                     break;
 
 #if !HERO_SUPERPOWER
-                  case TILE_TYPE_ROCK:
+                  case OBJ_BOULDER:
                     int deltaCol = newCol - col;
                     int targetRockCell = newRow*CAVE_WIDTH + newCol + deltaCol;
-                    if (deltaCol != 0 && map[targetRockCell].type == TILE_TYPE_EMPTY) {
+                    if (deltaCol != 0 && map[targetRockCell].type == OBJ_SPACE) {
                       heroMoveRockTurns++;
                       if (heroMoveRockTurns == 3) {
                         heroMoveRockTurns = 0;
-                        map[current].type = TILE_TYPE_EMPTY;
+                        map[current].type = OBJ_SPACE;
                         heroRow = newRow;
                         heroCol = newCol;
-                        map[newCell].type = TILE_TYPE_HERO;
+                        map[newCell].type = OBJ_ROCKFORD;
                         map[newCell].moved = true;
-                        map[targetRockCell].type = TILE_TYPE_ROCK;
+                        map[targetRockCell].type = OBJ_BOULDER;
                       }
                     }
                     break;
 #endif
-                  case TILE_TYPE_EXIT:
+                  case OBJ_EXIT:
                     if (diamondsCollected >= cave->diamondsNeeded[difficultyLevel]) {
-                      map[current].type = TILE_TYPE_EMPTY;
+                      map[current].type = OBJ_SPACE;
                       heroRow = newRow;
                       heroCol = newCol;
-                      map[newCell].type = TILE_TYPE_HERO;
+                      map[newCell].type = OBJ_ROCKFORD;
                       map[newCell].moved = true;
 
                       cave = getCave(++caveNumber);
@@ -712,8 +834,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           for (int row = 0; row < CAVE_HEIGHT; ++row) {
             for (int col = 0; col < CAVE_WIDTH; ++col) {
               int i = row*CAVE_WIDTH + col;
-              if (map[i].type == TILE_TYPE_EXPLOSION) {
-                map[i].type = TILE_TYPE_EMPTY;
+              if (map[i].type == OBJ_EXPLOSION) {
+                map[i].type = OBJ_SPACE;
               }
             }
           }
@@ -755,9 +877,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     //
     for (int row = 0; row < CAVE_HEIGHT; ++row) {
       for (int col = 0; col < CAVE_WIDTH; ++col) {
-        TileType tile = map[row*CAVE_WIDTH + col].type;
+        ObjectType tile = map[row*CAVE_WIDTH + col].type;
 
-        if (tile == TILE_TYPE_EMPTY) {
+        if (tile == OBJ_SPACE) {
           continue;
         }
 
@@ -766,17 +888,17 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         int atlY = 0;
 
         switch (tile) {
-          case TILE_TYPE_EARTH:
+          case OBJ_EARTH:
             atlX = 32;
             atlY = 16;
             break;
 
-          case TILE_TYPE_BRICK:
+          case OBJ_BRICK:
             atlX = 48;
             atlY = 16;
             break;
 
-          case TILE_TYPE_HERO:
+          case OBJ_ROCKFORD:
             if (heroIsAppearing) {
               int atlCol = appearanceAnim[appearanceAnimFrame] % SPRITE_ATLAS_WIDTH_TILES;
               int atlRow = appearanceAnim[appearanceAnimFrame] / SPRITE_ATLAS_WIDTH_TILES;
@@ -792,17 +914,17 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             }
             break;
 
-          case TILE_TYPE_ROCK:
+          case OBJ_BOULDER:
             atlX = 16;
             atlY = 16;
             break;
 
-          case TILE_TYPE_WALL:
+          case OBJ_WALL:
             atlX = 0;
             atlY = 16;
             break;
 
-          case TILE_TYPE_EXIT: {
+          case OBJ_EXIT: {
             int atlCol = exitAnim[exitAnimFrame] % SPRITE_ATLAS_WIDTH_TILES;
             int atlRow = exitAnim[exitAnimFrame] / SPRITE_ATLAS_WIDTH_TILES;
             atlX = atlCol * TILE_SIZE;
@@ -810,17 +932,17 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             break;
           }
 
-          case TILE_TYPE_EXPLOSION:
+          case OBJ_EXPLOSION:
             atlX = explosionAnim[explosionFrame]*16;
             atlY = 32;
             break;
 
-          case TILE_TYPE_DIAMOND:
+          case OBJ_DIAMOND:
             atlX = diamondFrame*16;
             atlY = 48;
             break;
 
-          case TILE_TYPE_FIREFLY:
+          case OBJ_FIREFLY:
             atlX = fireflyFrame*16;
             atlY = 64;
             break;
