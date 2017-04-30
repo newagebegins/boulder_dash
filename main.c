@@ -27,6 +27,7 @@ void debugPrint(char *format, ...) {
 #define TURN_DURATION 0.15f
 #define MAX_MAP_TILES 100*100
 #define DIAMOND_FRAME_COUNT 8
+#define FIREFLY_FRAME_COUNT 4
 
 #define CAMERA_STEP HALF_TILE_SIZE
 #define HERO_SIZE TILE_SIZE
@@ -59,6 +60,7 @@ typedef enum {
   TILE_TYPE_EXPLOSION,
   TILE_TYPE_DIAMOND,
   TILE_TYPE_EXIT,
+  TILE_TYPE_FIREFLY,
   TILE_TYPE_COUNT,
 } TileType;
 
@@ -144,7 +146,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   //////////////////////////////////
 
   int difficultyLevel = 0;
-  int caveNumber = 1;
+  int caveNumber = 2;
 
   uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH];
   Cave *cave = getCave(caveNumber);
@@ -183,6 +185,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int explosionFrame = 0;
   int explosionAnim[] = {0,1,0,2};
   int diamondFrame = 0;
+  int fireflyFrame = 0;
 
   int score = 0;
   int diamondsCollected = 0;
@@ -327,11 +330,13 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               map[i].type = TILE_TYPE_DIAMOND;
               break;
             case ' ':
-            case 'q':
               map[i].type = TILE_TYPE_EMPTY;
               break;
             case 'P':
               map[i].type = TILE_TYPE_EXIT;
+              break;
+            case 'q':
+              map[i].type = TILE_TYPE_FIREFLY;
               break;
             default:
               assert(!"Unhandled type!");
@@ -465,6 +470,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       diamondFrame++;
       if (diamondFrame == DIAMOND_FRAME_COUNT) {
         diamondFrame = 0;
+      }
+
+      fireflyFrame++;
+      if (fireflyFrame == FIREFLY_FRAME_COUNT) {
+        fireflyFrame = 0;
       }
 
       // Move camera
@@ -808,6 +818,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           case TILE_TYPE_DIAMOND:
             atlX = diamondFrame*16;
             atlY = 48;
+            break;
+
+          case TILE_TYPE_FIREFLY:
+            atlX = fireflyFrame*16;
+            atlY = 64;
             break;
         }
 
