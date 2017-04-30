@@ -415,38 +415,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
       for (int y = 2, i = 0; y <= 23; y++) {
         for(int x = 0; x <= 39; x++, i++) {
-          switch (caveData[y][x]) {
-            case 'W':
-              map[i].type = OBJ_STEEL_WALL;
-              break;
-            case '.':
-              map[i].type = OBJ_DIRT;
-              break;
-            case 'r':
-              map[i].type = OBJ_BOULDER_STATIONARY;
-              break;
-            case 'X':
-              map[i].type = OBJ_ROCKFORD;
-              break;
-            case 'w':
-              map[i].type = OBJ_BRICK_WALL;
-              break;
-            case 'd':
-              map[i].type = OBJ_DIAMOND_STATIONARY;
-              break;
-            case ' ':
-              map[i].type = OBJ_SPACE;
-              break;
-            case 'P':
-              map[i].type = OBJ_PRE_OUTBOX;
-              break;
-            case 'q':
-              map[i].type = OBJ_FIREFLY_POSITION_1;
-              break;
-            default:
-              assert(!"Unhandled type!");
-          }
-          if (map[i].type == OBJ_ROCKFORD) {
+          map[i].type = caveData[y][x];
+          if (map[i].type == OBJ_PRE_ROCKFORD_STAGE_1) {
             heroRow = y - 2;
             heroCol = x;
           }
@@ -687,7 +657,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                 map[below].type = map[current].type;
                 map[below].moved = true;
                 map[current].type = OBJ_SPACE;
-              } else if (map[below].type == OBJ_ROCKFORD) {
+              } else if (map[below].type == OBJ_PRE_ROCKFORD_STAGE_1) {
                 if (map[current].movedInPreviousFrame && !HERO_SUPERPOWER) {
                   map[current].type = OBJ_SPACE;
                   map[below].type = OBJ_SPACE;
@@ -722,7 +692,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                 exitAnimFrame = 0;
               }
             } else if (map[current].type == OBJ_FIREFLY_POSITION_1) {
-            } else if (map[current].type == OBJ_ROCKFORD) {
+            } else if (map[current].type == OBJ_PRE_ROCKFORD_STAGE_1) {
               if (heroIsAppearing) {
                 appearanceAnimFrame++;
                 if (appearanceAnimFrame == ARRAY_LENGTH(appearanceAnim)) {
@@ -767,7 +737,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                     map[current].type = OBJ_SPACE;
                     heroRow = newRow;
                     heroCol = newCol;
-                    map[newCell].type = OBJ_ROCKFORD;
+                    map[newCell].type = OBJ_PRE_ROCKFORD_STAGE_1;
                     map[newCell].moved = true;
                     break;
 
@@ -782,7 +752,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                         map[current].type = OBJ_SPACE;
                         heroRow = newRow;
                         heroCol = newCol;
-                        map[newCell].type = OBJ_ROCKFORD;
+                        map[newCell].type = OBJ_PRE_ROCKFORD_STAGE_1;
                         map[newCell].moved = true;
                         map[targetRockCell].type = OBJ_BOULDER_STATIONARY;
                       }
@@ -794,7 +764,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                       map[current].type = OBJ_SPACE;
                       heroRow = newRow;
                       heroCol = newCol;
-                      map[newCell].type = OBJ_ROCKFORD;
+                      map[newCell].type = OBJ_PRE_ROCKFORD_STAGE_1;
                       map[newCell].moved = true;
 
                       cave = getCave(++caveNumber);
@@ -882,7 +852,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             atlY = 16;
             break;
 
-          case OBJ_ROCKFORD:
+          case OBJ_PRE_ROCKFORD_STAGE_1:
             if (heroIsAppearing) {
               int atlCol = appearanceAnim[appearanceAnimFrame] % SPRITE_ATLAS_WIDTH_TILES;
               int atlRow = appearanceAnim[appearanceAnimFrame] / SPRITE_ATLAS_WIDTH_TILES;

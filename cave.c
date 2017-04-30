@@ -29,22 +29,10 @@ static void NextRandom(int *RandSeed1, int *RandSeed2) {
 }
 
 static void StoreObject(uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH], int x, int y, uint8_t anObject) {
-  static uint8_t creatureCode[64]= {
-    ' ', '.', 'w', 'm', 'P', 'P', '?', 'W',
-    'q', 'o', 'Q', 'O', 'q', 'o', 'Q', 'O',
-    'r', 'r', 'r', 'r', 'd', 'd', 'd', 'd',
-    '?', '?', '?', '?', '?', '?', '?', '?',
-    '?', '?', '?', '?', '3', 'X', '5', '6',
-    '?', '?', '?', '?', '?', '?', '?', '?',
-    'B', 'c', 'b', 'C', 'B', 'c', 'b', 'C',
-    '7', '8', 'a', 'a', '?', '?', '?', '?'
-  };
-
   assert(((x >= 0) && (x <= 39)));
   assert(((y >= 0) && (y <= 23)));
   assert(((anObject >= 0) && (anObject <= 63)));
-
-  caveData[y][x] = creatureCode[anObject];
+  caveData[y][x] = anObject;
 }
 
 static void DrawLine(uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH], uint8_t anObject, int x, int y, int aLength, int aDirection) {
