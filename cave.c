@@ -28,7 +28,7 @@ static void NextRandom(int *RandSeed1, int *RandSeed2) {
   assert(((*RandSeed2 >= 0x00) && (*RandSeed2 <= 0xFF)));
 }
 
-static void StoreObject(uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH], int x, int y, int anObject) {
+static void StoreObject(uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH], int x, int y, uint8_t anObject) {
   static uint8_t creatureCode[64]= {
     ' ', '.', 'w', 'm', 'P', 'P', '?', 'W',
     'q', 'o', 'Q', 'O', 'q', 'o', 'Q', 'O',
@@ -47,7 +47,7 @@ static void StoreObject(uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH], int x, int y,
   caveData[y][x] = creatureCode[anObject];
 }
 
-static void DrawLine(uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH], int anObject, int x, int y, int aLength, int aDirection) {
+static void DrawLine(uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH], uint8_t anObject, int x, int y, int aLength, int aDirection) {
   static int ldx[8]={ 0,  1, 1, 1, 0, -1, -1, -1};
   static int ldy[8]={-1, -1, 0, 1, 1,  1,  0, -1};
 
@@ -64,7 +64,7 @@ static void DrawLine(uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH], int anObject, in
   }
 }
 
-static void DrawFilledRect(uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH], int anObject, int x, int y, int aWidth, int aHeight, int aFillObject) {
+static void DrawFilledRect(uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH], uint8_t anObject, int x, int y, int aWidth, int aHeight, uint8_t aFillObject) {
   assert(((anObject >= 0) && (anObject <= 63)));
   assert(((x >= 0) && (x <= 39)));
   assert(((y >= 0) && (y <= 23)));
@@ -85,7 +85,7 @@ static void DrawFilledRect(uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH], int anObje
   }
 }
 
-static void DrawRect(uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH], int anObject, int x, int y, int aWidth, int aHeight) {
+static void DrawRect(uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH], uint8_t anObject, int x, int y, int aWidth, int aHeight) {
   assert(((anObject >= 0) && (anObject <= 63)));
   assert(((x >= 0) && (x <= 39)));
   assert(((y >= 0) && (y <= 23)));
@@ -105,7 +105,7 @@ static void DrawRect(uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH], int anObject, in
 void decodeCaveData(Cave *cave, uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH]) {
   uint8_t *aCaveData = (uint8_t *)cave;
 
-  int theWidth, theHeight, theFill, theLength, theDirection;
+  uint8_t theWidth, theHeight, theFill, theLength, theDirection;
   int x, y;
 
   int RandSeed1 = 0;
@@ -121,7 +121,7 @@ void decodeCaveData(Cave *cave, uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH]) {
   /* Decode the random cave data */
   for(y = 3; y <= 23; y++) {
     for(x = 0; x <= 39; x++) {
-      int theObject = 1;  /* Dirt */
+      uint8_t theObject = 1;  /* Dirt */
       NextRandom(&RandSeed1, &RandSeed2);
       for (int caveDataIndex = 0; caveDataIndex <= 3; caveDataIndex++) {
         if (RandSeed1 < aCaveData[0x1C + caveDataIndex]) {
@@ -135,7 +135,7 @@ void decodeCaveData(Cave *cave, uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH]) {
   /* Decode the explicit cave data */
   for (int caveDataIndex = 0x20; aCaveData[caveDataIndex] != 0xFF; caveDataIndex++) {
     int theCode = aCaveData[caveDataIndex];
-    int theObject = theCode & 0x3F;
+    uint8_t theObject = theCode & 0x3F;
 
     switch(3 & (aCaveData[caveDataIndex] >> 6)) {
       case 0: /* PLOT */
