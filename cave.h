@@ -56,7 +56,7 @@ typedef enum {
   OBJ_ROCKFORD_SCANNED = 0x39,
   OBJ_AMOEBA = 0x3A,
   OBJ_AMOEBA_SCANNED = 0x3B,
-} ObjectType;
+} objectType;
 
 typedef struct {
   uint8_t caveNumber;

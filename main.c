@@ -51,24 +51,44 @@ void debugPrint(char *format, ...) {
 #define BORDER_COLOR_FLASH COLOR_WHITE
 
 typedef enum {
-  DIR_LEFT,
-  DIR_UP,
-  DIR_RIGHT,
-  DIR_DOWN,
-} Direction;
+  up1,
+  down1,
+  down2,
+  left1,
+  right1,
+  down1left,
+  down1right,
+  up1left,
+  up1right,
+} offsetType;
 
 typedef enum {
-  TURN_LEFT,
-  TURN_RIGHT,
-  STRAIGHT_AHEAD,
-} Turning;
+  up,
+  down,
+  left,
+  right,
+} directionType;
 
-typedef struct {
-  ObjectType type;
-  bool moved;
-  bool movedInPreviousFrame;
-  Direction direction;
-} Object;
+typedef enum {
+  turnLeft,
+  turnRight,
+  straightAhead,
+} turningType;
+
+typedef enum {
+  boulderSound,
+  diamondSound,
+  pickedUpDiamondSound,
+  crackSound,
+  explosionSound,
+  movingThroughSpace,
+  movingThroughDirt,
+} soundType;
+
+void RequestSound(soundType sound) {
+  // TODO: implement
+  UNREFERENCED_PARAMETER(sound);
+}
 
 // Sprite index = row*16 + col
 typedef enum {
@@ -84,129 +104,1196 @@ typedef enum {
 typedef struct {
   int x;
   int y;
-} Position;
+} positionType;
 
-Object map[CAVE_HEIGHT][CAVE_WIDTH];
-
-ObjectType getObjectTypeAtPosition(Position position) {
-  return map[position.y][position.x].type;
+positionType MakePosition(int x, int y) {
+  positionType result;
+  result.x = x;
+  result.y = y;
+  return result;
 }
 
-Position getRelativePosition(Position position, Direction direction) {
-  Position result = {0};
-  switch (direction) {
-    case DIR_LEFT:
+objectType map[CAVE_HEIGHT][CAVE_WIDTH];
+
+objectType GetObjectAtPosition(positionType position) {
+  return map[position.y][position.x];
+}
+
+void PlaceObject(objectType obj, positionType pos) {
+  map[pos.y][pos.x] = obj;
+}
+
+void PlaceSpace(positionType position) {
+  PlaceObject(OBJ_SPACE, position);
+}
+
+void PlaceAmoeba(positionType position) {
+  PlaceObject(OBJ_AMOEBA, position);
+}
+
+void PlaceFallingBoulder(positionType boulderPosition) {
+  PlaceObject(OBJ_BOULDER_FALLING, boulderPosition);
+}
+
+void PlaceStationaryBoulder(positionType boulderPosition) {
+  PlaceObject(OBJ_BOULDER_STATIONARY, boulderPosition);
+}
+
+void PlaceFallingDiamond(positionType diamondPosition) {
+  PlaceObject(OBJ_DIAMOND_FALLING, diamondPosition);
+}
+
+void PlaceStationaryDiamond(positionType diamondPosition) {
+  PlaceObject(OBJ_DIAMOND_STATIONARY, diamondPosition);
+}
+
+positionType GetRelativePosition(positionType position, offsetType offset) {
+  positionType result;
+  result.x = position.x;
+  result.y = position.y;
+  switch (offset) {
+    case left1:
       result.x = position.x - 1;
       result.y = position.y;
       break;
-    case DIR_UP:
+    case up1:
       result.x = position.x;
       result.y = position.y - 1;
       break;
-    case DIR_RIGHT:
+    case right1:
       result.x = position.x + 1;
       result.y = position.y;
       break;
-    case DIR_DOWN:
+    case down1:
       result.x = position.x;
       result.y = position.y + 1;
       break;
+
+    case down2:
+      result.x = position.x;
+      result.y = position.y + 2;
+      break;
+
+    case down1left:
+      result.x = position.x - 1;
+      result.y = position.y + 1;
+      break;
+
+    case down1right:
+      result.x = position.x + 1;
+      result.y = position.y + 1;
+      break;
+
+    case up1left:
+      result.x = position.x - 1;
+      result.y = position.y - 1;
+      break;
+
+    case up1right:
+      result.x = position.x + 1;
+      result.y = position.y - 1;
+      break;
+
     default:
-      assert(!"Unknown direction");
+      assert(!"Unknown offset");
   }
   return result;
 }
 
-bool checkFireflyExplode(Position position) {
-  ObjectType type = getObjectTypeAtPosition(position);
-  return type == OBJ_ROCKFORD || type == OBJ_AMOEBA;
+bool CheckFlyExplode(positionType position) {
+  objectType type = GetObjectAtPosition(position);
+  return
+    type == OBJ_ROCKFORD ||
+    type == OBJ_ROCKFORD_SCANNED ||
+    type == OBJ_AMOEBA ||
+    type == OBJ_AMOEBA_SCANNED;
 }
 
-bool fireflyWillExplode(Position fireflyPosition) {
+bool FlyWillExplode(positionType fireflyPosition) {
   return
-    checkFireflyExplode(getRelativePosition(fireflyPosition, DIR_UP)) ||
-    checkFireflyExplode(getRelativePosition(fireflyPosition, DIR_LEFT)) ||
-    checkFireflyExplode(getRelativePosition(fireflyPosition, DIR_RIGHT)) ||
-    checkFireflyExplode(getRelativePosition(fireflyPosition, DIR_DOWN));
+    CheckFlyExplode(GetRelativePosition(fireflyPosition, up1)) ||
+    CheckFlyExplode(GetRelativePosition(fireflyPosition, left1)) ||
+    CheckFlyExplode(GetRelativePosition(fireflyPosition, right1)) ||
+    CheckFlyExplode(GetRelativePosition(fireflyPosition, down1));
 }
 
 typedef enum {
-  EXPLODE_TO_SPACE,
-  EXPLODE_TO_DIAMONDS,
-} ExplodeTo;
+  explodeToSpace,
+  explodeToDiamonds,
+} explosionType;
 
-void explode(Position position, ExplodeTo to) {
-  UNREFERENCED_PARAMETER(position);
-  UNREFERENCED_PARAMETER(to);
+void PlaceExplosion(positionType explosionPosition, explosionType explodeToWhat, int explosionStage) {
+  switch (explodeToWhat) {
+    case explodeToSpace:
+      switch (explosionStage) {
+        case 0:
+          PlaceObject(OBJ_EXPLODE_TO_SPACE_STAGE_0, explosionPosition);
+          break;
+        case 1:
+          PlaceObject(OBJ_EXPLODE_TO_SPACE_STAGE_1, explosionPosition);
+          break;
+        case 2:
+          PlaceObject(OBJ_EXPLODE_TO_SPACE_STAGE_2, explosionPosition);
+          break;
+        case 3:
+          PlaceObject(OBJ_EXPLODE_TO_SPACE_STAGE_3, explosionPosition);
+          break;
+        case 4:
+          PlaceObject(OBJ_EXPLODE_TO_SPACE_STAGE_4, explosionPosition);
+          break;
+        default:
+          assert(!"Unknown explosion stage");
+      }
+      break;
+
+    case explodeToDiamonds:
+      switch (explosionStage) {
+        case 0:
+          PlaceObject(OBJ_EXPLODE_TO_DIAMOND_STAGE_0, explosionPosition);
+          break;
+        case 1:
+          PlaceObject(OBJ_EXPLODE_TO_DIAMOND_STAGE_1, explosionPosition);
+          break;
+        case 2:
+          PlaceObject(OBJ_EXPLODE_TO_DIAMOND_STAGE_2, explosionPosition);
+          break;
+        case 3:
+          PlaceObject(OBJ_EXPLODE_TO_DIAMOND_STAGE_3, explosionPosition);
+          break;
+        case 4:
+          PlaceObject(OBJ_EXPLODE_TO_DIAMOND_STAGE_4, explosionPosition);
+          break;
+        default:
+          assert(!"Unknown explosion stage");
+      }
+      break;
+
+    default:
+      assert(!"Unknown explostion type");
+  }
 }
 
-Position getNewFireflyPosition(Position fireflyPosition, Direction fireflyDirection, Turning turning) {
-  UNREFERENCED_PARAMETER(fireflyPosition);
-  UNREFERENCED_PARAMETER(fireflyDirection);
-  UNREFERENCED_PARAMETER(turning);
-  return fireflyPosition;
-}
+void ScanExplosion(positionType explosionPosition, explosionType explodeToWhat, int explosionStage) {
+  // Morph the explosion into the next stage of the explosion.
+  assert((explosionStage >= 0) && (explosionStage <= 4));
 
-Direction getNewDirection(Direction fireflyDirection, Turning turning) {
-  UNREFERENCED_PARAMETER(fireflyDirection);
-  UNREFERENCED_PARAMETER(turning);
-  return fireflyDirection;
-}
-
-void placeFirefly(Position position, Direction direction) {
-  UNREFERENCED_PARAMETER(position);
-  UNREFERENCED_PARAMETER(direction);
-}
-
-void placeSpace(Position position) {
-  UNREFERENCED_PARAMETER(position);
-}
-
-void scanFirefly(Position fireflyPosition, Direction fireflyDirection) {
-  Position newPosition;
-  Direction newDirection;
-
-  if (fireflyWillExplode(fireflyPosition)) {
-    explode(fireflyPosition, EXPLODE_TO_SPACE);
+  // Explosion stages zero to 3 morph into stages 1 to 4
+  if (explosionStage <= 3) {
+    PlaceExplosion(explosionPosition, explodeToWhat, explosionStage+1);
   } else {
-    newPosition = getNewFireflyPosition(fireflyPosition, fireflyDirection, TURN_LEFT);
-    if (getObjectTypeAtPosition(newPosition) == OBJ_SPACE) {
-      newDirection = getNewDirection(fireflyDirection, TURN_LEFT);
-      placeFirefly(newPosition, newDirection);
-      placeSpace(fireflyPosition);
+    // Explosion stage 4 morphs into a space or a diamond as appropriate.
+    if (explodeToWhat == explodeToSpace) {
+      PlaceSpace(explosionPosition);
     } else {
-      newPosition = getNewFireflyPosition(fireflyPosition, fireflyDirection, STRAIGHT_AHEAD);
-      if (getObjectTypeAtPosition(newPosition) == OBJ_SPACE) {
-        placeFirefly(newPosition, fireflyDirection);
-        placeSpace(fireflyPosition);
+      PlaceStationaryDiamond(explosionPosition);
+    }
+  }
+}
+
+void Explode1Space(positionType explosionPosition, explosionType explodeToWhat, int explosionStage) {
+  // Explode one space to the required stage and type of explosion, checking
+  // whether the object at this space can be exploded first.
+  // Note that if the object that gets exploded happens to be Rockford, then naturally
+  // Rockford will no longer be in existance. However, we don't explicitely check whether
+  // we are exploding Rockford here; his absence will be noticed next scan frame
+  // if we don't come across Rockford at any time during the next scan frame.
+  assert((explosionStage == 0) || (explosionStage == 1));
+
+  if (GetObjectAtPosition(explosionPosition) != OBJ_STEEL_WALL) {
+    PlaceExplosion(explosionPosition, explodeToWhat, explosionStage);
+  }
+}
+
+void Explode(positionType explosionPosition, explosionType explodeToWhat) {
+  // Explode something at the specified position into the specified object type
+
+  // The spaces prior to and including the current space in the scan sequence
+  // are set to a stage 1 explosion.
+  Explode1Space(GetRelativePosition(explosionPosition, up1left), explodeToWhat, 1);
+  Explode1Space(GetRelativePosition(explosionPosition, up1), explodeToWhat, 1);
+  Explode1Space(GetRelativePosition(explosionPosition, up1right), explodeToWhat, 1);
+  Explode1Space(GetRelativePosition(explosionPosition, left1), explodeToWhat, 1);
+  Explode1Space(explosionPosition, explodeToWhat, 1);
+
+  // The spaces after the current scan position are set to a stage 0 explosion,
+  // so that they will be a stage 1 explosion by the end of the scan frame.
+  Explode1Space(GetRelativePosition(explosionPosition, right1), explodeToWhat, 0);
+  Explode1Space(GetRelativePosition(explosionPosition, down1left), explodeToWhat, 0);
+  Explode1Space(GetRelativePosition(explosionPosition, down1), explodeToWhat, 0);
+  Explode1Space(GetRelativePosition(explosionPosition, down1right), explodeToWhat, 0);
+  RequestSound(explosionSound);
+}
+
+positionType GetNextFlyPosition(positionType flyPosition, directionType flyDirection, turningType flyTurning) {
+  positionType result = flyPosition;
+
+  switch (flyDirection) {
+    case up:
+      switch (flyTurning) {
+        case turnLeft:
+          result.x--;
+          break;
+        case straightAhead:
+          result.y--;
+          break;
+        case turnRight:
+          result.x++;
+          break;
+      }
+      break;
+
+    case down:
+      switch (flyTurning) {
+        case turnLeft:
+          result.x++;
+          break;
+        case straightAhead:
+          result.y++;
+          break;
+        case turnRight:
+          result.x--;
+          break;
+      }
+      break;
+
+    case left:
+      switch (flyTurning) {
+        case turnLeft:
+          result.y++;
+          break;
+        case straightAhead:
+          result.x--;
+          break;
+        case turnRight:
+          result.y--;
+          break;
+      }
+      break;
+
+    case right:
+      switch (flyTurning) {
+        case turnLeft:
+          result.y--;
+          break;
+        case straightAhead:
+          result.x++;
+          break;
+        case turnRight:
+          result.y++;
+          break;
+      }
+      break;
+  }
+
+  return result;
+}
+
+directionType GetNewDirection(directionType flyDirection, turningType flyTurning) {
+  directionType result = {0};
+  switch (flyDirection) {
+    case up:
+      switch (flyTurning) {
+        case turnLeft:
+          result = left;
+          break;
+        case straightAhead:
+          result = up;
+          break;
+        case turnRight:
+          result = right;
+          break;
+      }
+      break;
+
+    case down:
+      switch (flyTurning) {
+        case turnLeft:
+          result = right;
+          break;
+        case straightAhead:
+          result = down;
+          break;
+        case turnRight:
+          result = left;
+          break;
+      }
+      break;
+
+    case left:
+      switch (flyTurning) {
+        case turnLeft:
+          result = down;
+          break;
+        case straightAhead:
+          result = left;
+          break;
+        case turnRight:
+          result = up;
+          break;
+      }
+      break;
+
+    case right:
+      switch (flyTurning) {
+        case turnLeft:
+          result = up;
+          break;
+        case straightAhead:
+          result = right;
+          break;
+        case turnRight:
+          result = down;
+          break;
+      }
+      break;
+  }
+  return result;
+}
+
+void PlaceFirefly(positionType position, directionType direction) {
+  switch (direction) {
+    case left:
+      PlaceObject(OBJ_FIREFLY_POSITION_1, position);
+      break;
+    case up:
+      PlaceObject(OBJ_FIREFLY_POSITION_2, position);
+      break;
+    case right:
+      PlaceObject(OBJ_FIREFLY_POSITION_3, position);
+      break;
+    case down:
+      PlaceObject(OBJ_FIREFLY_POSITION_4, position);
+      break;
+  }
+  assert(!"Unknown direction");
+}
+
+void PlaceButterfly(positionType position, directionType direction) {
+  switch (direction) {
+    case down:
+      PlaceObject(OBJ_BUTTERFLY_POSITION_1, position);
+      break;
+    case left:
+      PlaceObject(OBJ_BUTTERFLY_POSITION_2, position);
+      break;
+    case up:
+      PlaceObject(OBJ_BUTTERFLY_POSITION_3, position);
+      break;
+    case right:
+      PlaceObject(OBJ_BUTTERFLY_POSITION_4, position);
+      break;
+  }
+  assert(!"Unknown direction");
+}
+
+void ScanFirefly(positionType positionOfFirefly, directionType directionOfFirefly) {
+  positionType NewPosition;
+  directionType NewDirection;
+
+  if (FlyWillExplode(positionOfFirefly)) {
+    Explode(positionOfFirefly, explodeToSpace);
+  } else {
+        NewPosition = GetNextFlyPosition(positionOfFirefly, directionOfFirefly, turnLeft);
+    if (GetObjectAtPosition(NewPosition) == OBJ_SPACE) {
+      NewDirection = GetNewDirection(directionOfFirefly, turnLeft);
+      PlaceFirefly(NewPosition, NewDirection);
+      PlaceSpace(positionOfFirefly);
+    } else {
+      NewPosition = GetNextFlyPosition(positionOfFirefly, directionOfFirefly, straightAhead);
+      if (GetObjectAtPosition(NewPosition) == OBJ_SPACE) {
+        PlaceFirefly(NewPosition, directionOfFirefly);
+        PlaceSpace(positionOfFirefly);
       } else {
-        newDirection = getNewDirection(fireflyDirection, TURN_RIGHT);
-        placeFirefly(fireflyPosition, newDirection);
+        NewDirection = GetNewDirection(directionOfFirefly, turnRight);
+        PlaceFirefly(positionOfFirefly, NewDirection);
       }
     }
   }
 }
 
-void placePreRockford(Position position, int preRockfordStage) {
-  UNREFERENCED_PARAMETER(position);
-  UNREFERENCED_PARAMETER(preRockfordStage);
+void ScanButterfly(positionType positionOfButterfly, directionType directionOfButterfly) {
+  positionType NewPosition;
+  directionType NewDirection;
+
+  if (FlyWillExplode(positionOfButterfly)) {
+    Explode(positionOfButterfly, explodeToDiamonds);
+  } else {
+    NewPosition = GetNextFlyPosition(positionOfButterfly, directionOfButterfly, turnRight);
+    if (GetObjectAtPosition(NewPosition) == OBJ_SPACE) {
+      NewDirection = GetNewDirection(directionOfButterfly, turnRight);
+      PlaceButterfly(NewPosition, NewDirection);
+      PlaceSpace(positionOfButterfly);
+    } else {
+      NewPosition = GetNextFlyPosition(positionOfButterfly, directionOfButterfly, straightAhead);
+      if (GetObjectAtPosition(NewPosition) == OBJ_SPACE) {
+        PlaceButterfly(NewPosition, directionOfButterfly);
+        PlaceSpace(positionOfButterfly);
+      } else {
+        NewDirection = GetNewDirection(directionOfButterfly, turnLeft);
+        PlaceButterfly(positionOfButterfly, NewDirection);
+      }
+    }
+  }
 }
 
-void placeRockford(Position position) {
-  UNREFERENCED_PARAMETER(position);
+void PlacePreRockford(positionType position, int preRockfordStage) {
+  switch (preRockfordStage) {
+    case 1:
+      PlaceObject(OBJ_PRE_ROCKFORD_STAGE_1, position);
+      break;
+    case 2:
+      PlaceObject(OBJ_PRE_ROCKFORD_STAGE_2, position);
+      break;
+    case 3:
+      PlaceObject(OBJ_PRE_ROCKFORD_STAGE_3, position);
+      break;
+    case 4:
+      PlaceObject(OBJ_PRE_ROCKFORD_STAGE_4, position);
+      break;
+  }
+  assert(!"Unknown stage");
 }
 
-void scanPreRockford(Position currentScanPosition, int preRockfordStage, int timeTillBirth) {
+void PlaceRockford(positionType position) {
+  PlaceObject(OBJ_ROCKFORD, position);
+}
+
+void PlaceOutBox(positionType position) {
+  PlaceObject(OBJ_FLASHING_OUTBOX, position);
+}
+
+void ScanPreRockford(positionType currentScanPosition, int preRockfordStage, int timeTillBirth) {
   assert(timeTillBirth >= 0);
   assert(preRockfordStage >= 1 && preRockfordStage <= 4);
 
   if (timeTillBirth == 0) {
     if (preRockfordStage <= 3) {
-      placePreRockford(currentScanPosition, preRockfordStage+1);
+      PlacePreRockford(currentScanPosition, preRockfordStage+1);
     } else {
-      placeRockford(currentScanPosition);
+      PlaceRockford(currentScanPosition);
     }
   }
+}
+
+typedef enum {
+  propertyRounded,
+  propertyImpactExplosive,
+} propertyType;
+
+bool GetObjectProperty(objectType anObject, propertyType property) {
+  switch (property) {
+    case propertyRounded:
+      return
+        anObject == OBJ_BOULDER_STATIONARY ||
+        anObject == OBJ_BOULDER_STATIONARY_SCANNED ||
+        anObject == OBJ_DIAMOND_STATIONARY ||
+        anObject == OBJ_DIAMOND_STATIONARY_SCANNED ||
+        anObject == OBJ_BRICK_WALL;
+
+    case propertyImpactExplosive:
+      return
+        anObject == OBJ_ROCKFORD ||
+        anObject == OBJ_ROCKFORD_SCANNED ||
+        anObject == OBJ_FIREFLY_POSITION_1 ||
+        anObject == OBJ_FIREFLY_POSITION_2 ||
+        anObject == OBJ_FIREFLY_POSITION_3 ||
+        anObject == OBJ_FIREFLY_POSITION_4 ||
+        anObject == OBJ_FIREFLY_POSITION_1_SCANNED ||
+        anObject == OBJ_FIREFLY_POSITION_2_SCANNED ||
+        anObject == OBJ_FIREFLY_POSITION_3_SCANNED ||
+        anObject == OBJ_FIREFLY_POSITION_4_SCANNED ||
+        anObject == OBJ_BUTTERFLY_POSITION_1 ||
+        anObject == OBJ_BUTTERFLY_POSITION_2 ||
+        anObject == OBJ_BUTTERFLY_POSITION_3 ||
+        anObject == OBJ_BUTTERFLY_POSITION_4 ||
+        anObject == OBJ_BUTTERFLY_POSITION_1_SCANNED ||
+        anObject == OBJ_BUTTERFLY_POSITION_2_SCANNED ||
+        anObject == OBJ_BUTTERFLY_POSITION_3_SCANNED ||
+        anObject == OBJ_BUTTERFLY_POSITION_4_SCANNED;
+    default:
+      assert(!"Unknown property");
+  }
+  return false;
+}
+
+bool CanRollOff(objectType anObjectBelow) {
+  // If the specified object is one which a boulder or diamond can roll off,
+  // return true otherwise return false.
+
+  // First of all, only objects which have the property of being "rounded" are
+  // are ones which things can roll off. Secondly, if the object is a boulder
+  // or diamond, the boulder or diamond must be stationary, not falling.
+
+  // We're going to assume that GetObjectProperty() automatically returns "true"
+  // for objBoulderStationary, objDiamondStationary, objBrickWall, and returns "false"
+  // for everything else (including objBoulderFalling and objDiamondFalling).
+
+  return GetObjectProperty(anObjectBelow, propertyRounded);
+}
+
+bool ImpactExplosive(objectType anObject) {
+  // If the specified object has the property of being something that can
+  // explode, return true otherwise return false.
+  // ImpactExplosive objects are: Rockford, Firefly, Butterfly.
+  return GetObjectProperty(anObject, propertyImpactExplosive);
+}
+
+explosionType GetExplosionType(objectType anObject) {
+  // Assuming that the specified object is in fact explosive, returns the type
+  // of explosion (explodeToSpace or explodeToDiamonds)
+  // Explosive objects are: Rockford, Firefly, Butterfly.
+  assert(ImpactExplosive(anObject));
+
+  switch (anObject) {
+    case OBJ_ROCKFORD:
+    case OBJ_ROCKFORD_SCANNED:
+    case OBJ_FIREFLY_POSITION_1:
+    case OBJ_FIREFLY_POSITION_2:
+    case OBJ_FIREFLY_POSITION_3:
+    case OBJ_FIREFLY_POSITION_4:
+    case OBJ_FIREFLY_POSITION_1_SCANNED:
+    case OBJ_FIREFLY_POSITION_2_SCANNED:
+    case OBJ_FIREFLY_POSITION_3_SCANNED:
+    case OBJ_FIREFLY_POSITION_4_SCANNED:
+      return explodeToSpace;
+
+    case OBJ_BUTTERFLY_POSITION_1:
+    case OBJ_BUTTERFLY_POSITION_2:
+    case OBJ_BUTTERFLY_POSITION_3:
+    case OBJ_BUTTERFLY_POSITION_4:
+    case OBJ_BUTTERFLY_POSITION_1_SCANNED:
+    case OBJ_BUTTERFLY_POSITION_2_SCANNED:
+    case OBJ_BUTTERFLY_POSITION_3_SCANNED:
+    case OBJ_BUTTERFLY_POSITION_4_SCANNED:
+      return explodeToDiamonds;
+
+    default:
+      assert(!"Unknown object");
+  }
+
+  return false;
+}
+
+typedef enum {
+  kMagicWallOff,
+  kMagicWallOn,
+} magicWallStatusType;
+
+void ScanStationaryBoulder(positionType boulderPosition) {
+  positionType NewPosition;
+  objectType theObjectBelow;
+
+  // If the boulder can fall, move it down and mark it as falling.
+  NewPosition = GetRelativePosition(boulderPosition, down1);
+  theObjectBelow = GetObjectAtPosition(NewPosition);
+  if (theObjectBelow == OBJ_SPACE) {
+    PlaceFallingBoulder(NewPosition);
+    PlaceSpace(boulderPosition);
+    RequestSound(boulderSound); // yes, even when it starts falling. This applies to diamonds too (requests diamondSound).
+  } else {
+    // Failing that, see if the boulder can roll
+    if (CanRollOff(theObjectBelow)) {
+
+      // Try rolling left
+      NewPosition = GetRelativePosition(boulderPosition, left1);
+      if ((GetObjectAtPosition(NewPosition) == OBJ_SPACE) && (GetObjectAtPosition(GetRelativePosition(boulderPosition, down1left)) == OBJ_SPACE)) {
+        PlaceFallingBoulder(NewPosition);
+        PlaceSpace(boulderPosition);
+      } else {
+        // Try rolling right
+        NewPosition = GetRelativePosition(boulderPosition, right1);
+        if ((GetObjectAtPosition(NewPosition) == OBJ_SPACE) && (GetObjectAtPosition(GetRelativePosition(boulderPosition, down1right)) == OBJ_SPACE)) {
+          PlaceFallingBoulder(NewPosition);
+          PlaceSpace(boulderPosition);
+        }
+      }
+    }
+  }
+}
+
+void ScanFallingBoulder(positionType boulderPosition, magicWallStatusType *magicWallStatus) {
+  // Local variables
+  positionType NewPosition;
+  objectType theObjectBelow;
+
+  // If the boulder can continue to fall, move it down.
+  NewPosition = GetRelativePosition(boulderPosition, down1);
+  theObjectBelow = GetObjectAtPosition(NewPosition);
+  if (theObjectBelow == OBJ_SPACE) {
+    PlaceFallingBoulder(NewPosition);
+    PlaceSpace(boulderPosition);
+  }
+  // If the object below is a magic wall, we activate it (if it's off), and
+  // morph into a diamond two spaces below if it's now active. If the wall
+  // is expired, we just disappear (with a sound still though).
+  else if (theObjectBelow == OBJ_MAGIC_WALL) {
+    if (*magicWallStatus == kMagicWallOff) {
+      *magicWallStatus = kMagicWallOn;
+    }
+    if (*magicWallStatus == kMagicWallOn) {
+      NewPosition = GetRelativePosition(boulderPosition, down2);
+      if (GetObjectAtPosition(NewPosition) == OBJ_SPACE) {
+        PlaceFallingDiamond(NewPosition);
+      }
+    }
+    PlaceSpace(boulderPosition);
+    RequestSound(diamondSound);
+  }
+  // Failing that, we've hit something, so we play a sound and see if we can roll.
+  else {
+    RequestSound(boulderSound);
+    if (CanRollOff(theObjectBelow)) {
+      // Try rolling left
+      NewPosition = GetRelativePosition(boulderPosition, left1);
+      if ((GetObjectAtPosition(NewPosition) == OBJ_SPACE) && (GetObjectAtPosition(GetRelativePosition(boulderPosition, down1left)) == OBJ_SPACE)) {
+        PlaceFallingBoulder(NewPosition);
+        PlaceSpace(boulderPosition);
+      }
+      else {
+        // Try rolling right
+        NewPosition = GetRelativePosition(boulderPosition, right1);
+        if ((GetObjectAtPosition(NewPosition) == OBJ_SPACE) && (GetObjectAtPosition(GetRelativePosition(boulderPosition, down1right)) == OBJ_SPACE)) {
+          PlaceFallingBoulder(NewPosition);
+          PlaceSpace(boulderPosition);
+        }
+        // The boulder is sitting on an object which it could roll off, but it can't
+        // roll, so it comes to a stop.
+        else {
+          PlaceStationaryBoulder(boulderPosition);
+        }
+      }
+    }
+    // Failing all that, we see whether we've hit something explosive
+    else if (ImpactExplosive(theObjectBelow)) {
+      Explode(NewPosition, GetExplosionType(theObjectBelow));
+    }
+    // And lastly, failing everything, the boulder comes to a stop.
+    else {
+      PlaceStationaryBoulder(boulderPosition);
+    }
+  }
+}
+
+void ScanStationaryDiamond(positionType diamondPosition) {
+  positionType NewPosition;
+  objectType theObjectBelow;
+
+  // If the diamond can fall, move it down and mark it as falling.
+  NewPosition = GetRelativePosition(diamondPosition, down1);
+  theObjectBelow = GetObjectAtPosition(NewPosition);
+  if (theObjectBelow == OBJ_SPACE) {
+    PlaceFallingDiamond(NewPosition);
+    PlaceSpace(diamondPosition);
+    RequestSound(diamondSound); // yes, even when it starts falling. This applies to diamonds too (requests diamondSound).
+  } else {
+    // Failing that, see if the diamond can roll
+    if (CanRollOff(theObjectBelow)) {
+
+      // Try rolling left
+      NewPosition = GetRelativePosition(diamondPosition, left1);
+      if ((GetObjectAtPosition(NewPosition) == OBJ_SPACE) && (GetObjectAtPosition(GetRelativePosition(diamondPosition, down1left)) == OBJ_SPACE)) {
+        PlaceFallingDiamond(NewPosition);
+        PlaceSpace(diamondPosition);
+      } else {
+        // Try rolling right
+        NewPosition = GetRelativePosition(diamondPosition, right1);
+        if ((GetObjectAtPosition(NewPosition) == OBJ_SPACE) && (GetObjectAtPosition(GetRelativePosition(diamondPosition, down1right)) == OBJ_SPACE)) {
+          PlaceFallingDiamond(NewPosition);
+          PlaceSpace(diamondPosition);
+        }
+      }
+    }
+  }
+}
+
+void ScanFallingDiamond(positionType diamondPosition, magicWallStatusType *magicWallStatus) {
+  // Local variables
+  positionType NewPosition;
+  objectType theObjectBelow;
+
+  // If the diamond can continue to fall, move it down.
+  NewPosition = GetRelativePosition(diamondPosition, down1);
+  theObjectBelow = GetObjectAtPosition(NewPosition);
+  if (theObjectBelow == OBJ_SPACE) {
+    PlaceFallingDiamond(NewPosition);
+    PlaceSpace(diamondPosition);
+  }
+  // If the object below is a magic wall, we activate it (if it's off), and
+  // morph into a boulder two spaces below if it's now active. If the wall
+  // is expired, we just disappear (with a sound still though).
+  else if (theObjectBelow == OBJ_MAGIC_WALL) {
+    if (*magicWallStatus == kMagicWallOff) {
+      *magicWallStatus = kMagicWallOn;
+    }
+    if (*magicWallStatus == kMagicWallOn) {
+      NewPosition = GetRelativePosition(diamondPosition, down2);
+      if (GetObjectAtPosition(NewPosition) == OBJ_SPACE) {
+        PlaceFallingBoulder(NewPosition);
+      }
+    }
+    PlaceSpace(diamondPosition);
+    RequestSound(boulderSound);
+  }
+  // Failing that, we've hit something, so we play a sound and see if we can roll.
+  else {
+    RequestSound(diamondSound);
+    if (CanRollOff(theObjectBelow)) {
+      // Try rolling left
+      NewPosition = GetRelativePosition(diamondPosition, left1);
+      if ((GetObjectAtPosition(NewPosition) == OBJ_SPACE) && (GetObjectAtPosition(GetRelativePosition(diamondPosition, down1left)) == OBJ_SPACE)) {
+        PlaceFallingDiamond(NewPosition);
+        PlaceSpace(diamondPosition);
+      }
+      else {
+        // Try rolling right
+        NewPosition = GetRelativePosition(diamondPosition, right1);
+        if ((GetObjectAtPosition(NewPosition) == OBJ_SPACE) && (GetObjectAtPosition(GetRelativePosition(diamondPosition, down1right)) == OBJ_SPACE)) {
+          PlaceFallingDiamond(NewPosition);
+          PlaceSpace(diamondPosition);
+        }
+        // The diamond is sitting on an object which it could roll off, but it can't
+        // roll, so it comes to a stop.
+        else {
+          PlaceStationaryDiamond(diamondPosition);
+        }
+      }
+    }
+    // Failing all that, we see whether we've hit something explosive
+    else if (ImpactExplosive(theObjectBelow)) {
+      Explode(NewPosition, GetExplosionType(theObjectBelow));
+    }
+    // And lastly, failing everything, the diamond comes to a stop.
+    else {
+      PlaceStationaryDiamond(diamondPosition);
+    }
+  }
+}
+
+typedef struct {
+  int score;
+  int nextBonusLifeScore;
+  int lives;
+  int currentDiamondValue;
+  int diamondsCollected;
+  bool gotEnoughDiamonds;
+} playerType;
+
+typedef struct {
+  int diamondsNeeded;
+  int extraDiamondValue;
+} caveDataType;
+
+typedef struct {
+  directionType direction;
+  bool fireButtonDown;
+} joystickDirectionRecord;
+
+playerType CurrentPlayerData;
+caveDataType CaveData;
+
+void AddLife() {
+  assert(CurrentPlayerData.lives <= 9);
+
+  if (CurrentPlayerData.lives < 9) {
+    CurrentPlayerData.lives++;
+    // TODO: Make space objects flash to indicate bonus life;
+  }
+}
+
+void CheckForBonusLife()  {
+  // Check to see whether the score has passed a 500 or a 1000 point boundary 
+  // (in other words, you get a bonus life every 500 points).
+
+  if (CurrentPlayerData.score >= CurrentPlayerData.nextBonusLifeScore) {
+    AddLife();
+    CurrentPlayerData.nextBonusLifeScore += 500;
+  }
+}
+
+void ScanPreOutBox(positionType currentScanPosition, bool GotEnoughDiamonds) {
+  // If Rockford has collected enough diamonds, we can change the 
+  // pre-out box (ie an out box which has not yet been activated) 
+  // into a flashing out box.
+
+  if (GotEnoughDiamonds) {
+    PlaceOutBox(currentScanPosition);
+  }
+}
+
+void CheckEnoughDiamonds() {
+  if (CurrentPlayerData.diamondsCollected == CaveData.diamondsNeeded) {
+    CurrentPlayerData.gotEnoughDiamonds = true;
+    CurrentPlayerData.currentDiamondValue = CaveData.extraDiamondValue;
+    // TODO: Update statusbar;
+    RequestSound(crackSound);
+    // TODO: Request screen to flash white to indicate got enough diamonds;
+  }
+}
+
+void PickUpDiamond() {
+  // Player has picked up a diamond. Increase their score, increase their number 
+  // of diamonds collected, and check whether they have enough diamonds now.
+
+  RequestSound(pickedUpDiamondSound);
+  CurrentPlayerData.score += CurrentPlayerData.currentDiamondValue;
+  CheckForBonusLife();
+  CurrentPlayerData.diamondsCollected++;
+  CheckEnoughDiamonds();
+}
+
+joystickDirectionRecord GetNextDemoMovement() {
+  // TODO: implement
+  joystickDirectionRecord result = {0};
+  return result;
+}
+
+
+bool rightIsDown = false;
+bool leftIsDown = false;
+bool upIsDown = false;
+bool downIsDown = false;
+bool spaceIsDown = false;
+
+joystickDirectionRecord GetJoystickPos() {
+  joystickDirectionRecord result;
+
+  if (rightIsDown) {
+    result.direction = right;
+  } else if (leftIsDown) {
+    result.direction = left;
+  } else if (upIsDown) {
+    result.direction = up;
+  } else if (downIsDown) {
+    result.direction = down;
+  }
+
+  result.fireButtonDown = spaceIsDown;
+
+  return result;
+}
+
+bool RockfordMoving;
+
+typedef enum {
+  facingRight,
+  facingLeft,
+} rockfordFacingType;
+
+void RequestRockfordMovementSound(soundType sound) {
+  RequestSound(sound);
+}
+
+int GetRandomNumber(int min, int max) {
+  return min + rand() % (max - min + 1);
+}
+
+bool PushBoulder(positionType newBoulderPosition) {
+  // There is a 12.5% (1 in 8) than Rockford will succeed in pushing the boulder.
+  // Return true if boulder successfully pushed, false if not.
+
+  // Local variables
+  bool pushSuccessful;
+
+  pushSuccessful = (GetRandomNumber(0, 7) == 0);
+  if (pushSuccessful) {
+    RequestSound(boulderSound);
+    PlaceStationaryBoulder(newBoulderPosition);
+  }
+
+  return pushSuccessful;
+}
+
+bool MoveRockfordStage3(positionType newPosition,
+                        joystickDirectionRecord JoyPos) {
+  // See what object is in the space where Rockford is moving and deal with it
+  // appropriately. Returns true if the movement was successful, false otherwise.
+
+  // Local Variables
+  bool movementSuccessful;
+  objectType theObject;
+  positionType NewBoulderPosition;
+
+  // Determine what object is in the place where Rockford is moving.
+  movementSuccessful = false;
+  theObject = GetObjectAtPosition(newPosition);
+
+  switch (theObject) {
+    case OBJ_SPACE: // Space: move there, and play a sound (lower pitch white noise)
+      movementSuccessful = true;
+      RequestRockfordMovementSound(movingThroughSpace);
+      break;
+
+    case OBJ_DIRT: // Dirt: move there, and play a sound (higher pitch white noise)
+      movementSuccessful = true;
+      RequestRockfordMovementSound(movingThroughDirt);
+      break;
+
+    case OBJ_DIAMOND_STATIONARY: // Diamond: pick it up
+    case OBJ_DIAMOND_STATIONARY_SCANNED:
+      movementSuccessful = true;
+      PickUpDiamond();
+      break;
+
+    case OBJ_FLASHING_OUTBOX: // OutBox: flag that we've got out of the cave
+      movementSuccessful = true;
+      // TODO: FlagThatWeAreExitingTheCave(and that we got out alive);
+      break;
+
+    case OBJ_BOULDER_STATIONARY: // Boulder: push it
+    case OBJ_BOULDER_STATIONARY_SCANNED:
+      if (JoyPos.direction == left) {
+        NewBoulderPosition = GetRelativePosition(newPosition, left1);
+        if (GetObjectAtPosition(NewBoulderPosition) == OBJ_SPACE) {
+          movementSuccessful = PushBoulder(NewBoulderPosition);
+        }
+      } else if (JoyPos.direction == right) {
+        NewBoulderPosition = GetRelativePosition(newPosition, right1);
+        if (GetObjectAtPosition(NewBoulderPosition) == OBJ_SPACE) {
+          movementSuccessful = PushBoulder(NewBoulderPosition);
+        }
+      }
+      break;
+  }
+
+  // Return an indication of whether we were successful in moving.
+  return movementSuccessful;
+}
+
+bool MoveRockfordStage2(positionType originalPosition,
+                        positionType newPosition,
+                        joystickDirectionRecord JoyPos) {
+  // Part of the Move Rockford routine. Call MoveRockfordStage3 to do all the work.
+  // All this routine does is check to see if the fire button was down, and
+  // so either move Rockford to his new position or put a space where he would
+  // have moved. Returns true if Rockford really did physically move.
+
+  // Local variables
+  bool ActuallyMoved;
+
+  // Call a subroutine to move Rockford. It returns true if the movement was
+  // successful (without regard to the fire button).
+  ActuallyMoved = MoveRockfordStage3(newPosition, JoyPos);
+
+  // If the movement was successful, we check the fire button to determine
+  // whether Rockford actually physically moves to the new positon or not.
+  if (ActuallyMoved) {
+    if (JoyPos.fireButtonDown) {
+      PlaceSpace(newPosition);
+      ActuallyMoved = false;
+    } else {
+      PlaceRockford(newPosition);
+      PlaceSpace(originalPosition);
+    }
+  }
+  
+  // Tell our caller whether or not Rockford physically moved to a new position.
+  return ActuallyMoved;
+}
+
+void MoveRockfordStage1(positionType currentScanPosition,
+                        positionType *RockfordLocation,
+                        joystickDirectionRecord JoyPos,
+                        rockfordFacingType *RockfordAnimationFacingDirection) {
+  // Note: in this routine, if the user presses diagonally, the horizontal movement takes
+  // precedence over the vertical movement; ie Rockford moves horizontally.
+
+  // Local variables
+  bool ActuallyMoved;
+  positionType NewPosition = {0};
+
+  // Determine Rockford's new location if he actually moves there (ie he isn't
+  // blocked by a wall or something, and isn't holding the fire button down).
+  switch (JoyPos.direction) {
+    case down:
+      RockfordMoving = true;
+      NewPosition = GetRelativePosition(currentScanPosition, down1);
+      break;
+    case up:
+      RockfordMoving = true;
+      NewPosition = GetRelativePosition(currentScanPosition, up1);
+      break;
+    case right:
+      RockfordMoving = true;
+      *RockfordAnimationFacingDirection = facingRight;
+      NewPosition = GetRelativePosition(currentScanPosition, right1);
+      break;
+    case left:
+      RockfordMoving = true;
+      *RockfordAnimationFacingDirection = facingLeft;
+      NewPosition = GetRelativePosition(currentScanPosition, left1);
+      break;
+    default:
+      RockfordMoving = false;
+      break;
+  }
+
+  if (RockfordMoving) {
+    // Call a subroutine to actually deal with this further.
+    ActuallyMoved = MoveRockfordStage2(currentScanPosition, NewPosition, JoyPos);
+
+    // If Rockford did in fact physically move, we update our record of Rockford's
+    // position (used by the screen scrolling algorithm to know where to scroll).
+    if (ActuallyMoved) {
+      *RockfordLocation = NewPosition;
+    }
+  }
+}
+
+void ScanRockford(positionType currentScanPosition,
+                  positionType *RockfordLocation,
+                  rockfordFacingType *RockfordAnimationFacingDirection,
+                  bool demoMode,
+                  int *numRoundsSinceRockfordSeenAlive) {
+  // We have come across Rockford during the scan routine. Read the joystick or
+  // demo data to find out where Rockford wants to go, and call a subroutine to
+  // actually do it.
+
+  assert(*numRoundsSinceRockfordSeenAlive >= 0);
+
+  // Local variables
+  joystickDirectionRecord JoyPos;
+
+  // If we're in demo mode, we get our joystick movements from the demo data
+  if (demoMode) {
+    JoyPos = GetNextDemoMovement();
+  } else {
+    // Otherwise if we're in a real game, we get our joystick movements from
+    // the current player's input device (joystick, keyboard, whatever).
+    JoyPos = GetJoystickPos();
+  }
+
+  // Call a subroutine to actually deal with the joystick movement.
+  MoveRockfordStage1(currentScanPosition, RockfordLocation, JoyPos, RockfordAnimationFacingDirection);
+
+  // Rockford has been seen alive, so reset the counter indicating the number
+  // of rounds since Rockford was last seen alive.
+  *numRoundsSinceRockfordSeenAlive = 0;
+}
+
+int AnimationStage;
+
+void AnimateRockford(bool *Tapping,
+                     bool *Blinking,
+                     bool RockfordAnimationFacingDirection) {
+  // Called by the animation routine every animation frame
+
+  // If Rockford is currently moving, we display the right-moving or left-moving animation
+  // sequence.
+  if (RockfordMoving) {
+    // Can't tap or blink while moving
+    *Tapping = false;
+    *Blinking = false;
+
+    // Set up animation left or right as appropriate
+    if (RockfordAnimationFacingDirection == facingRight) {
+      // TODO: doing right-facing Rockford animation sequence
+    } else {
+      // TODO: doing left-facing Rockford animation sequence
+    }
+
+  }
+  // If Rockford is not currently moving, we display a forward facing animation sequence.
+  // Rockford might be idle, tapping, blinking, or both.
+  else {
+    // If we're at the beginning of an animation sequence, then check whether we
+    // will blink or tap for this sequence
+    if (AnimationStage == 1) {
+      // 1 in 4 chance of blinking
+      *Blinking = (GetRandomNumber(0, 3) == 0);
+      // 1 in 16 chance of starting or stopping foot tapping
+      if (GetRandomNumber(0, 15) == 0) {
+        *Tapping = !*Tapping;
+      }     
+    }
+    // TODO: doing forward-facing Rockford animation sequence (idle, blink, tap, or blink&tap)
+  }
+}
+
+int kTooManyAmoeba;
+
+bool AmoebaRandomlyDecidesToGrow(int anAmoebaRandomFactor) {
+  // Randomly decide whether this amoeba is going to attempt to grow or not. 
+  // anAmoebaRandomFactor should normally be 127 (slow growth) but sometimes is 
+  // changed to 15 (fast growth) if the amoeba has been alive too long.
+  assert(anAmoebaRandomFactor == 15 || anAmoebaRandomFactor == 127);
+  return (GetRandomNumber(0, anAmoebaRandomFactor) < 4); 
+}
+
+directionType GetRandomDirection() {
+  int n = GetRandomNumber(0, 3);
+  switch (n) {
+    case 0:
+      return up;
+    case 1:
+      return down;
+    case 2:
+      return left;
+  }
+  return right;
+}
+
+void ScanAmoeba(positionType positionOfAmoeba,
+                int anAmoebaRandomFactor,
+                bool amoebaSuffocatedLastFrame,
+                bool *atLeastOneAmoebaFoundThisFrameWhichCanGrow,
+                int totalAmoebaFoundLastFrame,
+                int *numberOfAmoebaFoundThisFrame) {
+  // Local variables
+  directionType direction;
+  positionType NewPosition;
+
+  assert(anAmoebaRandomFactor > 0);
+  assert(totalAmoebaFoundLastFrame > 0);
+  assert(*numberOfAmoebaFoundThisFrame > 0);
+  *numberOfAmoebaFoundThisFrame++;
+
+  // If the amoeba grew too big last frame, morph into a boulder.
+  // kTooManyAmoeba = 200 for original Boulder Dash.
+  if (totalAmoebaFoundLastFrame >= kTooManyAmoeba) {
+    PlaceStationaryBoulder(positionOfAmoeba);
+  } else {
+    // If the amoeba suffocated last frame, morph into a diamond
+    if (amoebaSuffocatedLastFrame) {
+      PlaceStationaryDiamond(positionOfAmoeba);
+    } else {
+      // If we haven't yet found any amoeba this frame which can grow, we check to 
+      // see whether this particular amoeba can grow.
+      if (!*atLeastOneAmoebaFoundThisFrameWhichCanGrow) {
+        objectType obj;
+
+        obj = GetObjectAtPosition(GetRelativePosition(positionOfAmoeba, up1));
+        if (obj == OBJ_SPACE || obj == OBJ_DIRT) {
+          *atLeastOneAmoebaFoundThisFrameWhichCanGrow = true;
+        }
+
+        obj = GetObjectAtPosition(GetRelativePosition(positionOfAmoeba, left1));
+        if (obj == OBJ_SPACE || obj == OBJ_DIRT) {
+          *atLeastOneAmoebaFoundThisFrameWhichCanGrow = true;
+        }
+
+        obj = GetObjectAtPosition(GetRelativePosition(positionOfAmoeba, right1));
+        if (obj == OBJ_SPACE || obj == OBJ_DIRT) {
+          *atLeastOneAmoebaFoundThisFrameWhichCanGrow = true;
+        }
+
+        obj = GetObjectAtPosition(GetRelativePosition(positionOfAmoeba, down1));
+        if (obj == OBJ_SPACE || obj == OBJ_DIRT) {
+          *atLeastOneAmoebaFoundThisFrameWhichCanGrow = true;
+        }
+      }
+
+      // If this amoeba decides to attempt to grow, it randomly chooses a direction, 
+      // and if it can grow in that direction, does so.
+      if (AmoebaRandomlyDecidesToGrow(anAmoebaRandomFactor)) {
+        direction = GetRandomDirection();
+        NewPosition = GetRelativePosition(positionOfAmoeba, direction);
+        objectType obj = GetObjectAtPosition(NewPosition);
+        if (obj == OBJ_SPACE || obj == OBJ_DIRT) {
+          PlaceAmoeba(NewPosition);
+        }
+      }
+    }
+  } 
 }
 
 LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
@@ -284,16 +1371,25 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   cave->diamondsNeeded[difficultyLevel] = 1;
 #endif
 
+  positionType RockfordLocation;
+  rockfordFacingType RockfordAnimationFacingDirection;
+  bool demoMode = false;
+  int numRoundsSinceRockfordSeenAlive;
+
+  int anAmoebaRandomFactor = 0;
+  bool amoebaSuffocatedLastFrame = 0;
+  bool atLeastOneAmoebaFoundThisFrameWhichCanGrow;
+  int totalAmoebaFoundLastFrame = 0;
+  int numberOfAmoebaFoundThisFrame;
+
+  bool gotEnoughDiamonds = false;
   int caveTimeLeft = 0;
   int caveTimeTurn = 0;
   int caveTimeTurnMax = 7;
   int cameraX = 0;
   int cameraY = 0;
   float turnTimer = 0;
-  bool rightIsDown = false;
-  bool leftIsDown = false;
-  bool upIsDown = false;
-  bool downIsDown = false;
+
   int heroRow = 0;
   int heroCol = 0;
   int heroMoveRockTurns = 0;
@@ -309,18 +1405,19 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int currentIdleAnimation = 0;
   bool idleAnimOnce = false;
   bool heroIsAlive = true;
-  bool explosionIsActive = false;
   int explosionFrame = 0;
   int explosionAnim[] = {0,1,0,2};
   int diamondFrame = 0;
   int fireflyFrame = 0;
+  int timeTillBirth = 12;
 
   int score = 0;
   int diamondsCollected = 0;
   int borderColor = COLOR_BLACK;
 
   int foregroundVisibilityTurnMax = NO_ANIMATIONS ? 1 : 28;
-  int deathForegroundVisibilityTurnMax = NO_ANIMATIONS ? 1 : 25;
+  // TODO
+  //int deathForegroundVisibilityTurnMax = NO_ANIMATIONS ? 1 : 25;
 
   int foregroundVisibilityTurn = foregroundVisibilityTurnMax;
   int foregroundOffset = 0;
@@ -369,6 +1466,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   bool foreground[MAX_MAP_TILES];
   bool deathForeground[PLAYFIELD_HALF_TILES_COUNT];
   bool isInit = true;
+  magicWallStatusType magicWallStatus;
 
   int cameraVelX = 0;
   int cameraVelY = 0;
@@ -411,6 +1509,10 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             case VK_DOWN:
               downIsDown = isDown;
               break;
+
+            case VK_SPACE:
+              spaceIsDown = isDown;
+              break;
           }
           break;
 
@@ -434,13 +1536,14 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       deathForegroundOffset = 0;
       diamondsCollected = 0;
       exitAnimFrame = 0;
+      magicWallStatus = kMagicWallOff;
 
       for (int y = 2; y <= 23; y++) {
         for(int x = 0; x <= 39; x++) {
           int mapY = y-2;
           int mapX = x;
-          map[mapY][mapX].type = caveData[y][x];
-          if (map[mapY][mapX].type == OBJ_PRE_ROCKFORD_STAGE_1) {
+          map[mapY][mapX] = caveData[y][x];
+          if (map[mapY][mapX] == OBJ_PRE_ROCKFORD_STAGE_1) {
             heroRow = mapY;
             heroCol = mapX;
           }
@@ -563,7 +1666,6 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       // Do turn
       //
 
-      explosionIsActive = false;
       borderColor = BORDER_COLOR_NORMAL;
 
       diamondFrame++;
@@ -655,154 +1757,165 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
         for (int row = 0; row < CAVE_HEIGHT; ++row) {
           for (int col = 0; col < CAVE_WIDTH; ++col) {
-            map[row][col].movedInPreviousFrame = map[row][col].moved;
-            map[row][col].moved = false;
+            switch (map[row][col]) {
+              case OBJ_FIREFLY_POSITION_1_SCANNED:
+                map[row][col] = OBJ_FIREFLY_POSITION_1;
+                break;
+              case OBJ_FIREFLY_POSITION_2_SCANNED:
+                map[row][col] = OBJ_FIREFLY_POSITION_2;
+                break;
+              case OBJ_FIREFLY_POSITION_3_SCANNED:
+                map[row][col] = OBJ_FIREFLY_POSITION_3;
+                break;
+              case OBJ_FIREFLY_POSITION_4_SCANNED:
+                map[row][col] = OBJ_FIREFLY_POSITION_4;
+                break;
+              case OBJ_BOULDER_STATIONARY_SCANNED:
+                map[row][col] = OBJ_BOULDER_STATIONARY;
+                break;
+              case OBJ_BOULDER_FALLING_SCANNED:
+                map[row][col] = OBJ_BOULDER_FALLING;
+                break;
+              case OBJ_DIAMOND_STATIONARY_SCANNED:
+                map[row][col] = OBJ_DIAMOND_STATIONARY;
+                break;
+              case OBJ_DIAMOND_FALLING_SCANNED:
+                map[row][col] = OBJ_DIAMOND_FALLING;
+                break;
+              case OBJ_BUTTERFLY_POSITION_1_SCANNED:
+                map[row][col] = OBJ_BUTTERFLY_POSITION_1;
+                break;
+              case OBJ_BUTTERFLY_POSITION_2_SCANNED:
+                map[row][col] = OBJ_BUTTERFLY_POSITION_2;
+                break;
+              case OBJ_BUTTERFLY_POSITION_3_SCANNED:
+                map[row][col] = OBJ_BUTTERFLY_POSITION_3;
+                break;
+              case OBJ_BUTTERFLY_POSITION_4_SCANNED:
+                map[row][col] = OBJ_BUTTERFLY_POSITION_4;
+                break;
+              case OBJ_ROCKFORD_SCANNED:
+                map[row][col] = OBJ_ROCKFORD;
+                break;
+              case OBJ_AMOEBA_SCANNED:
+                map[row][col] = OBJ_AMOEBA;
+                break;
+            }
           }
         }
 
-        // Move entities (processing order: top to bottom, left to right).
-        // Move only one tile per turn.
+        //
+        // Scan map
+        //
+
         for (int row = 0; row < CAVE_HEIGHT; ++row) {
           for (int col = 0; col < CAVE_WIDTH; ++col) {
-            if (map[row][col].moved) {
-              continue;
-            }
-            if (map[row][col].type == OBJ_EXPLODE_TO_SPACE_STAGE_1) {
-              explosionIsActive = true;
-            } else if (map[row][col].type == OBJ_BOULDER_STATIONARY || map[row][col].type == OBJ_DIAMOND_STATIONARY) {
-              if (map[row+1][col].type == OBJ_SPACE) {
-                map[row+1][col].type = map[row][col].type;
-                map[row+1][col].moved = true;
-                map[row][col].type = OBJ_SPACE;
-              } else if (map[row+1][col].type == OBJ_PRE_ROCKFORD_STAGE_1) {
-                if (map[row][col].movedInPreviousFrame && !HERO_SUPERPOWER) {
-                  map[row][col].type = OBJ_SPACE;
-                  map[row+1][col].type = OBJ_SPACE;
-                  heroIsAlive = false;
-                  for (int expRow = row; expRow <= row+2; ++expRow) {
-                    for (int expCol = col-1; expCol <= col+1; ++expCol) {
-                      if (map[expRow][expCol].type != OBJ_STEEL_WALL) {
-                        map[expRow][expCol].type = OBJ_EXPLODE_TO_SPACE_STAGE_1;
-                      }
-                    }
-                  }
-                }
-              } else if (map[row+1][col].type == OBJ_BOULDER_STATIONARY || map[row+1][col].type == OBJ_DIAMOND_STATIONARY || map[row+1][col].type == OBJ_BRICK_WALL) {
-                if (map[row][col-1].type == OBJ_SPACE && map[row+1][col-1].type == OBJ_SPACE) {
-                  map[row][col-1].type = map[row][col].type;
-                  map[row][col-1].moved = true;
-                  map[row][col].type = OBJ_SPACE;
-                } else if (map[row][col+1].type == OBJ_SPACE && map[row+1][col+1].type == OBJ_SPACE) {
-                  map[row][col+1].type = map[row][col].type;
-                  map[row][col+1].moved = true;
-                  map[row][col].type = OBJ_SPACE;
-                }
-              }
-            } else if (map[row][col].type == OBJ_PRE_OUTBOX) {
-              if (diamondsCollected >= cave->diamondsNeeded[difficultyLevel]) {
-                exitAnimFrame++;
-                if (exitAnimFrame == ARRAY_LENGTH(exitAnim)) {
-                  exitAnimFrame = 0;
-                }
-              } else {
-                exitAnimFrame = 0;
-              }
-            } else if (map[row][col].type == OBJ_FIREFLY_POSITION_1) {
-            } else if (map[row][col].type == OBJ_PRE_ROCKFORD_STAGE_1) {
-              if (heroIsAppearing) {
-                appearanceAnimFrame++;
-                if (appearanceAnimFrame == ARRAY_LENGTH(appearanceAnim)) {
-                  appearanceAnimFrame = 0;
-                  heroIsAppearing = false;
-                }
-              } else if (heroIsAlive) {
-                int newRow = row;
-                int newCol = col;
+            positionType scanPosition = MakePosition(row, col);
+            switch (map[row][col]) {
+              case OBJ_PRE_ROCKFORD_STAGE_1:
+                ScanPreRockford(scanPosition, 1, timeTillBirth);
+                break;
+              case OBJ_PRE_ROCKFORD_STAGE_2:
+                ScanPreRockford(scanPosition, 2, timeTillBirth);
+                break;
+              case OBJ_PRE_ROCKFORD_STAGE_3:
+                ScanPreRockford(scanPosition, 3, timeTillBirth);
+                break;
+              case OBJ_PRE_ROCKFORD_STAGE_4:
+                ScanPreRockford(scanPosition, 4, timeTillBirth);
+                break;
 
-                if (rightIsDown) {
-                  ++newCol;
-                } else if (leftIsDown) {
-                  --newCol;
-                } else if (upIsDown) {
-                  --newRow;
-                } else if (downIsDown) {
-                  ++newRow;
-                }
+              case OBJ_ROCKFORD:
+                ScanRockford(scanPosition,
+                             &RockfordLocation,
+                             &RockfordAnimationFacingDirection,
+                             demoMode,
+                             &numRoundsSinceRockfordSeenAlive);
+                break;
 
-                switch (map[newRow][newCol].type) {
-                  case OBJ_SPACE:
-                  case OBJ_DIRT:
-                  case OBJ_DIAMOND_STATIONARY:
-#if HERO_SUPERPOWER
-                  case OBJ_BRICK_WALL:
-                  case OBJ_BOULDER_STATIONARY:
-#endif
-                    if (map[newRow][newCol].type == OBJ_DIAMOND_STATIONARY) {
-                      if (diamondsCollected >= cave->diamondsNeeded[difficultyLevel]) {
-                        score += cave->extraDiamondValue;
-                      } else {
-                        score += cave->initialDiamondValue;
-                      }
-                      diamondsCollected++;
-                      if (diamondsCollected == cave->diamondsNeeded[difficultyLevel]) {
-                        borderColor = BORDER_COLOR_FLASH;
-                      }
-                    }
-                    map[row][col].type = OBJ_SPACE;
-                    heroRow = newRow;
-                    heroCol = newCol;
-                    map[newRow][newCol].type = OBJ_PRE_ROCKFORD_STAGE_1;
-                    map[newRow][newCol].moved = true;
-                    break;
+              case OBJ_AMOEBA:
+                ScanAmoeba(scanPosition,
+                           anAmoebaRandomFactor,
+                           amoebaSuffocatedLastFrame,
+                           &atLeastOneAmoebaFoundThisFrameWhichCanGrow,
+                           totalAmoebaFoundLastFrame,
+                           &numberOfAmoebaFoundThisFrame);
+                break;
+              
+              case OBJ_BOULDER_STATIONARY:
+                ScanStationaryBoulder(scanPosition);
+                break;
+              case OBJ_BOULDER_FALLING:
+                ScanFallingBoulder(scanPosition, &magicWallStatus);
+                break;
 
-#if !HERO_SUPERPOWER
-                  case OBJ_BOULDER_STATIONARY:
-                    int deltaCol = newCol - col;
-                    if (deltaCol != 0 && map[newRow][newCol+deltaCol].type == OBJ_SPACE) {
-                      heroMoveRockTurns++;
-                      if (heroMoveRockTurns == 3) {
-                        heroMoveRockTurns = 0;
-                        map[row][col].type = OBJ_SPACE;
-                        heroRow = newRow;
-                        heroCol = newCol;
-                        map[newRow][newCol].type = OBJ_PRE_ROCKFORD_STAGE_1;
-                        map[newRow][newCol].moved = true;
-                        map[newRow][newCol+deltaCol].type = OBJ_BOULDER_STATIONARY;
-                      }
-                    }
-                    break;
-#endif
-                  case OBJ_PRE_OUTBOX:
-                    if (diamondsCollected >= cave->diamondsNeeded[difficultyLevel]) {
-                      map[row][col].type = OBJ_SPACE;
-                      heroRow = newRow;
-                      heroCol = newCol;
-                      map[newRow][newCol].type = OBJ_PRE_ROCKFORD_STAGE_1;
-                      map[newRow][newCol].moved = true;
+              case OBJ_DIAMOND_STATIONARY:
+                ScanStationaryDiamond(scanPosition);
+                break;
+              case OBJ_DIAMOND_FALLING:
+                ScanFallingDiamond(scanPosition, &magicWallStatus);
+                break;
 
-                      cave = getCave(++caveNumber);
-                      decodeCaveData(cave, caveData);
-                      isInit = true;
-                    }
-                    break;
-                }
-              }
-            }
-          }
-        }
-      }
+              case OBJ_PRE_OUTBOX:
+                ScanPreOutBox(scanPosition, gotEnoughDiamonds);
+                break;
 
-      if (explosionIsActive) {
-        explosionFrame++;
+              case OBJ_EXPLODE_TO_SPACE_STAGE_0:
+                ScanExplosion(scanPosition, explodeToSpace, 0);
+                break;
+              case OBJ_EXPLODE_TO_SPACE_STAGE_1:
+                ScanExplosion(scanPosition, explodeToSpace, 1);
+                break;
+              case OBJ_EXPLODE_TO_SPACE_STAGE_2:
+                ScanExplosion(scanPosition, explodeToSpace, 2);
+                break;
+              case OBJ_EXPLODE_TO_SPACE_STAGE_3:
+                ScanExplosion(scanPosition, explodeToSpace, 3);
+                break;
+              case OBJ_EXPLODE_TO_SPACE_STAGE_4:
+                ScanExplosion(scanPosition, explodeToSpace, 4);
+                break;
+              case OBJ_EXPLODE_TO_DIAMOND_STAGE_0:
+                ScanExplosion(scanPosition, explodeToDiamonds, 0);
+                break;
+              case OBJ_EXPLODE_TO_DIAMOND_STAGE_1:
+                ScanExplosion(scanPosition, explodeToDiamonds, 1);
+                break;
+              case OBJ_EXPLODE_TO_DIAMOND_STAGE_2:
+                ScanExplosion(scanPosition, explodeToDiamonds, 2);
+                break;
+              case OBJ_EXPLODE_TO_DIAMOND_STAGE_3:
+                ScanExplosion(scanPosition, explodeToDiamonds, 3);
+                break;
+              case OBJ_EXPLODE_TO_DIAMOND_STAGE_4:
+                ScanExplosion(scanPosition, explodeToDiamonds, 4);
+                break;
 
-        if (explosionFrame >= ARRAY_LENGTH(explosionAnim)) {
-          explosionFrame = 0;
-          deathForegroundVisibilityTurn = deathForegroundVisibilityTurnMax;
-          for (int row = 0; row < CAVE_HEIGHT; ++row) {
-            for (int col = 0; col < CAVE_WIDTH; ++col) {
-              if (map[row][col].type == OBJ_EXPLODE_TO_SPACE_STAGE_1) {
-                map[row][col].type = OBJ_SPACE;
-              }
+              case OBJ_FIREFLY_POSITION_1:
+                ScanFirefly(scanPosition, left);
+                break;
+              case OBJ_FIREFLY_POSITION_2:
+                ScanFirefly(scanPosition, up);
+                break;
+              case OBJ_FIREFLY_POSITION_3:
+                ScanFirefly(scanPosition, right);
+                break;
+              case OBJ_FIREFLY_POSITION_4:
+                ScanFirefly(scanPosition, down);
+                break;
+
+              case OBJ_BUTTERFLY_POSITION_1:
+                ScanButterfly(scanPosition, down);
+                break;
+              case OBJ_BUTTERFLY_POSITION_2:
+                ScanButterfly(scanPosition, left);
+                break;
+              case OBJ_BUTTERFLY_POSITION_3:
+                ScanButterfly(scanPosition, up);
+                break;
+              case OBJ_BUTTERFLY_POSITION_4:
+                ScanButterfly(scanPosition, right);
+                break;
             }
           }
         }
@@ -843,7 +1956,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     //
     for (int row = 0; row < CAVE_HEIGHT; ++row) {
       for (int col = 0; col < CAVE_WIDTH; ++col) {
-        ObjectType tile = map[row][col].type;
+        objectType tile = map[row][col];
 
         if (tile == OBJ_SPACE) {
           continue;
