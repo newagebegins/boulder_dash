@@ -5,52 +5,7 @@
 
 #include "bitmaps.h"
 #include "caves.h"
-
-#define TILE_SIZE (2*SPRITE_SIZE)
-#define BORDER_SIZE TILE_SIZE
-
-// Viewport is the whole screen area except the border.
-#define VIEWPORT_WIDTH 256
-#define VIEWPORT_HEIGHT 192
-#define VIEWPORT_X_MIN BORDER_SIZE
-#define VIEWPORT_Y_MIN BORDER_SIZE
-#define VIEWPORT_X_MAX (VIEWPORT_X_MIN + VIEWPORT_WIDTH - 1)
-#define VIEWPORT_Y_MAX (VIEWPORT_Y_MIN + VIEWPORT_HEIGHT - 1)
-
-#define BACKBUFFER_WIDTH (VIEWPORT_WIDTH + BORDER_SIZE*2)
-#define BACKBUFFER_HEIGHT (VIEWPORT_HEIGHT + BORDER_SIZE*2)
-#define BACKBUFFER_PIXELS (BACKBUFFER_WIDTH*BACKBUFFER_HEIGHT)
-// 4 bits per pixel.
-#define BACKBUFFER_BYTES (BACKBUFFER_PIXELS*sizeof(uint8_t)/2)
-
-#define PALETTE_COLORS 3
-
-#define WINDOW_SCALE 3
-#define WINDOW_WIDTH (BACKBUFFER_WIDTH * WINDOW_SCALE)
-#define WINDOW_HEIGHT (BACKBUFFER_HEIGHT * WINDOW_SCALE)
-
-void setPixel(uint8_t *backbuffer, int x, int y, uint8_t colorIndex) {
-  assert((colorIndex & 0xf0) == 0);
-
-  int pixelOffset = y*BACKBUFFER_WIDTH + x;
-  int byteOffset = pixelOffset / 2;
-
-  assert(byteOffset >= 0 && byteOffset < BACKBUFFER_BYTES);
-
-  if (pixelOffset % 2 == 0) {
-    backbuffer[byteOffset] |= (colorIndex << 4);
-  } else {
-    backbuffer[byteOffset] |= colorIndex;
-  }
-}
-
-void drawFilledRect(uint8_t *backbuffer, int left, int top, int right, int bottom, uint8_t colorIndex) {
-  for (int y = top; y <= bottom; ++y) {
-    for (int x = left; x <= right; ++x) {
-      setPixel(backbuffer, x, y, colorIndex);
-    }
-  }
-}
+#include "graphics.h"
 
 LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
   switch (msg) {
@@ -66,29 +21,6 @@ LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdShow) {
   UNREFERENCED_PARAMETER(prevInst);
   UNREFERENCED_PARAMETER(cmdLine);
-
-  uint8_t *backbuffer = calloc(BACKBUFFER_PIXELS, sizeof(uint8_t));
-
-  BITMAPINFO *backbufferBmpInf = malloc(sizeof(BITMAPINFOHEADER) + (PALETTE_COLORS*sizeof(RGBQUAD)));
-  backbufferBmpInf->bmiHeader.biSize = sizeof(backbufferBmpInf->bmiHeader);
-  backbufferBmpInf->bmiHeader.biWidth = BACKBUFFER_WIDTH;
-  backbufferBmpInf->bmiHeader.biHeight = -BACKBUFFER_HEIGHT;
-  backbufferBmpInf->bmiHeader.biPlanes = 1;
-  backbufferBmpInf->bmiHeader.biBitCount = 4;
-  backbufferBmpInf->bmiHeader.biCompression = BI_RGB;
-  backbufferBmpInf->bmiHeader.biClrUsed = PALETTE_COLORS;
-
-  backbufferBmpInf->bmiColors[0].rgbBlue = 0xFF;
-  backbufferBmpInf->bmiColors[0].rgbGreen = 0;
-  backbufferBmpInf->bmiColors[0].rgbRed = 0;
-
-  backbufferBmpInf->bmiColors[1].rgbBlue = 0;
-  backbufferBmpInf->bmiColors[1].rgbGreen = 0xFF;
-  backbufferBmpInf->bmiColors[1].rgbRed = 0;
-
-  backbufferBmpInf->bmiColors[2].rgbBlue = 0;
-  backbufferBmpInf->bmiColors[2].rgbGreen = 0;
-  backbufferBmpInf->bmiColors[2].rgbRed = 0xFF;
 
   WNDCLASS wndClass = {0};
   wndClass.style = CS_HREDRAW | CS_VREDRAW;
@@ -111,6 +43,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   ShowWindow(wnd, cmdShow);
   UpdateWindow(wnd);
 
+  initGraphics(GetDC(wnd));
+
   float dt = 0.0f;
   float targetFps = 60.0f;
   float maxDt = 1.0f / targetFps;
@@ -122,7 +56,6 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   QueryPerformanceCounter(&perfc);
 
   bool running = true;
-  HDC deviceContext = GetDC(wnd);
 
   while (running) {
     perfcPrev = perfc;
@@ -156,15 +89,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     }
 
     // Draw border
-    drawFilledRect(backbuffer, 0, 0, BACKBUFFER_WIDTH-1, BACKBUFFER_HEIGHT-1, 0);
+    drawFilledRect(0, 0, BACKBUFFER_WIDTH-1, BACKBUFFER_HEIGHT-1, 0);
     // Clear viewport
-    drawFilledRect(backbuffer, VIEWPORT_X_MIN, VIEWPORT_Y_MIN, VIEWPORT_X_MAX, VIEWPORT_Y_MAX, 1);
+    drawFilledRect(VIEWPORT_X_MIN, VIEWPORT_Y_MIN, VIEWPORT_X_MAX, VIEWPORT_Y_MAX, 1);
 
-    StretchDIBits(deviceContext,
-                  0, 0, WINDOW_WIDTH, WINDOW_HEIGHT,
-                  0, 0, BACKBUFFER_WIDTH, BACKBUFFER_HEIGHT,
-                  backbuffer, backbufferBmpInf,
-                  DIB_RGB_COLORS, SRCCOPY);
+    displayBackbuffer();
   }
 
   return 0;
