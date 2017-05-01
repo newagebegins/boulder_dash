@@ -86,10 +86,10 @@ typedef struct {
   int y;
 } Position;
 
-Object map[MAX_MAP_TILES];
+Object map[CAVE_HEIGHT][CAVE_WIDTH];
 
 ObjectType getObjectTypeAtPosition(Position position) {
-  return map[position.y * CAVE_WIDTH + position.x].type;
+  return map[position.y][position.x].type;
 }
 
 Position getRelativePosition(Position position, Direction direction) {
@@ -183,6 +183,28 @@ void scanFirefly(Position fireflyPosition, Direction fireflyDirection) {
         newDirection = getNewDirection(fireflyDirection, TURN_RIGHT);
         placeFirefly(fireflyPosition, newDirection);
       }
+    }
+  }
+}
+
+void placePreRockford(Position position, int preRockfordStage) {
+  UNREFERENCED_PARAMETER(position);
+  UNREFERENCED_PARAMETER(preRockfordStage);
+}
+
+void placeRockford(Position position) {
+  UNREFERENCED_PARAMETER(position);
+}
+
+void scanPreRockford(Position currentScanPosition, int preRockfordStage, int timeTillBirth) {
+  assert(timeTillBirth >= 0);
+  assert(preRockfordStage >= 1 && preRockfordStage <= 4);
+
+  if (timeTillBirth == 0) {
+    if (preRockfordStage <= 3) {
+      placePreRockford(currentScanPosition, preRockfordStage+1);
+    } else {
+      placeRockford(currentScanPosition);
     }
   }
 }
@@ -413,12 +435,14 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       diamondsCollected = 0;
       exitAnimFrame = 0;
 
-      for (int y = 2, i = 0; y <= 23; y++) {
-        for(int x = 0; x <= 39; x++, i++) {
-          map[i].type = caveData[y][x];
-          if (map[i].type == OBJ_PRE_ROCKFORD_STAGE_1) {
-            heroRow = y - 2;
-            heroCol = x;
+      for (int y = 2; y <= 23; y++) {
+        for(int x = 0; x <= 39; x++) {
+          int mapY = y-2;
+          int mapX = x;
+          map[mapY][mapX].type = caveData[y][x];
+          if (map[mapY][mapX].type == OBJ_PRE_ROCKFORD_STAGE_1) {
+            heroRow = mapY;
+            heroCol = mapX;
           }
         }
       }
@@ -631,9 +655,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
         for (int row = 0; row < CAVE_HEIGHT; ++row) {
           for (int col = 0; col < CAVE_WIDTH; ++col) {
-            int i = row*CAVE_WIDTH + col;
-            map[i].movedInPreviousFrame = map[i].moved;
-            map[i].moved = false;
+            map[row][col].movedInPreviousFrame = map[row][col].moved;
+            map[row][col].moved = false;
           }
         }
 
@@ -641,48 +664,41 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         // Move only one tile per turn.
         for (int row = 0; row < CAVE_HEIGHT; ++row) {
           for (int col = 0; col < CAVE_WIDTH; ++col) {
-            int current = row*CAVE_WIDTH + col;
-            if (map[current].moved) {
+            if (map[row][col].moved) {
               continue;
             }
-            if (map[current].type == OBJ_EXPLODE_TO_SPACE_STAGE_1) {
+            if (map[row][col].type == OBJ_EXPLODE_TO_SPACE_STAGE_1) {
               explosionIsActive = true;
-            } else if (map[current].type == OBJ_BOULDER_STATIONARY || map[current].type == OBJ_DIAMOND_STATIONARY) {
-              int below = (row+1)*CAVE_WIDTH + col;
-              int left = row*CAVE_WIDTH + (col-1);
-              int right = row*CAVE_WIDTH + (col+1);
-              int belowLeft = (row+1)*CAVE_WIDTH + (col-1);
-              int belowRight = (row+1)*CAVE_WIDTH + (col+1);
-              if (map[below].type == OBJ_SPACE) {
-                map[below].type = map[current].type;
-                map[below].moved = true;
-                map[current].type = OBJ_SPACE;
-              } else if (map[below].type == OBJ_PRE_ROCKFORD_STAGE_1) {
-                if (map[current].movedInPreviousFrame && !HERO_SUPERPOWER) {
-                  map[current].type = OBJ_SPACE;
-                  map[below].type = OBJ_SPACE;
+            } else if (map[row][col].type == OBJ_BOULDER_STATIONARY || map[row][col].type == OBJ_DIAMOND_STATIONARY) {
+              if (map[row+1][col].type == OBJ_SPACE) {
+                map[row+1][col].type = map[row][col].type;
+                map[row+1][col].moved = true;
+                map[row][col].type = OBJ_SPACE;
+              } else if (map[row+1][col].type == OBJ_PRE_ROCKFORD_STAGE_1) {
+                if (map[row][col].movedInPreviousFrame && !HERO_SUPERPOWER) {
+                  map[row][col].type = OBJ_SPACE;
+                  map[row+1][col].type = OBJ_SPACE;
                   heroIsAlive = false;
                   for (int expRow = row; expRow <= row+2; ++expRow) {
                     for (int expCol = col-1; expCol <= col+1; ++expCol) {
-                      int expCell = expRow*CAVE_WIDTH + expCol;
-                      if (map[expCell].type != OBJ_STEEL_WALL) {
-                        map[expCell].type = OBJ_EXPLODE_TO_SPACE_STAGE_1;
+                      if (map[expRow][expCol].type != OBJ_STEEL_WALL) {
+                        map[expRow][expCol].type = OBJ_EXPLODE_TO_SPACE_STAGE_1;
                       }
                     }
                   }
                 }
-              } else if (map[below].type == OBJ_BOULDER_STATIONARY || map[below].type == OBJ_DIAMOND_STATIONARY || map[below].type == OBJ_BRICK_WALL) {
-                if (map[left].type == OBJ_SPACE && map[belowLeft].type == OBJ_SPACE) {
-                  map[left].type = map[current].type;
-                  map[left].moved = true;
-                  map[current].type = OBJ_SPACE;
-                } else if (map[right].type == OBJ_SPACE && map[belowRight].type == OBJ_SPACE) {
-                  map[right].type = map[current].type;
-                  map[right].moved = true;
-                  map[current].type = OBJ_SPACE;
+              } else if (map[row+1][col].type == OBJ_BOULDER_STATIONARY || map[row+1][col].type == OBJ_DIAMOND_STATIONARY || map[row+1][col].type == OBJ_BRICK_WALL) {
+                if (map[row][col-1].type == OBJ_SPACE && map[row+1][col-1].type == OBJ_SPACE) {
+                  map[row][col-1].type = map[row][col].type;
+                  map[row][col-1].moved = true;
+                  map[row][col].type = OBJ_SPACE;
+                } else if (map[row][col+1].type == OBJ_SPACE && map[row+1][col+1].type == OBJ_SPACE) {
+                  map[row][col+1].type = map[row][col].type;
+                  map[row][col+1].moved = true;
+                  map[row][col].type = OBJ_SPACE;
                 }
               }
-            } else if (map[current].type == OBJ_PRE_OUTBOX) {
+            } else if (map[row][col].type == OBJ_PRE_OUTBOX) {
               if (diamondsCollected >= cave->diamondsNeeded[difficultyLevel]) {
                 exitAnimFrame++;
                 if (exitAnimFrame == ARRAY_LENGTH(exitAnim)) {
@@ -691,8 +707,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               } else {
                 exitAnimFrame = 0;
               }
-            } else if (map[current].type == OBJ_FIREFLY_POSITION_1) {
-            } else if (map[current].type == OBJ_PRE_ROCKFORD_STAGE_1) {
+            } else if (map[row][col].type == OBJ_FIREFLY_POSITION_1) {
+            } else if (map[row][col].type == OBJ_PRE_ROCKFORD_STAGE_1) {
               if (heroIsAppearing) {
                 appearanceAnimFrame++;
                 if (appearanceAnimFrame == ARRAY_LENGTH(appearanceAnim)) {
@@ -713,9 +729,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                   ++newRow;
                 }
 
-                int newCell = newRow*CAVE_WIDTH + newCol;
-
-                switch (map[newCell].type) {
+                switch (map[newRow][newCol].type) {
                   case OBJ_SPACE:
                   case OBJ_DIRT:
                   case OBJ_DIAMOND_STATIONARY:
@@ -723,7 +737,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                   case OBJ_BRICK_WALL:
                   case OBJ_BOULDER_STATIONARY:
 #endif
-                    if (map[newCell].type == OBJ_DIAMOND_STATIONARY) {
+                    if (map[newRow][newCol].type == OBJ_DIAMOND_STATIONARY) {
                       if (diamondsCollected >= cave->diamondsNeeded[difficultyLevel]) {
                         score += cave->extraDiamondValue;
                       } else {
@@ -734,38 +748,37 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                         borderColor = BORDER_COLOR_FLASH;
                       }
                     }
-                    map[current].type = OBJ_SPACE;
+                    map[row][col].type = OBJ_SPACE;
                     heroRow = newRow;
                     heroCol = newCol;
-                    map[newCell].type = OBJ_PRE_ROCKFORD_STAGE_1;
-                    map[newCell].moved = true;
+                    map[newRow][newCol].type = OBJ_PRE_ROCKFORD_STAGE_1;
+                    map[newRow][newCol].moved = true;
                     break;
 
 #if !HERO_SUPERPOWER
                   case OBJ_BOULDER_STATIONARY:
                     int deltaCol = newCol - col;
-                    int targetRockCell = newRow*CAVE_WIDTH + newCol + deltaCol;
-                    if (deltaCol != 0 && map[targetRockCell].type == OBJ_SPACE) {
+                    if (deltaCol != 0 && map[newRow][newCol+deltaCol].type == OBJ_SPACE) {
                       heroMoveRockTurns++;
                       if (heroMoveRockTurns == 3) {
                         heroMoveRockTurns = 0;
-                        map[current].type = OBJ_SPACE;
+                        map[row][col].type = OBJ_SPACE;
                         heroRow = newRow;
                         heroCol = newCol;
-                        map[newCell].type = OBJ_PRE_ROCKFORD_STAGE_1;
-                        map[newCell].moved = true;
-                        map[targetRockCell].type = OBJ_BOULDER_STATIONARY;
+                        map[newRow][newCol].type = OBJ_PRE_ROCKFORD_STAGE_1;
+                        map[newRow][newCol].moved = true;
+                        map[newRow][newCol+deltaCol].type = OBJ_BOULDER_STATIONARY;
                       }
                     }
                     break;
 #endif
                   case OBJ_PRE_OUTBOX:
                     if (diamondsCollected >= cave->diamondsNeeded[difficultyLevel]) {
-                      map[current].type = OBJ_SPACE;
+                      map[row][col].type = OBJ_SPACE;
                       heroRow = newRow;
                       heroCol = newCol;
-                      map[newCell].type = OBJ_PRE_ROCKFORD_STAGE_1;
-                      map[newCell].moved = true;
+                      map[newRow][newCol].type = OBJ_PRE_ROCKFORD_STAGE_1;
+                      map[newRow][newCol].moved = true;
 
                       cave = getCave(++caveNumber);
                       decodeCaveData(cave, caveData);
@@ -787,9 +800,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           deathForegroundVisibilityTurn = deathForegroundVisibilityTurnMax;
           for (int row = 0; row < CAVE_HEIGHT; ++row) {
             for (int col = 0; col < CAVE_WIDTH; ++col) {
-              int i = row*CAVE_WIDTH + col;
-              if (map[i].type == OBJ_EXPLODE_TO_SPACE_STAGE_1) {
-                map[i].type = OBJ_SPACE;
+              if (map[row][col].type == OBJ_EXPLODE_TO_SPACE_STAGE_1) {
+                map[row][col].type = OBJ_SPACE;
               }
             }
           }
@@ -831,7 +843,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     //
     for (int row = 0; row < CAVE_HEIGHT; ++row) {
       for (int col = 0; col < CAVE_WIDTH; ++col) {
-        ObjectType tile = map[row*CAVE_WIDTH + col].type;
+        ObjectType tile = map[row][col].type;
 
         if (tile == OBJ_SPACE) {
           continue;
