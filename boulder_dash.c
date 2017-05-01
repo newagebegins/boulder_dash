@@ -1,5 +1,6 @@
 #include <windows.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <assert.h>
 
 #include "bitmaps.h"
@@ -14,6 +15,8 @@
 
 #define BACKBUFFER_WIDTH (VIEWPORT_WIDTH + BORDER_SIZE*2)
 #define BACKBUFFER_HEIGHT (VIEWPORT_HEIGHT + BORDER_SIZE*2)
+#define BACKBUFFER_PIXELS (BACKBUFFER_WIDTH*BACKBUFFER_HEIGHT)
+#define BACKBUFFER_BYTES (BACKBUFFER_PIXELS*sizeof(uint32_t))
 
 #define WINDOW_SCALE 3
 #define WINDOW_WIDTH (BACKBUFFER_WIDTH * WINDOW_SCALE)
@@ -33,6 +36,8 @@ LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdShow) {
   UNREFERENCED_PARAMETER(prevInst);
   UNREFERENCED_PARAMETER(cmdLine);
+
+  uint32_t *backbuffer = malloc(BACKBUFFER_BYTES);
 
   BITMAPINFO backbufferBmpInf = {0};
   backbufferBmpInf.bmiHeader.biSize = sizeof(backbufferBmpInf.bmiHeader);
@@ -62,6 +67,50 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                             0, 0, inst, 0);
   ShowWindow(wnd, cmdShow);
   UpdateWindow(wnd);
+
+  float dt = 0.0f;
+  float targetFps = 60.0f;
+  float maxDt = 1.0f / targetFps;
+  LARGE_INTEGER perfcFreq = {0};
+  LARGE_INTEGER perfc = {0};
+  LARGE_INTEGER prefcPrev = {0};
+
+  QueryPerformanceFrequency(&perfcFreq);
+  QueryPerformanceCounter(&perfc);
+
+  bool running = true;
+  HDC deviceContext = GetDC(wnd);
+
+  while (running) {
+    prefcPrev = perfc;
+    QueryPerformanceCounter(&perfc);
+    dt = (float)(perfc.QuadPart - prefcPrev.QuadPart) / (float)perfcFreq.QuadPart;
+    if (dt > maxDt) {
+      dt = maxDt;
+    }
+
+    MSG msg;
+    while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE)) {
+      switch (msg.message) {
+        case WM_QUIT:
+          running = false;
+          break;
+
+        default:
+          TranslateMessage(&msg);
+          DispatchMessage(&msg);
+          break;
+      }
+    }
+
+    for (int i = 0; i < BACKBUFFER_PIXELS; ++i) {
+      backbuffer[i] = 0xFF00FF00;
+    }
+
+    StretchDIBits(deviceContext, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT,
+                  0, 0, BACKBUFFER_WIDTH, BACKBUFFER_HEIGHT, backbuffer,
+                  &backbufferBmpInf, DIB_RGB_COLORS, SRCCOPY);
+  }
 
   return 0;
 }
