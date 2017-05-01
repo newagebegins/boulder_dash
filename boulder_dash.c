@@ -96,6 +96,15 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           running = false;
           break;
 
+        case WM_KEYDOWN:
+        case WM_KEYUP:
+          switch (msg.wParam) {
+            case VK_ESCAPE:
+              running = false;
+              break;
+          }
+          break;
+
         default:
           TranslateMessage(&msg);
           DispatchMessage(&msg);
@@ -107,9 +116,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       backbuffer[i] = 0xFF00FF00;
     }
 
-    StretchDIBits(deviceContext, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT,
-                  0, 0, BACKBUFFER_WIDTH, BACKBUFFER_HEIGHT, backbuffer,
-                  &backbufferBmpInf, DIB_RGB_COLORS, SRCCOPY);
+    StretchDIBits(deviceContext,
+                  0, 0, WINDOW_WIDTH, WINDOW_HEIGHT,
+                  0, 0, BACKBUFFER_WIDTH, BACKBUFFER_HEIGHT,
+                  backbuffer, &backbufferBmpInf,
+                  DIB_RGB_COLORS, SRCCOPY);
   }
 
   return 0;
