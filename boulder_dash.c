@@ -96,8 +96,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       }
     }
 
-    updateGame(dt);
-    renderGame();
+    gameUpdateAndRender(dt);
   }
 
   return 0;

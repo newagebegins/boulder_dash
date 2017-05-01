@@ -1,7 +1,6 @@
 #ifndef GAME_H
 #define GAME_H
 
-void updateGame(float dt);
-void renderGame();
+void gameUpdateAndRender(float dt);
 
 #endif

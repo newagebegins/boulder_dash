@@ -3,11 +3,9 @@
 #include "game.h"
 #include "graphics.h"
 
-void updateGame(float dt) {
+void gameUpdateAndRender(float dt) {
   UNREFERENCED_PARAMETER(dt);
-}
 
-void renderGame() {
   // Draw border
   drawFilledRect(0, 0, BACKBUFFER_WIDTH-1, BACKBUFFER_HEIGHT-1, 0);
   // Clear viewport
