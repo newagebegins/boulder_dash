@@ -16,39 +16,9 @@ void debugPrint(char *format, ...) {
   OutputDebugString(str);
 }
 
-#define HERO_SUPERPOWER false
-#define NO_ANIMATIONS false
-
-#define ARRAY_LENGTH(array) (sizeof(array)/sizeof(*array))
-#define PI 3.14159265358979323846f
-
-#define HERO_ANIM_FRAME_DURATION 0.05f
-#define HERO_ANIM_FRAME_COUNT 6
-#define TURN_DURATION 0.15f
-#define MAX_MAP_TILES 100*100
-#define DIAMOND_FRAME_COUNT 8
-#define FIREFLY_FRAME_COUNT 4
-
-#define CAMERA_STEP HALF_TILE_SIZE
-#define HERO_SIZE TILE_SIZE
-
-#define CAMERA_START_RIGHT_HERO_X (PLAYFIELD_X_MAX - 6*HALF_TILE_SIZE + 1)
-#define CAMERA_STOP_RIGHT_HERO_X (PLAYFIELD_X_MAX - 13*HALF_TILE_SIZE + 1)
-#define CAMERA_START_LEFT_HERO_X (PLAYFIELD_X_MIN + 6*HALF_TILE_SIZE)
-#define CAMERA_STOP_LEFT_HERO_X (PLAYFIELD_X_MIN + 14*HALF_TILE_SIZE)
-
-#define CAMERA_START_DOWN_HERO_Y (PLAYFIELD_Y_MAX - 4*HALF_TILE_SIZE + 1)
-#define CAMERA_STOP_DOWN_HERO_Y (PLAYFIELD_Y_MAX - 9*HALF_TILE_SIZE + 1)
-#define CAMERA_START_UP_HERO_Y (PLAYFIELD_Y_MIN + 4*HALF_TILE_SIZE)
-#define CAMERA_STOP_UP_HERO_Y (PLAYFIELD_Y_MIN + 9*HALF_TILE_SIZE)
-
-#define MIN_CAMERA_X 0
-#define MIN_CAMERA_Y 0
-#define MAX_CAMERA_X (CAVE_WIDTH*TILE_SIZE - PLAYFIELD_WIDTH)
-#define MAX_CAMERA_Y ((CAVE_HEIGHT-2)*TILE_SIZE - PLAYFIELD_HEIGHT)
-
-#define BORDER_COLOR_NORMAL COLOR_BLACK
-#define BORDER_COLOR_FLASH COLOR_WHITE
+//
+// Data structures
+//
 
 typedef enum {
   up1,
@@ -85,39 +55,114 @@ typedef enum {
   movingThroughDirt,
 } soundType;
 
-void RequestSound(soundType sound) {
-  // TODO: implement
-  UNREFERENCED_PARAMETER(sound);
-}
-
-// Sprite index = row*16 + col
-typedef enum {
-  SPRITE_TYPE_ENTRANCE = 20,
-  SPRITE_TYPE_WALL = 16,
-  SPRITE_TYPE_EXPLOSION_1 = 34,
-  SPRITE_TYPE_EXPLOSION_2 = 32,
-  SPRITE_TYPE_EXPLOSION_3 = 33,
-  SPRITE_TYPE_HERO_RUN_1 = 7,
-  SPRITE_TYPE_HERO_IDLE_1 = 0,
-} SpriteType;
-
 typedef struct {
   int x;
   int y;
 } positionType;
 
-positionType MakePosition(int x, int y) {
-  positionType result;
-  result.x = x;
-  result.y = y;
-  return result;
-}
+typedef enum {
+  explodeToSpace,
+  explodeToDiamonds,
+} explosionType;
 
+typedef enum {
+  propertyRounded,
+  propertyImpactExplosive,
+} propertyType;
+
+typedef struct {
+  directionType direction;
+  bool fireButtonDown;
+} joystickDirectionRecord;
+
+typedef enum {
+  facingRight,
+  facingLeft,
+} rockfordFacingType;
+
+//
+// Constants
+//
+
+#define ARRAY_LENGTH(array) (sizeof(array)/sizeof(*array))
+#define PI 3.14159265358979323846f
+
+#define BONUS_LIFE_PRICE 500
+#define TURN_DURATION 0.15f
+#define DIAMOND_FRAME_COUNT 8
+#define FIREFLY_FRAME_COUNT 4
+
+#define CAMERA_STEP HALF_TILE_SIZE
+
+#define CAMERA_START_RIGHT_X (PLAYFIELD_X_MAX - 6*HALF_TILE_SIZE + 1)
+#define CAMERA_STOP_RIGHT_X (PLAYFIELD_X_MAX - 13*HALF_TILE_SIZE + 1)
+#define CAMERA_START_LEFT_X (PLAYFIELD_X_MIN + 6*HALF_TILE_SIZE)
+#define CAMERA_STOP_LEFT_X (PLAYFIELD_X_MIN + 14*HALF_TILE_SIZE)
+
+#define CAMERA_START_DOWN_Y (PLAYFIELD_Y_MAX - 4*HALF_TILE_SIZE + 1)
+#define CAMERA_STOP_DOWN_Y (PLAYFIELD_Y_MAX - 9*HALF_TILE_SIZE + 1)
+#define CAMERA_START_UP_Y (PLAYFIELD_Y_MIN + 4*HALF_TILE_SIZE)
+#define CAMERA_STOP_UP_Y (PLAYFIELD_Y_MIN + 9*HALF_TILE_SIZE)
+
+#define MIN_CAMERA_X 0
+#define MIN_CAMERA_Y 0
+#define MAX_CAMERA_X (CAVE_WIDTH*TILE_SIZE - PLAYFIELD_WIDTH)
+#define MAX_CAMERA_Y ((CAVE_HEIGHT-2)*TILE_SIZE - PLAYFIELD_HEIGHT)
+
+#define TOO_MANY_AMOEBA 200
+#define CAVE_TIME_FRAME_MAX 7
+
+//
+// Global game state
+//
+
+uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH];
 objectType map[CAVE_HEIGHT][CAVE_WIDTH];
 
-objectType GetObjectAtPosition(positionType position) {
-  return map[position.y][position.x];
+int caveNumber;
+int difficultyLevel;
+
+int caveTime;
+int caveTimeLeft;
+int caveTimeFrame;
+
+int score;
+int nextBonusLifeScore;
+int lives;
+
+int initialDiamondValue;
+int extraDiamondValue;
+int currentDiamondValue;
+
+int diamondsNeeded;
+int diamondsCollected;
+bool gotEnoughDiamonds;
+
+bool rightIsDown;
+bool leftIsDown;
+bool upIsDown;
+bool downIsDown;
+bool spaceIsDown;
+
+int AnimationStage;
+bool RockfordMoving;
+positionType RockfordLocation;
+bool magicWallIsOn;
+rockfordFacingType RockfordAnimationFacingDirection;
+int numRoundsSinceRockfordSeenAlive;
+
+//
+//
+//
+
+void RequestSound(soundType sound) {
+  // TODO: implement
+  UNREFERENCED_PARAMETER(sound);
 }
+
+//
+// Place- functions
+//
 
 void PlaceObject(objectType obj, positionType pos) {
   map[pos.y][pos.x] = obj;
@@ -145,6 +190,127 @@ void PlaceFallingDiamond(positionType diamondPosition) {
 
 void PlaceStationaryDiamond(positionType diamondPosition) {
   PlaceObject(OBJ_DIAMOND_STATIONARY, diamondPosition);
+}
+
+void PlaceExplosion(positionType explosionPosition, explosionType explodeToWhat, int explosionStage) {
+  switch (explodeToWhat) {
+    case explodeToSpace:
+      switch (explosionStage) {
+        case 0:
+          PlaceObject(OBJ_EXPLODE_TO_SPACE_STAGE_0, explosionPosition);
+          break;
+        case 1:
+          PlaceObject(OBJ_EXPLODE_TO_SPACE_STAGE_1, explosionPosition);
+          break;
+        case 2:
+          PlaceObject(OBJ_EXPLODE_TO_SPACE_STAGE_2, explosionPosition);
+          break;
+        case 3:
+          PlaceObject(OBJ_EXPLODE_TO_SPACE_STAGE_3, explosionPosition);
+          break;
+        case 4:
+          PlaceObject(OBJ_EXPLODE_TO_SPACE_STAGE_4, explosionPosition);
+          break;
+        default:
+          assert(!"Unknown explosion stage");
+      }
+      break;
+
+    case explodeToDiamonds:
+      switch (explosionStage) {
+        case 0:
+          PlaceObject(OBJ_EXPLODE_TO_DIAMOND_STAGE_0, explosionPosition);
+          break;
+        case 1:
+          PlaceObject(OBJ_EXPLODE_TO_DIAMOND_STAGE_1, explosionPosition);
+          break;
+        case 2:
+          PlaceObject(OBJ_EXPLODE_TO_DIAMOND_STAGE_2, explosionPosition);
+          break;
+        case 3:
+          PlaceObject(OBJ_EXPLODE_TO_DIAMOND_STAGE_3, explosionPosition);
+          break;
+        case 4:
+          PlaceObject(OBJ_EXPLODE_TO_DIAMOND_STAGE_4, explosionPosition);
+          break;
+        default:
+          assert(!"Unknown explosion stage");
+      }
+      break;
+
+    default:
+      assert(!"Unknown explostion type");
+  }
+}
+
+void PlaceFirefly(positionType position, directionType direction) {
+  switch (direction) {
+    case left:
+      PlaceObject(OBJ_FIREFLY_POSITION_1, position);
+      break;
+    case up:
+      PlaceObject(OBJ_FIREFLY_POSITION_2, position);
+      break;
+    case right:
+      PlaceObject(OBJ_FIREFLY_POSITION_3, position);
+      break;
+    case down:
+      PlaceObject(OBJ_FIREFLY_POSITION_4, position);
+      break;
+  }
+  assert(!"Unknown direction");
+}
+
+void PlaceButterfly(positionType position, directionType direction) {
+  switch (direction) {
+    case down:
+      PlaceObject(OBJ_BUTTERFLY_POSITION_1, position);
+      break;
+    case left:
+      PlaceObject(OBJ_BUTTERFLY_POSITION_2, position);
+      break;
+    case up:
+      PlaceObject(OBJ_BUTTERFLY_POSITION_3, position);
+      break;
+    case right:
+      PlaceObject(OBJ_BUTTERFLY_POSITION_4, position);
+      break;
+  }
+  assert(!"Unknown direction");
+}
+
+void PlacePreRockford(positionType position, int preRockfordStage) {
+  switch (preRockfordStage) {
+    case 1:
+      PlaceObject(OBJ_PRE_ROCKFORD_STAGE_1, position);
+      break;
+    case 2:
+      PlaceObject(OBJ_PRE_ROCKFORD_STAGE_2, position);
+      break;
+    case 3:
+      PlaceObject(OBJ_PRE_ROCKFORD_STAGE_3, position);
+      break;
+    case 4:
+      PlaceObject(OBJ_PRE_ROCKFORD_STAGE_4, position);
+      break;
+  }
+  assert(!"Unknown stage");
+}
+
+void PlaceRockford(positionType position) {
+  PlaceObject(OBJ_ROCKFORD, position);
+}
+
+void PlaceOutBox(positionType position) {
+  PlaceObject(OBJ_FLASHING_OUTBOX, position);
+}
+
+//
+//
+//
+
+objectType GetObjectAtPosition(positionType position) {
+  return map[position.y][position.x];
 }
 
 positionType GetRelativePosition(positionType position, offsetType offset) {
@@ -215,62 +381,6 @@ bool FlyWillExplode(positionType fireflyPosition) {
     CheckFlyExplode(GetRelativePosition(fireflyPosition, left1)) ||
     CheckFlyExplode(GetRelativePosition(fireflyPosition, right1)) ||
     CheckFlyExplode(GetRelativePosition(fireflyPosition, down1));
-}
-
-typedef enum {
-  explodeToSpace,
-  explodeToDiamonds,
-} explosionType;
-
-void PlaceExplosion(positionType explosionPosition, explosionType explodeToWhat, int explosionStage) {
-  switch (explodeToWhat) {
-    case explodeToSpace:
-      switch (explosionStage) {
-        case 0:
-          PlaceObject(OBJ_EXPLODE_TO_SPACE_STAGE_0, explosionPosition);
-          break;
-        case 1:
-          PlaceObject(OBJ_EXPLODE_TO_SPACE_STAGE_1, explosionPosition);
-          break;
-        case 2:
-          PlaceObject(OBJ_EXPLODE_TO_SPACE_STAGE_2, explosionPosition);
-          break;
-        case 3:
-          PlaceObject(OBJ_EXPLODE_TO_SPACE_STAGE_3, explosionPosition);
-          break;
-        case 4:
-          PlaceObject(OBJ_EXPLODE_TO_SPACE_STAGE_4, explosionPosition);
-          break;
-        default:
-          assert(!"Unknown explosion stage");
-      }
-      break;
-
-    case explodeToDiamonds:
-      switch (explosionStage) {
-        case 0:
-          PlaceObject(OBJ_EXPLODE_TO_DIAMOND_STAGE_0, explosionPosition);
-          break;
-        case 1:
-          PlaceObject(OBJ_EXPLODE_TO_DIAMOND_STAGE_1, explosionPosition);
-          break;
-        case 2:
-          PlaceObject(OBJ_EXPLODE_TO_DIAMOND_STAGE_2, explosionPosition);
-          break;
-        case 3:
-          PlaceObject(OBJ_EXPLODE_TO_DIAMOND_STAGE_3, explosionPosition);
-          break;
-        case 4:
-          PlaceObject(OBJ_EXPLODE_TO_DIAMOND_STAGE_4, explosionPosition);
-          break;
-        default:
-          assert(!"Unknown explosion stage");
-      }
-      break;
-
-    default:
-      assert(!"Unknown explostion type");
-  }
 }
 
 void ScanExplosion(positionType explosionPosition, explosionType explodeToWhat, int explosionStage) {
@@ -450,42 +560,6 @@ directionType GetNewDirection(directionType flyDirection, turningType flyTurning
   return result;
 }
 
-void PlaceFirefly(positionType position, directionType direction) {
-  switch (direction) {
-    case left:
-      PlaceObject(OBJ_FIREFLY_POSITION_1, position);
-      break;
-    case up:
-      PlaceObject(OBJ_FIREFLY_POSITION_2, position);
-      break;
-    case right:
-      PlaceObject(OBJ_FIREFLY_POSITION_3, position);
-      break;
-    case down:
-      PlaceObject(OBJ_FIREFLY_POSITION_4, position);
-      break;
-  }
-  assert(!"Unknown direction");
-}
-
-void PlaceButterfly(positionType position, directionType direction) {
-  switch (direction) {
-    case down:
-      PlaceObject(OBJ_BUTTERFLY_POSITION_1, position);
-      break;
-    case left:
-      PlaceObject(OBJ_BUTTERFLY_POSITION_2, position);
-      break;
-    case up:
-      PlaceObject(OBJ_BUTTERFLY_POSITION_3, position);
-      break;
-    case right:
-      PlaceObject(OBJ_BUTTERFLY_POSITION_4, position);
-      break;
-  }
-  assert(!"Unknown direction");
-}
-
 void ScanFirefly(positionType positionOfFirefly, directionType directionOfFirefly) {
   positionType NewPosition;
   directionType NewDirection;
@@ -536,32 +610,6 @@ void ScanButterfly(positionType positionOfButterfly, directionType directionOfBu
   }
 }
 
-void PlacePreRockford(positionType position, int preRockfordStage) {
-  switch (preRockfordStage) {
-    case 1:
-      PlaceObject(OBJ_PRE_ROCKFORD_STAGE_1, position);
-      break;
-    case 2:
-      PlaceObject(OBJ_PRE_ROCKFORD_STAGE_2, position);
-      break;
-    case 3:
-      PlaceObject(OBJ_PRE_ROCKFORD_STAGE_3, position);
-      break;
-    case 4:
-      PlaceObject(OBJ_PRE_ROCKFORD_STAGE_4, position);
-      break;
-  }
-  assert(!"Unknown stage");
-}
-
-void PlaceRockford(positionType position) {
-  PlaceObject(OBJ_ROCKFORD, position);
-}
-
-void PlaceOutBox(positionType position) {
-  PlaceObject(OBJ_FLASHING_OUTBOX, position);
-}
-
 void ScanPreRockford(positionType currentScanPosition, int preRockfordStage, int timeTillBirth) {
   assert(timeTillBirth >= 0);
   assert(preRockfordStage >= 1 && preRockfordStage <= 4);
@@ -574,11 +622,6 @@ void ScanPreRockford(positionType currentScanPosition, int preRockfordStage, int
     }
   }
 }
-
-typedef enum {
-  propertyRounded,
-  propertyImpactExplosive,
-} propertyType;
 
 bool GetObjectProperty(objectType anObject, propertyType property) {
   switch (property) {
@@ -617,31 +660,14 @@ bool GetObjectProperty(objectType anObject, propertyType property) {
 }
 
 bool CanRollOff(objectType anObjectBelow) {
-  // If the specified object is one which a boulder or diamond can roll off,
-  // return true otherwise return false.
-
-  // First of all, only objects which have the property of being "rounded" are
-  // are ones which things can roll off. Secondly, if the object is a boulder
-  // or diamond, the boulder or diamond must be stationary, not falling.
-
-  // We're going to assume that GetObjectProperty() automatically returns "true"
-  // for objBoulderStationary, objDiamondStationary, objBrickWall, and returns "false"
-  // for everything else (including objBoulderFalling and objDiamondFalling).
-
   return GetObjectProperty(anObjectBelow, propertyRounded);
 }
 
 bool ImpactExplosive(objectType anObject) {
-  // If the specified object has the property of being something that can
-  // explode, return true otherwise return false.
-  // ImpactExplosive objects are: Rockford, Firefly, Butterfly.
   return GetObjectProperty(anObject, propertyImpactExplosive);
 }
 
 explosionType GetExplosionType(objectType anObject) {
-  // Assuming that the specified object is in fact explosive, returns the type
-  // of explosion (explodeToSpace or explodeToDiamonds)
-  // Explosive objects are: Rockford, Firefly, Butterfly.
   assert(ImpactExplosive(anObject));
 
   switch (anObject) {
@@ -673,11 +699,6 @@ explosionType GetExplosionType(objectType anObject) {
 
   return false;
 }
-
-typedef enum {
-  kMagicWallOff,
-  kMagicWallOn,
-} magicWallStatusType;
 
 void ScanStationaryBoulder(positionType boulderPosition) {
   positionType NewPosition;
@@ -711,7 +732,7 @@ void ScanStationaryBoulder(positionType boulderPosition) {
   }
 }
 
-void ScanFallingBoulder(positionType boulderPosition, magicWallStatusType *magicWallStatus) {
+void ScanFallingBoulder(positionType boulderPosition) {
   // Local variables
   positionType NewPosition;
   objectType theObjectBelow;
@@ -727,10 +748,10 @@ void ScanFallingBoulder(positionType boulderPosition, magicWallStatusType *magic
   // morph into a diamond two spaces below if it's now active. If the wall
   // is expired, we just disappear (with a sound still though).
   else if (theObjectBelow == OBJ_MAGIC_WALL) {
-    if (*magicWallStatus == kMagicWallOff) {
-      *magicWallStatus = kMagicWallOn;
+    if (magicWallIsOn == false) {
+      magicWallIsOn = true;
     }
-    if (*magicWallStatus == kMagicWallOn) {
+    if (magicWallIsOn == true) {
       NewPosition = GetRelativePosition(boulderPosition, down2);
       if (GetObjectAtPosition(NewPosition) == OBJ_SPACE) {
         PlaceFallingDiamond(NewPosition);
@@ -806,7 +827,7 @@ void ScanStationaryDiamond(positionType diamondPosition) {
   }
 }
 
-void ScanFallingDiamond(positionType diamondPosition, magicWallStatusType *magicWallStatus) {
+void ScanFallingDiamond(positionType diamondPosition) {
   // Local variables
   positionType NewPosition;
   objectType theObjectBelow;
@@ -822,10 +843,10 @@ void ScanFallingDiamond(positionType diamondPosition, magicWallStatusType *magic
   // morph into a boulder two spaces below if it's now active. If the wall
   // is expired, we just disappear (with a sound still though).
   else if (theObjectBelow == OBJ_MAGIC_WALL) {
-    if (*magicWallStatus == kMagicWallOff) {
-      *magicWallStatus = kMagicWallOn;
+    if (magicWallIsOn == false) {
+      magicWallIsOn = true;
     }
-    if (*magicWallStatus == kMagicWallOn) {
+    if (magicWallIsOn == true) {
       NewPosition = GetRelativePosition(diamondPosition, down2);
       if (GetObjectAtPosition(NewPosition) == OBJ_SPACE) {
         PlaceFallingBoulder(NewPosition);
@@ -869,44 +890,19 @@ void ScanFallingDiamond(positionType diamondPosition, magicWallStatusType *magic
   }
 }
 
-typedef struct {
-  int score;
-  int nextBonusLifeScore;
-  int lives;
-  int currentDiamondValue;
-  int diamondsCollected;
-  bool gotEnoughDiamonds;
-} playerType;
-
-typedef struct {
-  int diamondsNeeded;
-  int extraDiamondValue;
-} caveDataType;
-
-typedef struct {
-  directionType direction;
-  bool fireButtonDown;
-} joystickDirectionRecord;
-
-playerType CurrentPlayerData;
-caveDataType CaveData;
-
 void AddLife() {
-  assert(CurrentPlayerData.lives <= 9);
+  assert(lives <= 9);
 
-  if (CurrentPlayerData.lives < 9) {
-    CurrentPlayerData.lives++;
+  if (lives < 9) {
+    lives++;
     // TODO: Make space objects flash to indicate bonus life;
   }
 }
 
 void CheckForBonusLife()  {
-  // Check to see whether the score has passed a 500 or a 1000 point boundary 
-  // (in other words, you get a bonus life every 500 points).
-
-  if (CurrentPlayerData.score >= CurrentPlayerData.nextBonusLifeScore) {
+  if (score >= nextBonusLifeScore) {
     AddLife();
-    CurrentPlayerData.nextBonusLifeScore += 500;
+    nextBonusLifeScore += BONUS_LIFE_PRICE;
   }
 }
 
@@ -921,9 +917,9 @@ void ScanPreOutBox(positionType currentScanPosition, bool GotEnoughDiamonds) {
 }
 
 void CheckEnoughDiamonds() {
-  if (CurrentPlayerData.diamondsCollected == CaveData.diamondsNeeded) {
-    CurrentPlayerData.gotEnoughDiamonds = true;
-    CurrentPlayerData.currentDiamondValue = CaveData.extraDiamondValue;
+  if (diamondsCollected == diamondsNeeded) {
+    gotEnoughDiamonds = true;
+    currentDiamondValue = extraDiamondValue;
     // TODO: Update statusbar;
     RequestSound(crackSound);
     // TODO: Request screen to flash white to indicate got enough diamonds;
@@ -935,24 +931,11 @@ void PickUpDiamond() {
   // of diamonds collected, and check whether they have enough diamonds now.
 
   RequestSound(pickedUpDiamondSound);
-  CurrentPlayerData.score += CurrentPlayerData.currentDiamondValue;
+  score += currentDiamondValue;
   CheckForBonusLife();
-  CurrentPlayerData.diamondsCollected++;
+  diamondsCollected++;
   CheckEnoughDiamonds();
 }
-
-joystickDirectionRecord GetNextDemoMovement() {
-  // TODO: implement
-  joystickDirectionRecord result = {0};
-  return result;
-}
-
-
-bool rightIsDown = false;
-bool leftIsDown = false;
-bool upIsDown = false;
-bool downIsDown = false;
-bool spaceIsDown = false;
 
 joystickDirectionRecord GetJoystickPos() {
   joystickDirectionRecord result;
@@ -971,13 +954,6 @@ joystickDirectionRecord GetJoystickPos() {
 
   return result;
 }
-
-bool RockfordMoving;
-
-typedef enum {
-  facingRight,
-  facingLeft,
-} rockfordFacingType;
 
 void RequestRockfordMovementSound(soundType sound) {
   RequestSound(sound);
@@ -1091,9 +1067,7 @@ bool MoveRockfordStage2(positionType originalPosition,
 }
 
 void MoveRockfordStage1(positionType currentScanPosition,
-                        positionType *RockfordLocation,
-                        joystickDirectionRecord JoyPos,
-                        rockfordFacingType *RockfordAnimationFacingDirection) {
+                        joystickDirectionRecord JoyPos) {
   // Note: in this routine, if the user presses diagonally, the horizontal movement takes
   // precedence over the vertical movement; ie Rockford moves horizontally.
 
@@ -1114,12 +1088,12 @@ void MoveRockfordStage1(positionType currentScanPosition,
       break;
     case right:
       RockfordMoving = true;
-      *RockfordAnimationFacingDirection = facingRight;
+      RockfordAnimationFacingDirection = facingRight;
       NewPosition = GetRelativePosition(currentScanPosition, right1);
       break;
     case left:
       RockfordMoving = true;
-      *RockfordAnimationFacingDirection = facingLeft;
+      RockfordAnimationFacingDirection = facingLeft;
       NewPosition = GetRelativePosition(currentScanPosition, left1);
       break;
     default:
@@ -1134,47 +1108,19 @@ void MoveRockfordStage1(positionType currentScanPosition,
     // If Rockford did in fact physically move, we update our record of Rockford's
     // position (used by the screen scrolling algorithm to know where to scroll).
     if (ActuallyMoved) {
-      *RockfordLocation = NewPosition;
+      RockfordLocation = NewPosition;
     }
   }
 }
 
-void ScanRockford(positionType currentScanPosition,
-                  positionType *RockfordLocation,
-                  rockfordFacingType *RockfordAnimationFacingDirection,
-                  bool demoMode,
-                  int *numRoundsSinceRockfordSeenAlive) {
-  // We have come across Rockford during the scan routine. Read the joystick or
-  // demo data to find out where Rockford wants to go, and call a subroutine to
-  // actually do it.
-
-  assert(*numRoundsSinceRockfordSeenAlive >= 0);
-
-  // Local variables
-  joystickDirectionRecord JoyPos;
-
-  // If we're in demo mode, we get our joystick movements from the demo data
-  if (demoMode) {
-    JoyPos = GetNextDemoMovement();
-  } else {
-    // Otherwise if we're in a real game, we get our joystick movements from
-    // the current player's input device (joystick, keyboard, whatever).
-    JoyPos = GetJoystickPos();
-  }
-
-  // Call a subroutine to actually deal with the joystick movement.
-  MoveRockfordStage1(currentScanPosition, RockfordLocation, JoyPos, RockfordAnimationFacingDirection);
-
-  // Rockford has been seen alive, so reset the counter indicating the number
-  // of rounds since Rockford was last seen alive.
-  *numRoundsSinceRockfordSeenAlive = 0;
+void ScanRockford(positionType currentScanPosition) {
+  assert(numRoundsSinceRockfordSeenAlive >= 0);
+  joystickDirectionRecord JoyPos = GetJoystickPos();
+  MoveRockfordStage1(currentScanPosition, JoyPos);
+  numRoundsSinceRockfordSeenAlive = 0;
 }
 
-int AnimationStage;
-
-void AnimateRockford(bool *Tapping,
-                     bool *Blinking,
-                     bool RockfordAnimationFacingDirection) {
+void AnimateRockford(bool *Tapping, bool *Blinking) {
   // Called by the animation routine every animation frame
 
   // If Rockford is currently moving, we display the right-moving or left-moving animation
@@ -1208,8 +1154,6 @@ void AnimateRockford(bool *Tapping,
     // TODO: doing forward-facing Rockford animation sequence (idle, blink, tap, or blink&tap)
   }
 }
-
-int kTooManyAmoeba;
 
 bool AmoebaRandomlyDecidesToGrow(int anAmoebaRandomFactor) {
   // Randomly decide whether this amoeba is going to attempt to grow or not. 
@@ -1248,8 +1192,7 @@ void ScanAmoeba(positionType positionOfAmoeba,
   *numberOfAmoebaFoundThisFrame++;
 
   // If the amoeba grew too big last frame, morph into a boulder.
-  // kTooManyAmoeba = 200 for original Boulder Dash.
-  if (totalAmoebaFoundLastFrame >= kTooManyAmoeba) {
+  if (totalAmoebaFoundLastFrame >= TOO_MANY_AMOEBA) {
     PlaceStationaryBoulder(positionOfAmoeba);
   } else {
     // If the amoeba suffocated last frame, morph into a diamond
@@ -1294,6 +1237,120 @@ void ScanAmoeba(positionType positionOfAmoeba,
       }
     }
   } 
+}
+
+void initializeGame() {
+  difficultyLevel = 0;
+  score = 0;
+  nextBonusLifeScore = BONUS_LIFE_PRICE;
+  lives = 4;
+  caveNumber = 0;
+
+  rightIsDown = false;
+  leftIsDown = false;
+  upIsDown = false;
+  downIsDown = false;
+  spaceIsDown = false;
+}
+
+void initializeCave() {
+  magicWallIsOn = false;
+
+  caveTimeLeft = caveTime;
+  caveTimeFrame = 0;
+
+  diamondsCollected = 0;
+  gotEnoughDiamonds = false;
+  currentDiamondValue = initialDiamondValue;
+
+  RockfordAnimationFacingDirection = facingRight;
+  AnimationStage = 0;
+  RockfordMoving = false;
+  numRoundsSinceRockfordSeenAlive = 0;
+
+  for (int y = 2; y <= 23; y++) {
+    for(int x = 0; x <= 39; x++) {
+      int mapY = y-2;
+      int mapX = x;
+      map[mapY][mapX] = caveData[y][x];
+      if (map[mapY][mapX] == OBJ_PRE_ROCKFORD_STAGE_1) {
+        RockfordLocation.x = mapX;
+        RockfordLocation.y = mapY;
+      }
+    }
+  }
+}
+
+void loadNewCave() {
+  Cave *cave = getCave(++caveNumber);
+  decodeCaveData(cave, caveData);
+
+  initialDiamondValue = cave->initialDiamondValue;
+  diamondsNeeded = cave->diamondsNeeded[difficultyLevel];
+  extraDiamondValue = cave->extraDiamondValue;
+  caveTime = cave->caveTime[difficultyLevel];
+
+  initializeCave();
+}
+
+void updateMapCover() {
+  foregroundVisibilityTurn--;
+
+  foregroundOffset++;
+  if (foregroundOffset == TILE_SIZE) {
+    foregroundOffset = 0;
+  }
+
+  int cameraRow = cameraY / TILE_SIZE;
+  int cameraCol = cameraX / TILE_SIZE;
+
+  // Hide some foreground tiles every turn
+  for (int tile = 0; tile < foregroundTilesPerTurn; ++tile) {
+    for (int try = 0; try < 100; ++try) {
+      int row = rand() % PLAYFIELD_HEIGHT_IN_TILES + cameraRow;
+      int col = rand() % PLAYFIELD_WIDTH_IN_TILES + cameraCol;
+      int cell = row*CAVE_WIDTH + col;
+      if (foreground[cell]) {
+        foreground[cell] = false;
+        break;
+      }
+    }
+  }
+}
+
+void updateCamera() {
+  if (rockfordScreenRight > CAMERA_START_RIGHT_X) {
+    cameraVelX = CAMERA_STEP;
+  } else if (rockfordScreenLeft < CAMERA_START_LEFT_X) {
+    cameraVelX = -CAMERA_STEP;
+  }
+  if (rockfordScreenBottom > CAMERA_START_DOWN_Y) {
+    cameraVelY = CAMERA_STEP;
+  } else if (rockfordScreenTop < CAMERA_START_UP_Y) {
+    cameraVelY = -CAMERA_STEP;
+  }
+
+  if (rockfordScreenLeft >= CAMERA_STOP_LEFT_X && rockfordScreenRight <= CAMERA_STOP_RIGHT_X) {
+    cameraVelX = 0;
+  }
+  if (rockfordScreenTop >= CAMERA_STOP_UP_Y && rockfordScreenBottom <= CAMERA_STOP_DOWN_Y) {
+    cameraVelY = 0;
+  }
+
+  cameraX += cameraVelX;
+  cameraY += cameraVelY;
+
+  if (cameraX < MIN_CAMERA_X) {
+    cameraX = MIN_CAMERA_X;
+  } else if (cameraX > MAX_CAMERA_X) {
+    cameraX = MAX_CAMERA_X;
+  }
+
+  if (cameraY < MIN_CAMERA_Y) {
+    cameraY = MIN_CAMERA_Y;
+  } else if (cameraY > MAX_CAMERA_Y) {
+    cameraY = MAX_CAMERA_Y;
+  }
 }
 
 LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
@@ -1360,116 +1417,21 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
   //////////////////////////////////
 
-  int difficultyLevel = 0;
-  int caveNumber = 1;
-
-  uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH];
-  Cave *cave = getCave(caveNumber);
-  decodeCaveData(cave, caveData);
-
-#if 0
-  cave->diamondsNeeded[difficultyLevel] = 1;
-#endif
-
-  positionType RockfordLocation;
-  rockfordFacingType RockfordAnimationFacingDirection;
-  bool demoMode = false;
-  int numRoundsSinceRockfordSeenAlive;
-
   int anAmoebaRandomFactor = 0;
   bool amoebaSuffocatedLastFrame = 0;
   bool atLeastOneAmoebaFoundThisFrameWhichCanGrow;
   int totalAmoebaFoundLastFrame = 0;
   int numberOfAmoebaFoundThisFrame;
 
-  bool gotEnoughDiamonds = false;
-  int caveTimeLeft = 0;
-  int caveTimeTurn = 0;
-  int caveTimeTurnMax = 7;
-  int cameraX = 0;
-  int cameraY = 0;
   float turnTimer = 0;
 
-  int heroRow = 0;
-  int heroCol = 0;
-  int heroMoveRockTurns = 0;
-  int heroMoveFrame = 0;
-  float heroAnimTimer = 0;
-  bool heroIsAppearing = true;
-  bool heroIsMoving = false;
-  bool heroIsFacingRight = false;
-  bool heroIsFacingRightOld = false;
-  float heroIdleTimer = 0;
-  int heroIdleFrame = 0;
-  float nextIdleAnimTimer = 0;
-  int currentIdleAnimation = 0;
-  bool idleAnimOnce = false;
-  bool heroIsAlive = true;
-  int explosionFrame = 0;
-  int explosionAnim[] = {0,1,0,2};
-  int diamondFrame = 0;
-  int fireflyFrame = 0;
-  int timeTillBirth = 12;
-
-  int score = 0;
-  int diamondsCollected = 0;
-  int borderColor = COLOR_BLACK;
-
-  int foregroundVisibilityTurnMax = NO_ANIMATIONS ? 1 : 28;
-  // TODO
-  //int deathForegroundVisibilityTurnMax = NO_ANIMATIONS ? 1 : 25;
-
-  int foregroundVisibilityTurn = foregroundVisibilityTurnMax;
-  int foregroundOffset = 0;
-  int foregroundTilesPerTurn = 6;
-
-  int deathForegroundVisibilityTurn = 0;
-  int deathForegroundOffset = 0;
-  int deathForegroundTilesPerTurn = 18;
-
-#define IDLE_ANIMATIONS_COUNT 4
-  int idleAnim1[] = {0,1,2,1};
-  int idleAnim2[] = {3,4};
-  int idleAnim3[] = {0};
-  int idleAnim4[] = {4,6,5,3};
-  int *currentIdleAnim = 0;
-  int currentIdleAnimNumFrames = 0;
-  float currentIdleAnimFrameDuration = 0;
-
-  SpriteType appearanceAnim[] = {
-    SPRITE_TYPE_ENTRANCE,
-    SPRITE_TYPE_WALL,
-    SPRITE_TYPE_ENTRANCE,
-    SPRITE_TYPE_WALL,
-    SPRITE_TYPE_ENTRANCE,
-    SPRITE_TYPE_WALL,
-    SPRITE_TYPE_ENTRANCE,
-    SPRITE_TYPE_WALL,
-    SPRITE_TYPE_ENTRANCE,
-    SPRITE_TYPE_WALL,
-    SPRITE_TYPE_ENTRANCE,
-    SPRITE_TYPE_WALL,
-    SPRITE_TYPE_EXPLOSION_1,
-    SPRITE_TYPE_EXPLOSION_2,
-    SPRITE_TYPE_EXPLOSION_3,
-    SPRITE_TYPE_HERO_RUN_1,
-    SPRITE_TYPE_HERO_IDLE_1
-  };
-  int appearanceAnimFrame = 0;
-
-  SpriteType exitAnim[] = {
-    SPRITE_TYPE_WALL,
-    SPRITE_TYPE_ENTRANCE,
-  };
-  int exitAnimFrame = 0;
-
-  bool foreground[MAX_MAP_TILES];
-  bool deathForeground[PLAYFIELD_HALF_TILES_COUNT];
-  bool isInit = true;
-  magicWallStatusType magicWallStatus;
-
+  int cameraX = 0;
+  int cameraY = 0;
   int cameraVelX = 0;
   int cameraVelY = 0;
+
+  int diamondFrame = 0;
+  int fireflyFrame = 0;
 
   while (running) {
     prefcPrev = perfc;
@@ -1523,150 +1485,14 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       }
     }
 
-    if (isInit) {
-      isInit = false;
-
-      caveTimeLeft = cave->caveTime[difficultyLevel];
-      caveTimeTurn = 0;
-      heroIsAppearing = !NO_ANIMATIONS;
-      heroIsAlive = true;
-      foregroundVisibilityTurn = foregroundVisibilityTurnMax;
-      foregroundOffset = 0;
-      deathForegroundVisibilityTurn = 0;
-      deathForegroundOffset = 0;
-      diamondsCollected = 0;
-      exitAnimFrame = 0;
-      magicWallStatus = kMagicWallOff;
-
-      for (int y = 2; y <= 23; y++) {
-        for(int x = 0; x <= 39; x++) {
-          int mapY = y-2;
-          int mapX = x;
-          map[mapY][mapX] = caveData[y][x];
-          if (map[mapY][mapX] == OBJ_PRE_ROCKFORD_STAGE_1) {
-            heroRow = mapY;
-            heroCol = mapX;
-          }
-        }
-      }
-
-      for (int i = 0; i < CAVE_WIDTH * CAVE_HEIGHT; ++i) {
-        foreground[i] = true;
-      }
-
-      for (int i = 0; i < PLAYFIELD_HALF_TILES_COUNT; ++i) {
-        deathForeground[i] = false;
-      }
-    }
-
-    heroIsFacingRightOld = heroIsFacingRight;
-
-    if (rightIsDown || leftIsDown || upIsDown || downIsDown) {
-      heroAnimTimer += dt;
-      heroIsMoving = true;
-
-      if (rightIsDown) {
-        heroIsFacingRight = true;
-      } else if (leftIsDown) {
-        heroIsFacingRight = false;
-      }
-    } else {
-      heroAnimTimer = 0;
-      heroIsMoving = false;
-    }
-
-    if ((heroIsFacingRightOld != heroIsFacingRight) || !heroIsMoving) {
-      heroMoveRockTurns = 0;
-    }
-
-    heroMoveFrame = (int)(heroAnimTimer / HERO_ANIM_FRAME_DURATION) % HERO_ANIM_FRAME_COUNT;
-
-    // Idle animation
-    if (!heroIsMoving) {
-      nextIdleAnimTimer -= dt;
-
-      heroIdleTimer += dt;
-      if (heroIdleTimer > currentIdleAnimFrameDuration*currentIdleAnimNumFrames) {
-        heroIdleTimer = 0;
-        if (idleAnimOnce) {
-          nextIdleAnimTimer = 0;
-        }
-      }
-
-      if (nextIdleAnimTimer <= 0) {
-        heroIdleTimer = 0;
-        currentIdleAnimation = rand() % IDLE_ANIMATIONS_COUNT;
-        switch (currentIdleAnimation) {
-          case 0:
-            nextIdleAnimTimer = (float)(rand()%1000 + 500) / 1000.0f;
-            break;
-          case 1:
-            nextIdleAnimTimer = (float)(rand()%2000 + 1000) / 1000.0f;
-            break;
-          case 2:
-            nextIdleAnimTimer = (float)(rand()%2000 + 1000) / 1000.0f;
-            break;
-          case 3:
-            nextIdleAnimTimer = (float)(rand()%2000 + 1000) / 1000.0f;
-            break;
-          default:
-            assert('no!');
-        }
-      }
-
-      switch (currentIdleAnimation) {
-        case 0:
-          currentIdleAnim = idleAnim1;
-          currentIdleAnimNumFrames = ARRAY_LENGTH(idleAnim1);
-          currentIdleAnimFrameDuration = 0.07f;
-          idleAnimOnce = true;
-          break;
-
-        case 1:
-          currentIdleAnim = idleAnim2;
-          currentIdleAnimNumFrames = ARRAY_LENGTH(idleAnim2);
-          currentIdleAnimFrameDuration = 0.1f;
-          idleAnimOnce = false;
-          break;
-
-        case 2:
-          currentIdleAnim = idleAnim3;
-          currentIdleAnimNumFrames = ARRAY_LENGTH(idleAnim3);
-          currentIdleAnimFrameDuration = 0.1f;
-          idleAnimOnce = false;
-          break;
-
-        case 3:
-          currentIdleAnim = idleAnim4;
-          currentIdleAnimNumFrames = ARRAY_LENGTH(idleAnim4);
-          currentIdleAnimFrameDuration = 0.07f;
-          idleAnimOnce = true;
-          break;
-
-        default:
-          assert('no!');
-      }
-
-      heroIdleFrame = currentIdleAnim[(int)(heroIdleTimer / currentIdleAnimFrameDuration)];
-    } else {
-      nextIdleAnimTimer = 0;
-      heroIdleTimer = 0;
-    }
-
-    int heroScreenLeft = PLAYFIELD_X_MIN + heroCol * TILE_SIZE - cameraX;
-    int heroScreenTop = PLAYFIELD_Y_MIN + heroRow * TILE_SIZE - cameraY;
-    int heroScreenRight = heroScreenLeft + TILE_SIZE;
-    int heroScreenBottom = heroScreenTop + TILE_SIZE;
+    int rockfordScreenLeft = PLAYFIELD_X_MIN + RockfordLocation.x * TILE_SIZE - cameraX;
+    int rockfordScreenTop = PLAYFIELD_Y_MIN + RockfordLocation.y * TILE_SIZE - cameraY;
+    int rockfordScreenRight = rockfordScreenLeft + TILE_SIZE;
+    int rockfordScreenBottom = rockfordScreenTop + TILE_SIZE;
 
     turnTimer += dt;
     if (turnTimer >= TURN_DURATION) {
       turnTimer -= TURN_DURATION;
-
-      //
-      // Do turn
-      //
-
-      borderColor = BORDER_COLOR_NORMAL;
 
       diamondFrame++;
       if (diamondFrame == DIAMOND_FRAME_COUNT) {
@@ -1678,77 +1504,18 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         fireflyFrame = 0;
       }
 
-      // Move camera
-      {
-        if (heroScreenRight > CAMERA_START_RIGHT_HERO_X) {
-          cameraVelX = CAMERA_STEP;
-        } else if (heroScreenLeft < CAMERA_START_LEFT_HERO_X) {
-          cameraVelX = -CAMERA_STEP;
-        }
-        if (heroScreenBottom > CAMERA_START_DOWN_HERO_Y) {
-          cameraVelY = CAMERA_STEP;
-        } else if (heroScreenTop < CAMERA_START_UP_HERO_Y) {
-          cameraVelY = -CAMERA_STEP;
-        }
+      updateCamera();
 
-        if (heroScreenLeft >= CAMERA_STOP_LEFT_HERO_X && heroScreenRight <= CAMERA_STOP_RIGHT_HERO_X) {
-          cameraVelX = 0;
-        }
-        if (heroScreenTop >= CAMERA_STOP_UP_HERO_Y && heroScreenBottom <= CAMERA_STOP_DOWN_HERO_Y) {
-          cameraVelY = 0;
-        }
-
-        cameraX += cameraVelX;
-        cameraY += cameraVelY;
-
-        if (cameraX < MIN_CAMERA_X) {
-          cameraX = MIN_CAMERA_X;
-        } else if (cameraX > MAX_CAMERA_X) {
-          cameraX = MAX_CAMERA_X;
-        }
-
-        if (cameraY < MIN_CAMERA_Y) {
-          cameraY = MIN_CAMERA_Y;
-        } else if (cameraY > MAX_CAMERA_Y) {
-          cameraY = MAX_CAMERA_Y;
-        }
-      }
-
-      if (foregroundVisibilityTurn > 0) {
-        //
-        // Foreground is active
-        //
-
-        foregroundVisibilityTurn--;
-
-        foregroundOffset++;
-        if (foregroundOffset == TILE_SIZE) {
-          foregroundOffset = 0;
-        }
-
-        int cameraRow = cameraY / TILE_SIZE;
-        int cameraCol = cameraX / TILE_SIZE;
-
-        // Hide some foreground tiles every turn
-        for (int tile = 0; tile < foregroundTilesPerTurn; ++tile) {
-          for (int try = 0; try < 100; ++try) {
-            int row = rand() % PLAYFIELD_HEIGHT_IN_TILES + cameraRow;
-            int col = rand() % PLAYFIELD_WIDTH_IN_TILES + cameraCol;
-            int cell = row*CAVE_WIDTH + col;
-            if (foreground[cell]) {
-              foreground[cell] = false;
-              break;
-            }
-          }
-        }
+      if (mapIsCovered()) {
+        updateMapCover();
       } else {
         //
         // Foreground is not active
         //
 
-        caveTimeTurn++;
-        if (caveTimeTurn == caveTimeTurnMax) {
-          caveTimeTurn = 0;
+        caveTimeFrame++;
+        if (caveTimeFrame == CAVE_TIME_FRAME_MAX) {
+          caveTimeFrame = 0;
           --caveTimeLeft;
           if (caveTimeLeft == 0) {
             isInit = true;
@@ -1829,7 +1596,6 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                 ScanRockford(scanPosition,
                              &RockfordLocation,
                              &RockfordAnimationFacingDirection,
-                             demoMode,
                              &numRoundsSinceRockfordSeenAlive);
                 break;
 
@@ -1846,18 +1612,18 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                 ScanStationaryBoulder(scanPosition);
                 break;
               case OBJ_BOULDER_FALLING:
-                ScanFallingBoulder(scanPosition, &magicWallStatus);
+                ScanFallingBoulder(scanPosition, &magicWallIsOn);
                 break;
 
               case OBJ_DIAMOND_STATIONARY:
                 ScanStationaryDiamond(scanPosition);
                 break;
               case OBJ_DIAMOND_FALLING:
-                ScanFallingDiamond(scanPosition, &magicWallStatus);
+                ScanFallingDiamond(scanPosition, &magicWallIsOn);
                 break;
 
               case OBJ_PRE_OUTBOX:
-                ScanPreOutBox(scanPosition, gotEnoughDiamonds);
+                ScanPreOutBox(scanPosition);
                 break;
 
               case OBJ_EXPLODE_TO_SPACE_STAGE_0:
@@ -1978,17 +1744,17 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             break;
 
           case OBJ_PRE_ROCKFORD_STAGE_1:
-            if (heroIsAppearing) {
+            if (rockfordIsAppearing) {
               int atlCol = appearanceAnim[appearanceAnimFrame] % SPRITE_ATLAS_WIDTH_TILES;
               int atlRow = appearanceAnim[appearanceAnimFrame] / SPRITE_ATLAS_WIDTH_TILES;
               atlX = atlCol * TILE_SIZE;
               atlY = atlRow * TILE_SIZE;
-            } else if (heroIsMoving) {
-              atlX = 112 + heroMoveFrame * 16;
+            } else if (rockfordIsMoving) {
+              atlX = 112 + rockfordMoveFrame * 16;
               atlY = 0;
-              flipHorizontally = !heroIsFacingRight;
+              flipHorizontally = !rockfordIsFacingRight;
             } else {
-              atlX = heroIdleFrame * 16;
+              atlX = rockfordIdleFrame * 16;
               atlY = 0;
             }
             break;
@@ -2142,19 +1908,19 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 #if 0
     debugPrint("x: %d, y: %d, mx: %d, my: %d\n", cameraX, cameraY, MAX_CAMERA_X, MAX_CAMERA_Y);
 
-    drawLine(CAMERA_START_RIGHT_HERO_X, 0, CAMERA_START_RIGHT_HERO_X, BACKBUFFER_HEIGHT - 1, COLOR_PINK);
-    drawLine(CAMERA_STOP_RIGHT_HERO_X, 0, CAMERA_STOP_RIGHT_HERO_X, BACKBUFFER_HEIGHT - 1, COLOR_GREEN);
+    drawLine(CAMERA_START_RIGHT_X, 0, CAMERA_START_RIGHT_X, BACKBUFFER_HEIGHT - 1, COLOR_PINK);
+    drawLine(CAMERA_STOP_RIGHT_X, 0, CAMERA_STOP_RIGHT_X, BACKBUFFER_HEIGHT - 1, COLOR_GREEN);
 
-    drawLine(CAMERA_START_LEFT_HERO_X, 0, CAMERA_START_LEFT_HERO_X, BACKBUFFER_HEIGHT - 1, COLOR_PINK);
-    drawLine(CAMERA_STOP_LEFT_HERO_X, 0, CAMERA_STOP_LEFT_HERO_X, BACKBUFFER_HEIGHT - 1, COLOR_GREEN);
+    drawLine(CAMERA_START_LEFT_X, 0, CAMERA_START_LEFT_X, BACKBUFFER_HEIGHT - 1, COLOR_PINK);
+    drawLine(CAMERA_STOP_LEFT_X, 0, CAMERA_STOP_LEFT_X, BACKBUFFER_HEIGHT - 1, COLOR_GREEN);
 
-    drawLine(0, CAMERA_START_DOWN_HERO_Y, BACKBUFFER_WIDTH - 1, CAMERA_START_DOWN_HERO_Y, COLOR_PINK);
-    drawLine(0, CAMERA_STOP_DOWN_HERO_Y, BACKBUFFER_WIDTH - 1, CAMERA_STOP_DOWN_HERO_Y, COLOR_GREEN);
+    drawLine(0, CAMERA_START_DOWN_Y, BACKBUFFER_WIDTH - 1, CAMERA_START_DOWN_Y, COLOR_PINK);
+    drawLine(0, CAMERA_STOP_DOWN_Y, BACKBUFFER_WIDTH - 1, CAMERA_STOP_DOWN_Y, COLOR_GREEN);
 
-    drawLine(0, CAMERA_START_UP_HERO_Y, BACKBUFFER_WIDTH - 1, CAMERA_START_UP_HERO_Y, COLOR_PINK);
-    drawLine(0, CAMERA_STOP_UP_HERO_Y, BACKBUFFER_WIDTH - 1, CAMERA_STOP_UP_HERO_Y, COLOR_GREEN);
+    drawLine(0, CAMERA_START_UP_Y, BACKBUFFER_WIDTH - 1, CAMERA_START_UP_Y, COLOR_PINK);
+    drawLine(0, CAMERA_STOP_UP_Y, BACKBUFFER_WIDTH - 1, CAMERA_STOP_UP_Y, COLOR_GREEN);
 
-    drawRect(heroScreenLeft, heroScreenTop, heroScreenRight, heroScreenBottom, COLOR_YELLOW);
+    drawRect(rockfordScreenLeft, rockfordScreenTop, rockfordScreenRight, rockfordScreenBottom, COLOR_YELLOW);
 #endif
 
     StretchDIBits(deviceContext, 0, 0, windowWidth, windowHeight,
