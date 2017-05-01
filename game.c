@@ -1,5 +1,5 @@
-#include "bitmaps.h"
-#include "caves.h"
+#include "data_sprites.h"
+#include "data_caves.h"
 #include "game.h"
 #include "graphics.h"
 

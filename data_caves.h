@@ -1,5 +1,5 @@
-#ifndef CAVES_H
-#define CAVES_H
+#ifndef DATA_CAVES_H
+#define DATA_CAVES_H
 
 #include <stdint.h>
 

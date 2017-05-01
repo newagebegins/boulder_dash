@@ -1,8 +1,8 @@
 //
 // IMPORTANT: This is a generated file, don't edit by hand!
 //
-#ifndef BITMAPS_H
-#define BITMAPS_H
+#ifndef DATA_BITMAPS_H
+#define DATA_BITMAPS_H
 
 #include <stdint.h>
 

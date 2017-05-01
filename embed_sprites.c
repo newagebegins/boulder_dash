@@ -72,7 +72,7 @@ void main() {
   Spritesheet spritesheet = loadSpritesheet();
 
   FILE *out;
-  fopen_s(&out, "bitmaps.h", "w");
+  fopen_s(&out, "data_sprites.h", "w");
 
   fprintf(out, "//\n");
   fprintf(out, "// IMPORTANT: This is a generated file, don't edit by hand!\n");
