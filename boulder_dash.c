@@ -100,7 +100,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   float maxDt = 1.0f / targetFps;
   LARGE_INTEGER perfcFreq = {0};
   LARGE_INTEGER perfc = {0};
-  LARGE_INTEGER prefcPrev = {0};
+  LARGE_INTEGER perfcPrev = {0};
 
   QueryPerformanceFrequency(&perfcFreq);
   QueryPerformanceCounter(&perfc);
@@ -111,9 +111,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   float timer = 0;
 
   while (running) {
-    prefcPrev = perfc;
+    perfcPrev = perfc;
     QueryPerformanceCounter(&perfc);
-    dt = (float)(perfc.QuadPart - prefcPrev.QuadPart) / (float)perfcFreq.QuadPart;
+    dt = (float)(perfc.QuadPart - perfcPrev.QuadPart) / (float)perfcFreq.QuadPart;
     if (dt > maxDt) {
       dt = maxDt;
     }
