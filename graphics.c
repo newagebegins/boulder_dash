@@ -18,17 +18,21 @@ void initGraphics(HDC deviceContext) {
   gBitmapInfo->bmiHeader.biCompression = BI_RGB;
   gBitmapInfo->bmiHeader.biClrUsed = PALETTE_COLORS;
 
-  gBitmapInfo->bmiColors[0].rgbBlue = 0xFF;
-  gBitmapInfo->bmiColors[0].rgbGreen = 0;
-  gBitmapInfo->bmiColors[0].rgbRed = 0;
+  static RGBQUAD black  = {0x00, 0x00, 0x00, 0x00};
+  static RGBQUAD red    = {0x00, 0x00, 0xCC, 0x00};
+  static RGBQUAD green  = {0x00, 0xCC, 0x00, 0x00};
+  static RGBQUAD yellow = {0x00, 0xCC, 0xCC, 0x00};
+  static RGBQUAD blue   = {0xCC, 0x00, 0x00, 0x00};
+  static RGBQUAD purple = {0xCC, 0x00, 0xCC, 0x00};
+  static RGBQUAD cyan   = {0xCC, 0xCC, 0x00, 0x00};
+  static RGBQUAD gray   = {0xCC, 0xCC, 0xCC, 0x00};
+  static RGBQUAD white  = {0xFF, 0xFF, 0xFF, 0x00};
 
-  gBitmapInfo->bmiColors[1].rgbBlue = 0;
-  gBitmapInfo->bmiColors[1].rgbGreen = 0xFF;
-  gBitmapInfo->bmiColors[1].rgbRed = 0;
-
-  gBitmapInfo->bmiColors[2].rgbBlue = 0;
-  gBitmapInfo->bmiColors[2].rgbGreen = 0;
-  gBitmapInfo->bmiColors[2].rgbRed = 0xFF;
+  gBitmapInfo->bmiColors[0] = black;
+  gBitmapInfo->bmiColors[1] = gray;
+  gBitmapInfo->bmiColors[2] = white;
+  gBitmapInfo->bmiColors[3] = red;
+  gBitmapInfo->bmiColors[4] = yellow;
 }
 
 void displayBackbuffer() {
@@ -39,8 +43,8 @@ void displayBackbuffer() {
                 DIB_RGB_COLORS, SRCCOPY);
 }
 
-void setPixel(int x, int y, uint8_t colorIndex) {
-  assert(colorIndex < PALETTE_COLORS);
+void setPixel(int x, int y, uint8_t color) {
+  assert(color < PALETTE_COLORS);
 
   int pixelOffset = y*BACKBUFFER_WIDTH + x;
   int byteOffset = pixelOffset / 2;
@@ -48,32 +52,42 @@ void setPixel(int x, int y, uint8_t colorIndex) {
   assert(byteOffset >= 0 && byteOffset < BACKBUFFER_BYTES);
 
   if (pixelOffset % 2 == 0) {
-    gBackbuffer[byteOffset] |= (colorIndex << 4);
+    gBackbuffer[byteOffset] |= (color << 4);
   } else {
-    gBackbuffer[byteOffset] |= colorIndex;
+    gBackbuffer[byteOffset] |= color;
   }
 }
 
-void drawFilledRect(int left, int top, int right, int bottom, uint8_t colorIndex) {
+void drawFilledRect(int left, int top, int right, int bottom, uint8_t color) {
   for (int y = top; y <= bottom; ++y) {
     for (int x = left; x <= right; ++x) {
-      setPixel(x, y, colorIndex);
+      setPixel(x, y, color);
     }
   }
 }
 
-void drawSprite(const Sprite sprite, int outRow, int outCol, uint8_t fgColor, uint8_t bgColor) {
-  for (uint8_t sprY = 0; sprY < SPRITE_SIZE; ++sprY) {
-    int y = outRow*SPRITE_SIZE + sprY;
-    uint8_t byte = sprite[sprY];
+void drawSprite(const Sprite sprite, int spriteRow, int spriteCol, uint8_t fgColor, uint8_t bgColor) {
+  for (uint8_t bmpY = 0; bmpY < SPRITE_SIZE; ++bmpY) {
+    int y = spriteRow*SPRITE_SIZE + bmpY;
+    uint8_t byte = sprite[bmpY];
 
-    for (uint8_t sprX = 0; sprX < SPRITE_SIZE; ++sprX) {
-      int x = outCol*SPRITE_SIZE + sprX;
-      uint8_t mask = 1 << ((SPRITE_SIZE-1) - sprX);
+    for (uint8_t bmpX = 0; bmpX < SPRITE_SIZE; ++bmpX) {
+      int x = spriteCol*SPRITE_SIZE + bmpX;
+      uint8_t mask = 1 << ((SPRITE_SIZE-1) - bmpX);
       uint8_t bit = byte & mask;
       uint8_t color = bit ? fgColor : bgColor;
 
       setPixel(x, y, color);
     }
   }
+}
+
+void drawTile(const Sprite spriteA, const Sprite spriteB, const Sprite spriteC, const Sprite spriteD,
+              int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
+  int spriteRow = tileRow*TILE_SIZE_IN_SPRITES;
+  int spriteCol = tileCol*TILE_SIZE_IN_SPRITES;
+  drawSprite(spriteA, spriteRow, spriteCol, fgColor, bgColor);
+  drawSprite(spriteB, spriteRow, spriteCol+1, fgColor, bgColor);
+  drawSprite(spriteC, spriteRow+1, spriteCol, fgColor, bgColor);
+  drawSprite(spriteD, spriteRow+1, spriteCol+1, fgColor, bgColor);
 }

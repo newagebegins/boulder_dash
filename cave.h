@@ -74,9 +74,11 @@ typedef struct {
   uint8_t objectProbability[NUM_RANDOM_OBJECTS];
 } CaveInfo;
 
+typedef uint8_t CaveMap[CAVE_HEIGHT][CAVE_WIDTH];
+
 typedef struct {
   CaveInfo info;
-  uint8_t map[CAVE_HEIGHT][CAVE_WIDTH];
+  CaveMap map;
 } Cave;
 
 Cave decodeCave(uint8_t caveIndex);
