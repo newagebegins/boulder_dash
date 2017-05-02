@@ -40,7 +40,7 @@ void displayBackbuffer() {
 }
 
 void setPixel(int x, int y, uint8_t colorIndex) {
-  assert((colorIndex & 0xf0) == 0);
+  assert(colorIndex < PALETTE_COLORS);
 
   int pixelOffset = y*BACKBUFFER_WIDTH + x;
   int byteOffset = pixelOffset / 2;
@@ -58,6 +58,22 @@ void drawFilledRect(int left, int top, int right, int bottom, uint8_t colorIndex
   for (int y = top; y <= bottom; ++y) {
     for (int x = left; x <= right; ++x) {
       setPixel(x, y, colorIndex);
+    }
+  }
+}
+
+void drawSprite(const Sprite sprite, int outRow, int outCol, uint8_t fgColor, uint8_t bgColor) {
+  for (uint8_t sprY = 0; sprY < SPRITE_SIZE; ++sprY) {
+    int y = outRow*SPRITE_SIZE + sprY;
+    uint8_t byte = sprite[sprY];
+
+    for (uint8_t sprX = 0; sprX < SPRITE_SIZE; ++sprX) {
+      int x = outCol*SPRITE_SIZE + sprX;
+      uint8_t mask = 1 << ((SPRITE_SIZE-1) - sprX);
+      uint8_t bit = byte & mask;
+      uint8_t color = bit ? fgColor : bgColor;
+
+      setPixel(x, y, color);
     }
   }
 }

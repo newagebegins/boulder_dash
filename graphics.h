@@ -2,7 +2,7 @@
 #define GRAPHICS_H
 
 #include <windows.h>
-#include <stdint.h>
+#include "data_sprites.h"
 
 #define TILE_SIZE 16
 #define BORDER_SIZE TILE_SIZE
@@ -31,5 +31,6 @@ void initGraphics(HDC deviceContext);
 void displayBackbuffer();
 void setPixel(int x, int y, uint8_t colorIndex);
 void drawFilledRect(int left, int top, int right, int bottom, uint8_t colorIndex);
+void drawSprite(const Sprite sprite, int outRow, int outCol, uint8_t fgColor, uint8_t bgColor);
 
 #endif

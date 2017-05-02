@@ -1,6 +1,10 @@
+#include <windows.h>
 #include <assert.h>
 #include <stdint.h>
+
 #include "cave.h"
+#include "common.h"
+#include "data_caves.h"
 
 static void NextRandom(int *RandSeed1, int *RandSeed2) {
   assert(((*RandSeed1 >= 0x00) && (*RandSeed1 <= 0xFF)));
@@ -90,8 +94,17 @@ static void DrawRect(uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH], uint8_t anObject
   }
 }
 
-void decodeCaveData(Cave *cave, uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH]) {
-  uint8_t *aCaveData = (uint8_t *)cave;
+Cave decodeCave(uint8_t caveIndex) {
+  static const uint8_t *caves[] = {
+    gCave1, gCave2, gCave3, gCave4, gCave5, gCave6, gCave7, gCave8, gCave9, gCave10, gCave11,
+    gCave12, gCave13, gCave14, gCave15, gCave16, gCave17, gCave18, gCave19, gCave20
+  };
+
+  assert(caveIndex < ARRAY_LENGTH(caves));
+  uint8_t const *aCaveData = caves[caveIndex];
+
+  Cave cave;
+  CopyMemory(&cave.info, aCaveData, sizeof(cave.info));
 
   uint8_t theWidth, theHeight, theFill, theLength, theDirection;
   int x, y;
@@ -102,7 +115,7 @@ void decodeCaveData(Cave *cave, uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH]) {
   /* Clear out the cave data to a null value */
   for(x = 0; x < 40; x++) {
     for (y = 0; y <= 23; y++) {
-      StoreObject(caveData, x, y, 0x07);
+      StoreObject(cave.map, x, y, 0x07);
     }
   }
 
@@ -116,7 +129,7 @@ void decodeCaveData(Cave *cave, uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH]) {
           theObject = aCaveData[0x18 + caveDataIndex];
         }
       }
-      StoreObject(caveData, x, y, theObject);
+      StoreObject(cave.map, x, y, theObject);
     }
   }
 
@@ -129,7 +142,7 @@ void decodeCaveData(Cave *cave, uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH]) {
       case 0: /* PLOT */
         x = aCaveData[++caveDataIndex];
         y = aCaveData[++caveDataIndex];
-        StoreObject(caveData, x, y, theObject);
+        StoreObject(cave.map, x, y, theObject);
         break;
 
       case 1: /* LINE */
@@ -137,7 +150,7 @@ void decodeCaveData(Cave *cave, uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH]) {
         y = aCaveData[++caveDataIndex];
         theLength = aCaveData[++caveDataIndex];
         theDirection = aCaveData[++caveDataIndex];
-        DrawLine(caveData, theObject, x, y, theLength, theDirection);
+        DrawLine(cave.map, theObject, x, y, theLength, theDirection);
         break;
 
       case 2: /* FILLED RECTANGLE */
@@ -146,7 +159,7 @@ void decodeCaveData(Cave *cave, uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH]) {
         theWidth = aCaveData[++caveDataIndex];
         theHeight = aCaveData[++caveDataIndex];
         theFill = aCaveData[++caveDataIndex];
-        DrawFilledRect(caveData, theObject, x, y, theWidth, theHeight, theFill);
+        DrawFilledRect(cave.map, theObject, x, y, theWidth, theHeight, theFill);
         break;
 
       case 3: /* OPEN RECTANGLE */
@@ -154,20 +167,13 @@ void decodeCaveData(Cave *cave, uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH]) {
         y = aCaveData[++caveDataIndex];
         theWidth = aCaveData[++caveDataIndex];
         theHeight = aCaveData[++caveDataIndex];
-        DrawRect(caveData, theObject, x, y, theWidth, theHeight);
+        DrawRect(cave.map, theObject, x, y, theWidth, theHeight);
         break;
     }
   }
 
   /* SteelBounds */
-  DrawRect(caveData, 0x07, 0, 2, 40, 22);
-}
+  DrawRect(cave.map, 0x07, 0, 2, 40, 22);
 
-Cave* getCave(int caveIndex) {
-  static uint8_t* caves[] = {
-    0, cave1, cave2, cave3, cave4, cave5, cave6, cave7, cave8, cave9, cave10, cave11,
-    cave12, cave13, cave14, cave15, cave16, cave17, cave18, cave19, cave20
-  };
-
-  return (Cave *)caves[caveIndex];
+  return cave;
 }

@@ -14,7 +14,7 @@ typedef struct {
 Spritesheet loadSpritesheet() {
   Spritesheet result;
 
-  HANDLE fileHandle = CreateFile("sprites2.bmp", GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  HANDLE fileHandle = CreateFile("sprites3.bmp", GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
   assert(fileHandle != INVALID_HANDLE_VALUE);
   LARGE_INTEGER fileSize;
   GetFileSizeEx(fileHandle, &fileSize);
@@ -48,21 +48,21 @@ Spritesheet loadSpritesheet() {
 }
 
 void outputSprite(FILE *out, char *name, Spritesheet spritesheet, int row, int col) {
-  fprintf(out, "static const uint8_t %s[SPRITE_SIZE] = {", name);
+  fprintf(out, "static const Sprite %s = {", name);
 
   int startX = col*SPRITE_SIZE;
   int startY = row*SPRITE_SIZE;
 
   for (int spriteY = 0; spriteY < SPRITE_SIZE; ++spriteY) {
-    uint8_t outRow = 0;
+    uint8_t outByte = 0;
     for (int spriteX = 0; spriteX < SPRITE_SIZE; ++spriteX) {
       int x = startX + spriteX;
-      int y = startY = spriteY;
+      int y = startY + spriteY;
       uint32_t pixel = spritesheet.pixels[y*spritesheet.width + x];
       uint8_t outBit = pixel == 0x00FFFFFF ? 1 : 0;
-      outRow |= (outBit << ((SPRITE_SIZE-1) - spriteX));
+      outByte |= (outBit << ((SPRITE_SIZE-1) - spriteX));
     }
-    fprintf(out, "0x%02X,", outRow);
+    fprintf(out, "0x%02X,", outByte);
   }
 
   fprintf(out, "};\n");
@@ -77,10 +77,11 @@ void main() {
   fprintf(out, "//\n");
   fprintf(out, "// IMPORTANT: This is a generated file, don't edit by hand!\n");
   fprintf(out, "//\n");
-  fprintf(out, "#ifndef BITMAPS_H\n");
-  fprintf(out, "#define BITMAPS_H\n\n");
+  fprintf(out, "#ifndef DATA_SPRITES_H\n");
+  fprintf(out, "#define DATA_SPRITES_H\n\n");
   fprintf(out, "#include <stdint.h>\n\n");
-  fprintf(out, "#define SPRITE_SIZE %d\n\n", SPRITE_SIZE);
+  fprintf(out, "#define SPRITE_SIZE %d\n", SPRITE_SIZE);
+  fprintf(out, "typedef uint8_t Sprite[SPRITE_SIZE];\n\n");
 
   outputSprite(out, "gSpriteRockfordEye1", spritesheet, 0, 0);
   outputSprite(out, "gSpriteRockfordEye2", spritesheet, 0, 1);

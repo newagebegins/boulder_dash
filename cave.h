@@ -56,7 +56,7 @@ typedef enum {
   OBJ_ROCKFORD_SCANNED = 0x39,
   OBJ_AMOEBA = 0x3A,
   OBJ_AMOEBA_SCANNED = 0x3B,
-} objectType;
+} CaveObject;
 
 typedef struct {
   uint8_t caveNumber;
@@ -72,9 +72,13 @@ typedef struct {
   uint8_t unused[2];
   uint8_t randomObject[NUM_RANDOM_OBJECTS];
   uint8_t objectProbability[NUM_RANDOM_OBJECTS];
+} CaveInfo;
+
+typedef struct {
+  CaveInfo info;
+  uint8_t map[CAVE_HEIGHT][CAVE_WIDTH];
 } Cave;
 
-Cave* getCave(int caveIndex);
-void decodeCaveData(Cave *caveInfo, uint8_t caveData[CAVE_HEIGHT][CAVE_WIDTH]);
+Cave decodeCave(uint8_t caveIndex);
 
 #endif
