@@ -31,8 +31,8 @@ static void gameRender() {
   drawBorder();
   clearViewport();
   //drawMap();
-  drawSprite(gSpriteSteelWall, 0, 0, 1, PALETTE_COLOR_1);
-  drawSprite(gSpriteRockfordEye1, 0, 1, 1, PALETTE_COLOR_2);
+  drawSprite(gSpriteSteelWall, 0, 0, 1, 2);
+  drawSprite(gSpriteRockfordEye1, 0, 1, 1, 2);
   displayBackbuffer();
 }
 
