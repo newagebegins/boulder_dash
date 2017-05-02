@@ -21,16 +21,21 @@
 // 4 bits per pixel.
 #define BACKBUFFER_BYTES (BACKBUFFER_PIXELS*sizeof(uint8_t)/2)
 
-#define PALETTE_COLORS 3
-
 #define WINDOW_SCALE 3
 #define WINDOW_WIDTH (BACKBUFFER_WIDTH * WINDOW_SCALE)
 #define WINDOW_HEIGHT (BACKBUFFER_HEIGHT * WINDOW_SCALE)
 
+typedef enum {
+  PALETTE_COLOR_0,
+  PALETTE_COLOR_1,
+  PALETTE_COLOR_2,
+  PALETTE_COLOR_COUNT,
+} PaletteColor;
+
 void initGraphics(HDC deviceContext);
 void displayBackbuffer();
-void setPixel(int x, int y, uint8_t colorIndex);
-void drawFilledRect(int left, int top, int right, int bottom, uint8_t colorIndex);
-void drawSprite(const Sprite sprite, int outRow, int outCol, uint8_t fgColor, uint8_t bgColor);
+void setPixel(int x, int y, PaletteColor colorIndex);
+void drawFilledRect(int left, int top, int right, int bottom, PaletteColor colorIndex);
+void drawSprite(const Sprite sprite, int outRow, int outCol, PaletteColor fgColor, PaletteColor bgColor);
 
 #endif
