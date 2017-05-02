@@ -39,10 +39,10 @@
 
 void initGraphics(HDC deviceContext);
 void displayBackbuffer();
-void setPixel(int x, int y, uint8_t colorIndex);
-void drawFilledRect(int left, int top, int right, int bottom, uint8_t colorIndex);
 void drawSprite(const Sprite sprite, int outRow, int outCol, uint8_t fgColor, uint8_t bgColor);
 void drawTile(const Sprite spriteA, const Sprite spriteB, const Sprite spriteC, const Sprite spriteD,
               int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor);
+void drawSpaceTile(int tileRow, int tileCol);
+void drawBorder(uint8_t color);
 
 #endif

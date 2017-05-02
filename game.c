@@ -17,14 +17,6 @@ static void gameUpdate(GameState *gameState, float dt) {
   }
 }
 
-static void drawBorder() {
-  drawFilledRect(0, 0, BACKBUFFER_WIDTH-1, BACKBUFFER_HEIGHT-1, 0);
-}
-
-static void clearViewport() {
-  drawFilledRect(VIEWPORT_X_MIN, VIEWPORT_Y_MIN, VIEWPORT_X_MAX, VIEWPORT_Y_MAX, 0);
-}
-
 static bool isTileVisible(uint8_t tileRow, uint8_t tileCol) {
   return
     tileRow >= VIEWPORT_Y_MIN_IN_TILES && tileRow <= VIEWPORT_Y_MAX_IN_TILES &&
@@ -40,6 +32,9 @@ static void drawCave(CaveMap map) {
         continue;
       }
       switch (map[y][x]) {
+        case OBJ_SPACE:
+          drawSpaceTile(tileRow, tileCol);
+          break;
         case OBJ_STEEL_WALL:
           drawTile(gSpriteSteelWall, gSpriteSteelWall, gSpriteSteelWall, gSpriteSteelWall, tileRow, tileCol, 4, 0);
           break;
@@ -63,8 +58,7 @@ static void drawCave(CaveMap map) {
 }
 
 static void gameRender(CaveMap map) {
-  drawBorder();
-  clearViewport();
+  drawBorder(0);
   drawCave(map);
   displayBackbuffer();
 }

@@ -43,27 +43,35 @@ void displayBackbuffer() {
                 DIB_RGB_COLORS, SRCCOPY);
 }
 
-void setPixel(int x, int y, uint8_t color) {
+static void setPixel(int x, int y, uint8_t color) {
   assert(color < PALETTE_COLORS);
+  assert((color & 0xF0) == 0);
 
   int pixelOffset = y*BACKBUFFER_WIDTH + x;
   int byteOffset = pixelOffset / 2;
 
   assert(byteOffset >= 0 && byteOffset < BACKBUFFER_BYTES);
 
+  uint8_t oldColor = gBackbuffer[byteOffset];
+  uint8_t newColor;
   if (pixelOffset % 2 == 0) {
-    gBackbuffer[byteOffset] |= (color << 4);
+    newColor = (color << 4) | (oldColor & 0x0F);
   } else {
-    gBackbuffer[byteOffset] |= color;
+    newColor = (oldColor & 0xF0) | color;
   }
+  gBackbuffer[byteOffset] = newColor;
 }
 
-void drawFilledRect(int left, int top, int right, int bottom, uint8_t color) {
+static void drawFilledRect(int left, int top, int right, int bottom, uint8_t color) {
   for (int y = top; y <= bottom; ++y) {
     for (int x = left; x <= right; ++x) {
       setPixel(x, y, color);
     }
   }
+}
+
+void drawBorder(uint8_t color) {
+  drawFilledRect(0, 0, BACKBUFFER_WIDTH-1, BACKBUFFER_HEIGHT-1, color);
 }
 
 void drawSprite(const Sprite sprite, int spriteRow, int spriteCol, uint8_t fgColor, uint8_t bgColor) {
@@ -90,4 +98,12 @@ void drawTile(const Sprite spriteA, const Sprite spriteB, const Sprite spriteC, 
   drawSprite(spriteB, spriteRow, spriteCol+1, fgColor, bgColor);
   drawSprite(spriteC, spriteRow+1, spriteCol, fgColor, bgColor);
   drawSprite(spriteD, spriteRow+1, spriteCol+1, fgColor, bgColor);
+}
+
+void drawSpaceTile(int tileRow, int tileCol) {
+  int left = tileCol*TILE_SIZE;
+  int top = tileRow*TILE_SIZE;
+  int bottom = top + TILE_SIZE - 1;
+  int right = left + TILE_SIZE - 1;
+  drawFilledRect(left, top, right, bottom, 0);
 }
