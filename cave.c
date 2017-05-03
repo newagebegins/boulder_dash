@@ -164,7 +164,7 @@ Cave decodeCave(uint8_t caveIndex) {
   }
 
   // Steel bounds
-  drawRect(cave.map, OBJ_STEEL_WALL, 0, 2, 40, 22);
+  drawRect(cave.map, OBJ_STEEL_WALL, 0, 2, CAVE_WIDTH, CAVE_HEIGHT-2);
 
   return cave;
 }
