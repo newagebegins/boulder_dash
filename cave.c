@@ -106,7 +106,7 @@ Cave decodeCave(uint8_t caveIndex) {
     int randSeed1 = 0;
     int randSeed2 = cave.info.randomiserSeed[0];
 
-    for(int y = 3; y < CAVE_HEIGHT; y++) {
+    for(int y = 1; y < CAVE_HEIGHT; y++) {
       for(int x = 0; x < CAVE_WIDTH; x++) {
         CaveObject object = OBJ_DIRT;
         nextRandom(&randSeed1, &randSeed2);
@@ -122,7 +122,8 @@ Cave decodeCave(uint8_t caveIndex) {
 
   // Decode explicit map data
   {
-    uint8_t const *explicitData = caves[caveIndex] + sizeof(CaveInfo);
+    const uint8_t *explicitData = caves[caveIndex] + sizeof(CaveInfo);
+    const int uselessTopBorderHeight = 2;
 
     for (int i = 0; explicitData[i] != 0xFF; i++) {
       uint8_t object = explicitData[i] & 0x3F;
@@ -130,13 +131,13 @@ Cave decodeCave(uint8_t caveIndex) {
       switch(3 & (explicitData[i] >> 6)) {
         case 0: {
           int x = explicitData[++i];
-          int y = explicitData[++i];
+          int y = explicitData[++i] - uselessTopBorderHeight;
           storeObject(cave.map, x, y, object);
           break;
         }
         case 1: {
           int x = explicitData[++i];
-          int y = explicitData[++i];
+          int y = explicitData[++i] - uselessTopBorderHeight;
           int length = explicitData[++i];
           int direction = explicitData[++i];
           drawLine(cave.map, object, x, y, length, direction);
@@ -144,7 +145,7 @@ Cave decodeCave(uint8_t caveIndex) {
         }
         case 2: {
           int x = explicitData[++i];
-          int y = explicitData[++i];
+          int y = explicitData[++i] - uselessTopBorderHeight;
           int width = explicitData[++i];
           int height = explicitData[++i];
           int fill = explicitData[++i];
@@ -153,7 +154,7 @@ Cave decodeCave(uint8_t caveIndex) {
         }
         case 3: {
           int x = explicitData[++i];
-          int y = explicitData[++i];
+          int y = explicitData[++i] - uselessTopBorderHeight;
           int width = explicitData[++i];
           int height = explicitData[++i];
           drawRect(cave.map, object, x, y, width, height);
@@ -164,7 +165,7 @@ Cave decodeCave(uint8_t caveIndex) {
   }
 
   // Steel bounds
-  drawRect(cave.map, OBJ_STEEL_WALL, 0, 2, CAVE_WIDTH, CAVE_HEIGHT-2);
+  drawRect(cave.map, OBJ_STEEL_WALL, 0, 0, CAVE_WIDTH, CAVE_HEIGHT);
 
   return cave;
 }

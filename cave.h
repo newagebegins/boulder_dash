@@ -1,7 +1,7 @@
 #ifndef CAVE_H
 #define CAVE_H
 
-#define CAVE_HEIGHT 24
+#define CAVE_HEIGHT 22
 #define CAVE_WIDTH 40
 #define NUM_DIFFICULTY_LEVELS 5
 #define NUM_RANDOM_OBJECTS 4
