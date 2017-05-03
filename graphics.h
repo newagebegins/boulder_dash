@@ -2,8 +2,9 @@
 #define GRAPHICS_H
 
 #include <windows.h>
-#include "data_sprites.h"
+#include <stdint.h>
 
+#define SPRITE_SIZE 8
 #define TILE_SIZE_IN_SPRITES 2
 #define TILE_SIZE (SPRITE_SIZE*TILE_SIZE_IN_SPRITES)
 #define BORDER_SIZE_IN_TILES 1
@@ -37,12 +38,19 @@
 #define WINDOW_WIDTH (BACKBUFFER_WIDTH * WINDOW_SCALE)
 #define WINDOW_HEIGHT (BACKBUFFER_HEIGHT * WINDOW_SCALE)
 
+typedef uint8_t Sprite[SPRITE_SIZE];
+
 void initGraphics(HDC deviceContext);
 void displayBackbuffer();
 void drawSprite(const Sprite sprite, int outRow, int outCol, uint8_t fgColor, uint8_t bgColor);
 void drawTile(const Sprite spriteA, const Sprite spriteB, const Sprite spriteC, const Sprite spriteD,
               int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor);
 void drawSpaceTile(int tileRow, int tileCol);
+void drawSteelWallTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor);
+void drawDirtTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor);
+void drawBrickWallTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor);
+void drawBoulderTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor);
+void drawDiamondTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor);
 void drawBorder(uint8_t color);
 
 #endif

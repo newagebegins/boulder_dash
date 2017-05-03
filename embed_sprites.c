@@ -79,9 +79,6 @@ void main() {
   fprintf(out, "//\n");
   fprintf(out, "#ifndef DATA_SPRITES_H\n");
   fprintf(out, "#define DATA_SPRITES_H\n\n");
-  fprintf(out, "#include <stdint.h>\n\n");
-  fprintf(out, "#define SPRITE_SIZE %d\n", SPRITE_SIZE);
-  fprintf(out, "typedef uint8_t Sprite[SPRITE_SIZE];\n\n");
 
   outputSprite(out, "gSpriteRockfordEye1", spritesheet, 0, 0);
   outputSprite(out, "gSpriteRockfordEye2", spritesheet, 0, 1);

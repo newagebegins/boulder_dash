@@ -36,21 +36,21 @@ static void drawCave(CaveMap map) {
           drawSpaceTile(tileRow, tileCol);
           break;
         case OBJ_STEEL_WALL:
-          drawTile(gSpriteSteelWall, gSpriteSteelWall, gSpriteSteelWall, gSpriteSteelWall, tileRow, tileCol, 4, 0);
+          drawSteelWallTile(tileRow, tileCol, 4, 0);
           break;
         case OBJ_DIRT:
-          drawTile(gSpriteDirtA, gSpriteDirtB, gSpriteDirtC, gSpriteDirtD, tileRow, tileCol, 3, 0);
+          drawDirtTile(tileRow, tileCol, 3, 0);
           break;
         case OBJ_BRICK_WALL:
-          drawTile(gSpriteBrick1, gSpriteBrick1, gSpriteBrick1, gSpriteBrick1, tileRow, tileCol, 1, 3);
+          drawBrickWallTile(tileRow, tileCol, 1, 3);
           break;
         case OBJ_BOULDER_STATIONARY:
         case OBJ_BOULDER_FALLING:
-          drawTile(gSpriteBoulderA, gSpriteBoulderB, gSpriteBoulderC, gSpriteBoulderD, tileRow, tileCol, 4, 0);
+          drawBoulderTile(tileRow, tileCol, 4, 0);
           break;
         case OBJ_DIAMOND_STATIONARY:
         case OBJ_DIAMOND_FALLING:
-          drawTile(gSpriteDiamond1A, gSpriteDiamond1B, gSpriteDiamond1C, gSpriteDiamond1D, tileRow, tileCol, 2, 0);
+          drawDiamondTile(tileRow, tileCol, 2, 0);
           break;
       }
     }

@@ -1,5 +1,6 @@
 #include <assert.h>
 #include "graphics.h"
+#include "data_sprites.h"
 
 static uint8_t *gBackbuffer;
 static BITMAPINFO *gBitmapInfo;
@@ -106,4 +107,24 @@ void drawSpaceTile(int tileRow, int tileCol) {
   int bottom = top + TILE_SIZE - 1;
   int right = left + TILE_SIZE - 1;
   drawFilledRect(left, top, right, bottom, 0);
+}
+
+void drawSteelWallTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
+  drawTile(gSpriteSteelWall, gSpriteSteelWall, gSpriteSteelWall, gSpriteSteelWall, tileRow, tileCol, fgColor, bgColor);
+}
+
+void drawDirtTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
+  drawTile(gSpriteDirtA, gSpriteDirtB, gSpriteDirtC, gSpriteDirtD, tileRow, tileCol, fgColor, bgColor);
+}
+
+void drawBrickWallTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
+  drawTile(gSpriteBrick1, gSpriteBrick1, gSpriteBrick1, gSpriteBrick1, tileRow, tileCol, fgColor, bgColor);
+}
+
+void drawBoulderTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
+  drawTile(gSpriteBoulderA, gSpriteBoulderB, gSpriteBoulderC, gSpriteBoulderD, tileRow, tileCol, fgColor, bgColor);
+}
+
+void drawDiamondTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
+  drawTile(gSpriteDiamond1A, gSpriteDiamond1B, gSpriteDiamond1C, gSpriteDiamond1D, tileRow, tileCol, fgColor, bgColor);
 }
