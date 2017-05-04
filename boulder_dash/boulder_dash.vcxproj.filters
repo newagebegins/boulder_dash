@@ -38,13 +38,13 @@
     <ClInclude Include="data_caves.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="data_sprites.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="game.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="graphics.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\embed_sprites\data_sprites.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

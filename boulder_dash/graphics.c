@@ -1,7 +1,7 @@
 #include <stdbool.h>
 #include <assert.h>
 #include "graphics.h"
-#include "data_sprites.h"
+#include "../embed_sprites/data_sprites.h"
 
 static uint8_t *gBackbuffer;
 static BITMAPINFO *gBitmapInfo;
