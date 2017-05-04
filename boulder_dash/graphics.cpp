@@ -9,9 +9,9 @@ static HDC gDeviceContext;
 
 void initGraphics(HDC deviceContext) {
   gDeviceContext = deviceContext;
-  gBackbuffer = calloc(BACKBUFFER_PIXELS, sizeof(uint8_t));
+  gBackbuffer = (uint8_t *)malloc(BACKBUFFER_PIXELS);
 
-  gBitmapInfo = malloc(sizeof(BITMAPINFOHEADER) + (PALETTE_COLORS*sizeof(RGBQUAD)));
+  gBitmapInfo = (BITMAPINFO *)malloc(sizeof(BITMAPINFOHEADER) + (PALETTE_COLORS*sizeof(RGBQUAD)));
   gBitmapInfo->bmiHeader.biSize = sizeof(gBitmapInfo->bmiHeader);
   gBitmapInfo->bmiHeader.biWidth = BACKBUFFER_WIDTH;
   gBitmapInfo->bmiHeader.biHeight = -BACKBUFFER_HEIGHT;

@@ -126,7 +126,7 @@ Cave decodeCave(uint8_t caveIndex) {
     const int uselessTopBorderHeight = 2;
 
     for (int i = 0; explicitData[i] != 0xFF; i++) {
-      uint8_t object = explicitData[i] & 0x3F;
+      CaveObject object = (CaveObject)(explicitData[i] & 0x3F);
 
       switch(3 & (explicitData[i] >> 6)) {
         case 0: {
@@ -148,7 +148,7 @@ Cave decodeCave(uint8_t caveIndex) {
           int y = explicitData[++i] - uselessTopBorderHeight;
           int width = explicitData[++i];
           int height = explicitData[++i];
-          int fill = explicitData[++i];
+          CaveObject fill = (CaveObject)explicitData[++i];
           drawFilledRect(cave.map, object, x, y, width, height, fill);
           break;
         }

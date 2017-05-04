@@ -18,7 +18,7 @@ Spritesheet loadSpritesheet() {
   assert(fileHandle != INVALID_HANDLE_VALUE);
   LARGE_INTEGER fileSize;
   GetFileSizeEx(fileHandle, &fileSize);
-  uint8_t *fileContents = malloc(fileSize.LowPart);
+  uint8_t *fileContents = (uint8_t *)malloc(fileSize.LowPart);
   DWORD bytesRead;
   ReadFile(fileHandle, fileContents, fileSize.LowPart, &bytesRead, NULL);
   assert(bytesRead == fileSize.LowPart);
@@ -28,7 +28,7 @@ Spritesheet loadSpritesheet() {
   result.width = *(int*)(fileContents + 18);
   result.height = *(int*)(fileContents + 22);
   uint8_t *pixels = fileContents + pixelsOffset;
-  result.pixels = malloc(result.width * result.height * sizeof(*result.pixels));
+  result.pixels = (uint32_t *)malloc(result.width * result.height * sizeof(*result.pixels));
 
   for (int dstRow = 0; dstRow < result.height; ++dstRow) {
     int srcRow = result.height - dstRow - 1;

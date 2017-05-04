@@ -9,7 +9,7 @@
 #define ROCKFORD_TURNS_TILL_BIRTH 12
 #define MAP_UNCOVER_TURNS 69
 
-typedef struct {
+struct GameState {
   bool gameIsStarted;
   uint8_t caveNumber;
   int livesLeft;
@@ -23,7 +23,7 @@ typedef struct {
   int mapUncoverTurnsLeft;
   Cave cave;
   CaveMap mapCover;
-} GameState;
+};
 
 static int getRandomNumber(int min, int max) {
   return min + rand() % (max - min + 1);
@@ -32,7 +32,7 @@ static int getRandomNumber(int min, int max) {
 static void initMapCover(CaveMap mapCover) {
   for (int y = 0; y < CAVE_HEIGHT; ++y) {
     for (int x = 0; x < CAVE_WIDTH; ++x) {
-      mapCover[y][x] = true;
+      mapCover[y][x] = OBJ_STEEL_WALL;
     }
   }
 }
@@ -69,13 +69,13 @@ static void updateMapCover(CaveMap mapCover, int *mapUncoverTurnsLeft) {
   if (*mapUncoverTurnsLeft == 0) {
     for (int y = 0; y < CAVE_HEIGHT; ++y) {
       for (int x = 0; x < CAVE_WIDTH; ++x) {
-        mapCover[y][x] = false;
+        mapCover[y][x] = OBJ_SPACE;
       }
     }
   } else {
     for (int y = 0; y < CAVE_HEIGHT; ++y) {
       int x = getRandomNumber(0, CAVE_WIDTH-1);
-      mapCover[y][x] = false;
+      mapCover[y][x] = OBJ_SPACE;
     }
   }
 }
@@ -178,7 +178,7 @@ static void drawTextArea(const GameState *gameState) {
 static void drawMapCover(const CaveMap mapCover, int turn) {
   for (int y = 0; y < CAVE_HEIGHT; ++y) {
     for (int x = 0; x < CAVE_WIDTH; ++x) {
-      if (!mapCover[y][x] || !isTileVisible(y, x)) {
+      if (mapCover[y][x] == OBJ_SPACE || !isTileVisible(y, x)) {
         continue;
       }
       drawAnimatedSteelWallTile(y, x, 4, 0, turn);

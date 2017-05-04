@@ -6,7 +6,7 @@
 #define NUM_DIFFICULTY_LEVELS 5
 #define NUM_RANDOM_OBJECTS 4
 
-typedef enum {
+enum CaveObject : uint8_t {
   OBJ_SPACE = 0x00,
   OBJ_DIRT = 0x01,
   OBJ_BRICK_WALL = 0x02,
@@ -56,9 +56,9 @@ typedef enum {
   OBJ_ROCKFORD_SCANNED = 0x39,
   OBJ_AMOEBA = 0x3A,
   OBJ_AMOEBA_SCANNED = 0x3B,
-} CaveObject;
+};
 
-typedef struct {
+struct CaveInfo {
   uint8_t caveNumber;
   uint8_t magicWallMillingTime; // also max amoeba time at 3% growth
   uint8_t initialDiamondValue;
@@ -70,16 +70,16 @@ typedef struct {
   uint8_t backgroundColor2;
   uint8_t foregroundColor;
   uint8_t unused[2];
-  uint8_t randomObject[NUM_RANDOM_OBJECTS];
+  CaveObject randomObject[NUM_RANDOM_OBJECTS];
   uint8_t objectProbability[NUM_RANDOM_OBJECTS];
-} CaveInfo;
+};
 
-typedef uint8_t CaveMap[CAVE_HEIGHT][CAVE_WIDTH];
+typedef CaveObject CaveMap[CAVE_HEIGHT][CAVE_WIDTH];
 
-typedef struct {
+struct Cave {
   CaveInfo info;
   CaveMap map;
-} Cave;
+};
 
 Cave decodeCave(uint8_t caveIndex);
 

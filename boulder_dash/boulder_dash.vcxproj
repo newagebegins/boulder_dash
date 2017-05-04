@@ -143,10 +143,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="boulder_dash.c" />
-    <ClCompile Include="cave.c" />
-    <ClCompile Include="game.c" />
-    <ClCompile Include="graphics.c" />
+    <ClCompile Include="boulder_dash.cpp" />
+    <ClCompile Include="cave.cpp" />
+    <ClCompile Include="game.cpp" />
+    <ClCompile Include="graphics.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\embed_sprites\data_sprites.h" />

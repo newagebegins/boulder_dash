@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="embed_sprites.c">
+    <ClCompile Include="embed_sprites.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

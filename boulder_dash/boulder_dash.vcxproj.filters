@@ -15,16 +15,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="boulder_dash.c">
+    <ClCompile Include="boulder_dash.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="cave.c">
+    <ClCompile Include="cave.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="game.c">
+    <ClCompile Include="game.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="graphics.c">
+    <ClCompile Include="graphics.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
