@@ -56,8 +56,12 @@ static void initGameState(GameState *gameState) {
   initMapCover(gameState->mapCover);
 }
 
+static bool isMapUncovered(int mapUncoverTurnsLeft) {
+  return mapUncoverTurnsLeft <= 0;
+}
+
 static void updateMapCover(CaveMap mapCover, int *mapUncoverTurnsLeft) {
-  if (*mapUncoverTurnsLeft <= 0) {
+  if (isMapUncovered(*mapUncoverTurnsLeft)) {
     return;
   }
 
@@ -79,9 +83,11 @@ static void updateMapCover(CaveMap mapCover, int *mapUncoverTurnsLeft) {
 static void doCaveTurn(GameState *gameState) {
   gameState->turn++;
 
-  gameState->rockfordTurnsTillBirth--;
-  if (gameState->rockfordTurnsTillBirth < 0) {
-    gameState->rockfordTurnsTillBirth = 0;
+  if (isMapUncovered(gameState->mapUncoverTurnsLeft)) {
+    gameState->rockfordTurnsTillBirth--;
+    if (gameState->rockfordTurnsTillBirth < 0) {
+      gameState->rockfordTurnsTillBirth = 0;
+    }
   }
 
   updateMapCover(gameState->mapCover, &gameState->mapUncoverTurnsLeft);
