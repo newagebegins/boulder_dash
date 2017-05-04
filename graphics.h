@@ -51,5 +51,6 @@ void drawDiamond1Tile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor
 void drawExplosion1Tile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor);
 void drawOutboxTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor);
 void drawBorder(uint8_t color);
+void drawText(const char *text);
 
 #endif

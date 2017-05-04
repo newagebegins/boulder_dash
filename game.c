@@ -40,6 +40,10 @@ static bool isTileVisible(uint8_t tileRow, uint8_t tileCol) {
     tileCol >= VIEWPORT_X_MIN_IN_TILES && tileCol <= VIEWPORT_X_MAX_IN_TILES;
 }
 
+static bool isBeforeRockfordBirth(const GameState *gameState) {
+  return gameState->rockfordTurnsTillBirth > 0;
+}
+
 static void drawCave(const GameState *gameState) {
   for (uint8_t y = 0; y < CAVE_HEIGHT; ++y) {
     for (uint8_t x = 0; x < CAVE_WIDTH; ++x) {
@@ -70,7 +74,7 @@ static void drawCave(const GameState *gameState) {
           drawDiamond1Tile(tileRow, tileCol, 2, 0);
           break;
         case OBJ_PRE_ROCKFORD_STAGE_1:
-          if (gameState->rockfordTurnsTillBirth > 0) {
+          if (isBeforeRockfordBirth(gameState)) {
             if (gameState->rockfordTurnsTillBirth % 2) {
               drawSteelWallTile(tileRow, tileCol, 4, 0);
             } else {
@@ -88,6 +92,9 @@ static void drawCave(const GameState *gameState) {
 static void gameRender(const GameState *gameState) {
   drawBorder(0);
   drawCave(gameState);
+  if (isBeforeRockfordBirth(gameState)) {
+    drawText("  PLAYER 1,  3 MEN,  ROOM A/1");
+  }
   displayBackbuffer();
 }
 
