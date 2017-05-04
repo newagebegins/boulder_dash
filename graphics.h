@@ -42,15 +42,14 @@ typedef uint8_t Sprite[SPRITE_SIZE];
 
 void initGraphics(HDC deviceContext);
 void displayBackbuffer();
-void drawSprite(const Sprite sprite, int outRow, int outCol, uint8_t fgColor, uint8_t bgColor);
-void drawTile(const Sprite spriteA, const Sprite spriteB, const Sprite spriteC, const Sprite spriteD,
-              int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor);
 void drawSpaceTile(int tileRow, int tileCol);
 void drawSteelWallTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor);
 void drawDirtTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor);
 void drawBrickWallTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor);
 void drawBoulderTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor);
-void drawDiamondTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor);
+void drawDiamond1Tile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor);
+void drawExplosion1Tile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor);
+void drawOutboxTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor);
 void drawBorder(uint8_t color);
 
 #endif

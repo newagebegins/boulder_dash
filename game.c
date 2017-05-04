@@ -3,8 +3,13 @@
 #include "graphics.h"
 #include "cave.h"
 
+#define TURN_DURATION 0.15f
+#define ROCKFORD_TURNS_TILL_BIRTH 12
+
 typedef struct {
   bool caveIsDecoded;
+  float turnTimer;
+  int rockfordTurnsTillBirth;
   Cave cave;
 } GameState;
 
@@ -14,6 +19,18 @@ static void gameUpdate(GameState *gameState, float dt) {
   if (!gameState->caveIsDecoded) {
     gameState->cave = decodeCave(0);
     gameState->caveIsDecoded = true;
+    gameState->turnTimer = 0;
+    gameState->rockfordTurnsTillBirth = ROCKFORD_TURNS_TILL_BIRTH;
+  }
+
+  gameState->turnTimer += dt;
+  if (gameState->turnTimer >= TURN_DURATION) {
+    gameState->turnTimer -= TURN_DURATION;
+
+    gameState->rockfordTurnsTillBirth--;
+    if (gameState->rockfordTurnsTillBirth < 0) {
+      gameState->rockfordTurnsTillBirth = 0;
+    }
   }
 }
 
@@ -23,7 +40,7 @@ static bool isTileVisible(uint8_t tileRow, uint8_t tileCol) {
     tileCol >= VIEWPORT_X_MIN_IN_TILES && tileCol <= VIEWPORT_X_MAX_IN_TILES;
 }
 
-static void drawCave(CaveMap map) {
+static void drawCave(const GameState *gameState) {
   for (uint8_t y = 0; y < CAVE_HEIGHT; ++y) {
     for (uint8_t x = 0; x < CAVE_WIDTH; ++x) {
       uint8_t tileRow = VIEWPORT_X_MIN_IN_TILES + y;
@@ -31,7 +48,7 @@ static void drawCave(CaveMap map) {
       if (!isTileVisible(tileRow, tileCol)) {
         continue;
       }
-      switch (map[y][x]) {
+      switch (gameState->cave.map[y][x]) {
         case OBJ_SPACE:
           drawSpaceTile(tileRow, tileCol);
           break;
@@ -50,21 +67,32 @@ static void drawCave(CaveMap map) {
           break;
         case OBJ_DIAMOND_STATIONARY:
         case OBJ_DIAMOND_FALLING:
-          drawDiamondTile(tileRow, tileCol, 2, 0);
+          drawDiamond1Tile(tileRow, tileCol, 2, 0);
+          break;
+        case OBJ_PRE_ROCKFORD_STAGE_1:
+          if (gameState->rockfordTurnsTillBirth > 0) {
+            if (gameState->rockfordTurnsTillBirth % 2) {
+              drawSteelWallTile(tileRow, tileCol, 4, 0);
+            } else {
+              drawOutboxTile(tileRow, tileCol, 4, 0);
+            }
+          } else {
+            drawExplosion1Tile(tileRow, tileCol, 2, 0);
+          }
           break;
       }
     }
   }
 }
 
-static void gameRender(CaveMap map) {
+static void gameRender(const GameState *gameState) {
   drawBorder(0);
-  drawCave(map);
+  drawCave(gameState);
   displayBackbuffer();
 }
 
 void gameUpdateAndRender(float dt) {
   static GameState gameState;
   gameUpdate(&gameState, dt);
-  gameRender(gameState.cave.map);
+  gameRender(&gameState);
 }

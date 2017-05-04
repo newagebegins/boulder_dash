@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <assert.h>
 #include "graphics.h"
 #include "data_sprites.h"
@@ -75,13 +76,14 @@ void drawBorder(uint8_t color) {
   drawFilledRect(0, 0, BACKBUFFER_WIDTH-1, BACKBUFFER_HEIGHT-1, color);
 }
 
-void drawSprite(const Sprite sprite, int spriteRow, int spriteCol, uint8_t fgColor, uint8_t bgColor) {
+static void drawSprite(const Sprite sprite, int spriteRow, int spriteCol, uint8_t fgColor, uint8_t bgColor,
+                       bool flipHorz, bool flipVert) {
   for (uint8_t bmpY = 0; bmpY < SPRITE_SIZE; ++bmpY) {
-    int y = spriteRow*SPRITE_SIZE + bmpY;
+    int y = flipVert ? (spriteRow*SPRITE_SIZE + SPRITE_SIZE-1 - bmpY) : (spriteRow*SPRITE_SIZE + bmpY);
     uint8_t byte = sprite[bmpY];
 
     for (uint8_t bmpX = 0; bmpX < SPRITE_SIZE; ++bmpX) {
-      int x = spriteCol*SPRITE_SIZE + bmpX;
+      int x = flipHorz ? (spriteCol*SPRITE_SIZE + SPRITE_SIZE-1 - bmpX) : (spriteCol*SPRITE_SIZE + bmpX);
       uint8_t mask = 1 << ((SPRITE_SIZE-1) - bmpX);
       uint8_t bit = byte & mask;
       uint8_t color = bit ? fgColor : bgColor;
@@ -91,14 +93,14 @@ void drawSprite(const Sprite sprite, int spriteRow, int spriteCol, uint8_t fgCol
   }
 }
 
-void drawTile(const Sprite spriteA, const Sprite spriteB, const Sprite spriteC, const Sprite spriteD,
-              int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
+static void drawTile(const Sprite spriteA, const Sprite spriteB, const Sprite spriteC, const Sprite spriteD,
+                     int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
   int spriteRow = tileRow*TILE_SIZE_IN_SPRITES;
   int spriteCol = tileCol*TILE_SIZE_IN_SPRITES;
-  drawSprite(spriteA, spriteRow, spriteCol, fgColor, bgColor);
-  drawSprite(spriteB, spriteRow, spriteCol+1, fgColor, bgColor);
-  drawSprite(spriteC, spriteRow+1, spriteCol, fgColor, bgColor);
-  drawSprite(spriteD, spriteRow+1, spriteCol+1, fgColor, bgColor);
+  drawSprite(spriteA, spriteRow, spriteCol, fgColor, bgColor, false, false);
+  drawSprite(spriteB, spriteRow, spriteCol+1, fgColor, bgColor, false, false);
+  drawSprite(spriteC, spriteRow+1, spriteCol, fgColor, bgColor, false, false);
+  drawSprite(spriteD, spriteRow+1, spriteCol+1, fgColor, bgColor, false, false);
 }
 
 void drawSpaceTile(int tileRow, int tileCol) {
@@ -125,6 +127,19 @@ void drawBoulderTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor)
   drawTile(gSpriteBoulderA, gSpriteBoulderB, gSpriteBoulderC, gSpriteBoulderD, tileRow, tileCol, fgColor, bgColor);
 }
 
-void drawDiamondTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
+void drawDiamond1Tile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
   drawTile(gSpriteDiamond1A, gSpriteDiamond1B, gSpriteDiamond1C, gSpriteDiamond1D, tileRow, tileCol, fgColor, bgColor);
+}
+
+void drawExplosion1Tile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
+  drawTile(gSpriteExplosion1A, gSpriteExplosion1B, gSpriteExplosion1C, gSpriteExplosion1D, tileRow, tileCol, fgColor, bgColor);
+}
+
+void drawOutboxTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
+  int spriteRow = tileRow*TILE_SIZE_IN_SPRITES;
+  int spriteCol = tileCol*TILE_SIZE_IN_SPRITES;
+  drawSprite(gSpriteOutbox, spriteRow, spriteCol, fgColor, bgColor, false, false);
+  drawSprite(gSpriteOutbox, spriteRow, spriteCol+1, fgColor, bgColor, true, false);
+  drawSprite(gSpriteOutbox, spriteRow+1, spriteCol, fgColor, bgColor, false, true);
+  drawSprite(gSpriteOutbox, spriteRow+1, spriteCol+1, fgColor, bgColor, true, true);
 }
