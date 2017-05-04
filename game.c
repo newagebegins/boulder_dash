@@ -34,10 +34,10 @@ static void gameUpdate(GameState *gameState, float dt) {
   }
 }
 
-static bool isTileVisible(uint8_t tileRow, uint8_t tileCol) {
+static bool isTileVisible(int tileRow, int tileCol) {
   return
-    tileRow >= VIEWPORT_Y_MIN_IN_TILES && tileRow <= VIEWPORT_Y_MAX_IN_TILES &&
-    tileCol >= VIEWPORT_X_MIN_IN_TILES && tileCol <= VIEWPORT_X_MAX_IN_TILES;
+    tileRow >= 0 && tileRow < PLAYFIELD_HEIGHT_IN_TILES &&
+    tileCol >= 0 && tileCol < PLAYFIELD_WIDTH_IN_TILES;
 }
 
 static bool isBeforeRockfordBirth(const GameState *gameState) {
@@ -45,10 +45,10 @@ static bool isBeforeRockfordBirth(const GameState *gameState) {
 }
 
 static void drawCave(const GameState *gameState) {
-  for (uint8_t y = 0; y < CAVE_HEIGHT; ++y) {
-    for (uint8_t x = 0; x < CAVE_WIDTH; ++x) {
-      uint8_t tileRow = VIEWPORT_X_MIN_IN_TILES + y;
-      uint8_t tileCol = VIEWPORT_Y_MIN_IN_TILES + x;
+  for (int y = 0; y < CAVE_HEIGHT; ++y) {
+    for (int x = 0; x < CAVE_WIDTH; ++x) {
+      int tileRow = y;
+      int tileCol = x;
       if (!isTileVisible(tileRow, tileCol)) {
         continue;
       }

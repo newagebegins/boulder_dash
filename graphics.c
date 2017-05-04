@@ -93,10 +93,15 @@ static void drawSprite(const Sprite sprite, int spriteRow, int spriteCol, uint8_
   }
 }
 
+static void tileToSpritePos(int tileRow, int tileCol, int *spriteRow, int *spriteCol) {
+  *spriteRow = (PLAYFIELD_Y_MIN_IN_TILES + tileRow) * TILE_SIZE_IN_SPRITES;
+  *spriteCol = (PLAYFIELD_X_MIN_IN_TILES + tileCol) * TILE_SIZE_IN_SPRITES;
+}
+
 static void drawTile(const Sprite spriteA, const Sprite spriteB, const Sprite spriteC, const Sprite spriteD,
                      int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
-  int spriteRow = tileRow*TILE_SIZE_IN_SPRITES;
-  int spriteCol = tileCol*TILE_SIZE_IN_SPRITES;
+  int spriteRow, spriteCol;
+  tileToSpritePos(tileRow, tileCol, &spriteRow, &spriteCol);
   drawSprite(spriteA, spriteRow, spriteCol, fgColor, bgColor, false, false);
   drawSprite(spriteB, spriteRow, spriteCol+1, fgColor, bgColor, false, false);
   drawSprite(spriteC, spriteRow+1, spriteCol, fgColor, bgColor, false, false);
@@ -104,8 +109,8 @@ static void drawTile(const Sprite spriteA, const Sprite spriteB, const Sprite sp
 }
 
 void drawSpaceTile(int tileRow, int tileCol) {
-  int left = tileCol*TILE_SIZE;
-  int top = tileRow*TILE_SIZE;
+  int left = PLAYFIELD_X_MIN + tileCol*TILE_SIZE;
+  int top = PLAYFIELD_Y_MIN + tileRow*TILE_SIZE;
   int bottom = top + TILE_SIZE - 1;
   int right = left + TILE_SIZE - 1;
   drawFilledRect(left, top, right, bottom, 0);
@@ -136,8 +141,8 @@ void drawExplosion1Tile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgCol
 }
 
 void drawOutboxTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
-  int spriteRow = tileRow*TILE_SIZE_IN_SPRITES;
-  int spriteCol = tileCol*TILE_SIZE_IN_SPRITES;
+  int spriteRow, spriteCol;
+  tileToSpritePos(tileRow, tileCol, &spriteRow, &spriteCol);
   drawSprite(gSpriteOutbox, spriteRow, spriteCol, fgColor, bgColor, false, false);
   drawSprite(gSpriteOutbox, spriteRow, spriteCol+1, fgColor, bgColor, true, false);
   drawSprite(gSpriteOutbox, spriteRow+1, spriteCol, fgColor, bgColor, false, true);
