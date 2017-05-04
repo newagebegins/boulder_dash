@@ -1,4 +1,6 @@
 #include <stdbool.h>
+#include <stdio.h>
+
 #include "game.h"
 #include "graphics.h"
 #include "cave.h"
@@ -7,30 +9,49 @@
 #define ROCKFORD_TURNS_TILL_BIRTH 12
 
 typedef struct {
-  bool caveIsDecoded;
+  bool gameIsStarted;
+  uint8_t caveNumber;
+  int livesLeft;
   float turnTimer;
   int rockfordTurnsTillBirth;
+  int diamondsCollected;
+  int difficultyLevel;
+  int caveTimeLeft;
+  int score;
   Cave cave;
 } GameState;
 
-static void gameUpdate(GameState *gameState, float dt) {
-  UNREFERENCED_PARAMETER(dt);
+static void initializeGameState(GameState *gameState) {
+  gameState->gameIsStarted = true;
 
-  if (!gameState->caveIsDecoded) {
-    gameState->cave = decodeCave(0);
-    gameState->caveIsDecoded = true;
-    gameState->turnTimer = 0;
-    gameState->rockfordTurnsTillBirth = ROCKFORD_TURNS_TILL_BIRTH;
+  gameState->caveNumber = 0;
+  gameState->cave = decodeCave(gameState->caveNumber);
+  gameState->difficultyLevel = 0;
+  gameState->caveTimeLeft = gameState->cave.info.caveTime[gameState->difficultyLevel];
+
+  gameState->livesLeft = 3;
+  gameState->score = 0;
+  gameState->diamondsCollected = 0;
+  gameState->turnTimer = 0;
+  gameState->rockfordTurnsTillBirth = ROCKFORD_TURNS_TILL_BIRTH;
+}
+
+static void doCaveTurn(GameState *gameState) {
+  gameState->rockfordTurnsTillBirth--;
+  if (gameState->rockfordTurnsTillBirth < 0) {
+    gameState->rockfordTurnsTillBirth = 0;
+  }
+}
+
+static void gameUpdate(GameState *gameState, float dt) {
+  if (!gameState->gameIsStarted) {
+    initializeGameState(gameState);
   }
 
   gameState->turnTimer += dt;
   if (gameState->turnTimer >= TURN_DURATION) {
     gameState->turnTimer -= TURN_DURATION;
-
-    gameState->rockfordTurnsTillBirth--;
-    if (gameState->rockfordTurnsTillBirth < 0) {
-      gameState->rockfordTurnsTillBirth = 0;
-    }
+    doCaveTurn(gameState);
   }
 }
 
@@ -89,17 +110,30 @@ static void drawCave(const GameState *gameState) {
   }
 }
 
+static void drawTextArea(const GameState *gameState) {
+  char text[64];
+  if (isBeforeRockfordBirth(gameState)) {
+    sprintf_s(text, sizeof(text), "  PLAYER 1,  %d MEN,  ROOM %c/1", gameState->livesLeft, 'A' + gameState->caveNumber);
+  } else {
+    sprintf_s(text, sizeof(text), "   %d*%d   %02d   %03d   %06d",
+              gameState->cave.info.diamondsNeeded[gameState->difficultyLevel],
+              gameState->cave.info.initialDiamondValue,
+              gameState->diamondsCollected,
+              gameState->caveTimeLeft,
+              gameState->score);
+  }
+  drawText(text);
+}
+
 static void gameRender(const GameState *gameState) {
   drawBorder(0);
   drawCave(gameState);
-  if (isBeforeRockfordBirth(gameState)) {
-    drawText("  PLAYER 1,  3 MEN,  ROOM A/1");
-  }
+  drawTextArea(gameState);
   displayBackbuffer();
 }
 
 void gameUpdateAndRender(float dt) {
-  static GameState gameState;
+  static GameState gameState = {0};
   gameUpdate(&gameState, dt);
   gameRender(&gameState);
 }
