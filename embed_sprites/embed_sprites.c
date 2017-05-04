@@ -14,7 +14,7 @@ typedef struct {
 Spritesheet loadSpritesheet() {
   Spritesheet result;
 
-  HANDLE fileHandle = CreateFile("sprites3.bmp", GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  HANDLE fileHandle = CreateFile("sprites.bmp", GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
   assert(fileHandle != INVALID_HANDLE_VALUE);
   LARGE_INTEGER fileSize;
   GetFileSizeEx(fileHandle, &fileSize);
