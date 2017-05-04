@@ -77,10 +77,10 @@ void drawBorder(uint8_t color) {
 }
 
 static void drawSprite(const Sprite sprite, int spriteRow, int spriteCol, uint8_t fgColor, uint8_t bgColor,
-                       bool flipHorz, bool flipVert) {
+                       bool flipHorz, bool flipVert, int animationStep) {
   for (uint8_t bmpY = 0; bmpY < SPRITE_SIZE; ++bmpY) {
     int y = flipVert ? (spriteRow*SPRITE_SIZE + SPRITE_SIZE-1 - bmpY) : (spriteRow*SPRITE_SIZE + bmpY);
-    uint8_t byte = sprite[bmpY];
+    uint8_t byte = sprite[(bmpY + animationStep) % SPRITE_SIZE];
 
     for (uint8_t bmpX = 0; bmpX < SPRITE_SIZE; ++bmpX) {
       int x = flipHorz ? (spriteCol*SPRITE_SIZE + SPRITE_SIZE-1 - bmpX) : (spriteCol*SPRITE_SIZE + bmpX);
@@ -99,13 +99,13 @@ static void tileToSpritePos(int tileRow, int tileCol, int *spriteRow, int *sprit
 }
 
 static void drawTile(const Sprite spriteA, const Sprite spriteB, const Sprite spriteC, const Sprite spriteD,
-                     int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
+                     int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor, int animationStep) {
   int spriteRow, spriteCol;
   tileToSpritePos(tileRow, tileCol, &spriteRow, &spriteCol);
-  drawSprite(spriteA, spriteRow, spriteCol, fgColor, bgColor, false, false);
-  drawSprite(spriteB, spriteRow, spriteCol+1, fgColor, bgColor, false, false);
-  drawSprite(spriteC, spriteRow+1, spriteCol, fgColor, bgColor, false, false);
-  drawSprite(spriteD, spriteRow+1, spriteCol+1, fgColor, bgColor, false, false);
+  drawSprite(spriteA, spriteRow, spriteCol, fgColor, bgColor, false, false, animationStep);
+  drawSprite(spriteB, spriteRow, spriteCol+1, fgColor, bgColor, false, false, animationStep);
+  drawSprite(spriteC, spriteRow+1, spriteCol, fgColor, bgColor, false, false, animationStep);
+  drawSprite(spriteD, spriteRow+1, spriteCol+1, fgColor, bgColor, false, false, animationStep);
 }
 
 void drawSpaceTile(int tileRow, int tileCol) {
@@ -117,36 +117,40 @@ void drawSpaceTile(int tileRow, int tileCol) {
 }
 
 void drawSteelWallTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
-  drawTile(gSpriteSteelWall, gSpriteSteelWall, gSpriteSteelWall, gSpriteSteelWall, tileRow, tileCol, fgColor, bgColor);
+  drawTile(gSpriteSteelWall, gSpriteSteelWall, gSpriteSteelWall, gSpriteSteelWall, tileRow, tileCol, fgColor, bgColor, 0);
+}
+
+void drawAnimatedSteelWallTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor, int animationStep) {
+  drawTile(gSpriteSteelWall, gSpriteSteelWall, gSpriteSteelWall, gSpriteSteelWall, tileRow, tileCol, fgColor, bgColor, animationStep);
 }
 
 void drawDirtTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
-  drawTile(gSpriteDirtA, gSpriteDirtB, gSpriteDirtC, gSpriteDirtD, tileRow, tileCol, fgColor, bgColor);
+  drawTile(gSpriteDirtA, gSpriteDirtB, gSpriteDirtC, gSpriteDirtD, tileRow, tileCol, fgColor, bgColor, 0);
 }
 
 void drawBrickWallTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
-  drawTile(gSpriteBrick1, gSpriteBrick1, gSpriteBrick1, gSpriteBrick1, tileRow, tileCol, fgColor, bgColor);
+  drawTile(gSpriteBrick1, gSpriteBrick1, gSpriteBrick1, gSpriteBrick1, tileRow, tileCol, fgColor, bgColor, 0);
 }
 
 void drawBoulderTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
-  drawTile(gSpriteBoulderA, gSpriteBoulderB, gSpriteBoulderC, gSpriteBoulderD, tileRow, tileCol, fgColor, bgColor);
+  drawTile(gSpriteBoulderA, gSpriteBoulderB, gSpriteBoulderC, gSpriteBoulderD, tileRow, tileCol, fgColor, bgColor, 0);
 }
 
 void drawDiamond1Tile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
-  drawTile(gSpriteDiamond1A, gSpriteDiamond1B, gSpriteDiamond1C, gSpriteDiamond1D, tileRow, tileCol, fgColor, bgColor);
+  drawTile(gSpriteDiamond1A, gSpriteDiamond1B, gSpriteDiamond1C, gSpriteDiamond1D, tileRow, tileCol, fgColor, bgColor, 0);
 }
 
 void drawExplosion1Tile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
-  drawTile(gSpriteExplosion1A, gSpriteExplosion1B, gSpriteExplosion1C, gSpriteExplosion1D, tileRow, tileCol, fgColor, bgColor);
+  drawTile(gSpriteExplosion1A, gSpriteExplosion1B, gSpriteExplosion1C, gSpriteExplosion1D, tileRow, tileCol, fgColor, bgColor, 0);
 }
 
 void drawOutboxTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
   int spriteRow, spriteCol;
   tileToSpritePos(tileRow, tileCol, &spriteRow, &spriteCol);
-  drawSprite(gSpriteOutbox, spriteRow, spriteCol, fgColor, bgColor, false, false);
-  drawSprite(gSpriteOutbox, spriteRow, spriteCol+1, fgColor, bgColor, true, false);
-  drawSprite(gSpriteOutbox, spriteRow+1, spriteCol, fgColor, bgColor, false, true);
-  drawSprite(gSpriteOutbox, spriteRow+1, spriteCol+1, fgColor, bgColor, true, true);
+  drawSprite(gSpriteOutbox, spriteRow, spriteCol, fgColor, bgColor, false, false, 0);
+  drawSprite(gSpriteOutbox, spriteRow, spriteCol+1, fgColor, bgColor, true, false, 0);
+  drawSprite(gSpriteOutbox, spriteRow+1, spriteCol, fgColor, bgColor, false, true, 0);
+  drawSprite(gSpriteOutbox, spriteRow+1, spriteCol+1, fgColor, bgColor, true, true, 0);
 }
 
 static const uint8_t* getCharSprite(char ch) {
@@ -205,6 +209,6 @@ void drawText(const char *text) {
     if (text[i] == ' ') {
       continue;
     }
-    drawSprite(getCharSprite(text[i]), 3, 2+i, 1, 0, false, false);
+    drawSprite(getCharSprite(text[i]), 3, 2+i, 1, 0, false, false, 0);
   }
 }

@@ -7,21 +7,37 @@
 
 #define TURN_DURATION 0.15f
 #define ROCKFORD_TURNS_TILL_BIRTH 12
+#define MAP_UNCOVER_TURNS 69
 
 typedef struct {
   bool gameIsStarted;
   uint8_t caveNumber;
   int livesLeft;
+  int turn;
   float turnTimer;
   int rockfordTurnsTillBirth;
   int diamondsCollected;
   int difficultyLevel;
   int caveTimeLeft;
   int score;
+  int mapUncoverTurnsLeft;
   Cave cave;
+  CaveMap mapCover;
 } GameState;
 
-static void initializeGameState(GameState *gameState) {
+static int getRandomNumber(int min, int max) {
+  return min + rand() % (max - min + 1);
+}
+
+static void initMapCover(CaveMap mapCover) {
+  for (int y = 0; y < CAVE_HEIGHT; ++y) {
+    for (int x = 0; x < CAVE_WIDTH; ++x) {
+      mapCover[y][x] = true;
+    }
+  }
+}
+
+static void initGameState(GameState *gameState) {
   gameState->gameIsStarted = true;
 
   gameState->caveNumber = 0;
@@ -32,20 +48,48 @@ static void initializeGameState(GameState *gameState) {
   gameState->livesLeft = 3;
   gameState->score = 0;
   gameState->diamondsCollected = 0;
+  gameState->turn = 0;
   gameState->turnTimer = 0;
   gameState->rockfordTurnsTillBirth = ROCKFORD_TURNS_TILL_BIRTH;
+  gameState->mapUncoverTurnsLeft = MAP_UNCOVER_TURNS;
+
+  initMapCover(gameState->mapCover);
+}
+
+static void updateMapCover(CaveMap mapCover, int *mapUncoverTurnsLeft) {
+  if (*mapUncoverTurnsLeft <= 0) {
+    return;
+  }
+
+  (*mapUncoverTurnsLeft)--;
+  if (*mapUncoverTurnsLeft == 0) {
+    for (int y = 0; y < CAVE_HEIGHT; ++y) {
+      for (int x = 0; x < CAVE_WIDTH; ++x) {
+        mapCover[y][x] = false;
+      }
+    }
+  } else {
+    for (int y = 0; y < CAVE_HEIGHT; ++y) {
+      int x = getRandomNumber(0, CAVE_WIDTH-1);
+      mapCover[y][x] = false;
+    }
+  }
 }
 
 static void doCaveTurn(GameState *gameState) {
+  gameState->turn++;
+
   gameState->rockfordTurnsTillBirth--;
   if (gameState->rockfordTurnsTillBirth < 0) {
     gameState->rockfordTurnsTillBirth = 0;
   }
+
+  updateMapCover(gameState->mapCover, &gameState->mapUncoverTurnsLeft);
 }
 
 static void gameUpdate(GameState *gameState, float dt) {
   if (!gameState->gameIsStarted) {
-    initializeGameState(gameState);
+    initGameState(gameState);
   }
 
   gameState->turnTimer += dt;
@@ -125,9 +169,21 @@ static void drawTextArea(const GameState *gameState) {
   drawText(text);
 }
 
+static void drawMapCover(const CaveMap mapCover, int turn) {
+  for (int y = 0; y < CAVE_HEIGHT; ++y) {
+    for (int x = 0; x < CAVE_WIDTH; ++x) {
+      if (!mapCover[y][x] || !isTileVisible(y, x)) {
+        continue;
+      }
+      drawAnimatedSteelWallTile(y, x, 4, 0, turn);
+    }
+  }
+}
+
 static void gameRender(const GameState *gameState) {
   drawBorder(0);
   drawCave(gameState);
+  drawMapCover(gameState->mapCover, gameState->turn);
   drawTextArea(gameState);
   displayBackbuffer();
 }

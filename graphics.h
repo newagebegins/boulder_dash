@@ -52,6 +52,7 @@ void initGraphics(HDC deviceContext);
 void displayBackbuffer();
 void drawSpaceTile(int tileRow, int tileCol);
 void drawSteelWallTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor);
+void drawAnimatedSteelWallTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor, int animationStep);
 void drawDirtTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor);
 void drawBrickWallTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor);
 void drawBoulderTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor);
