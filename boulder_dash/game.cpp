@@ -40,86 +40,86 @@ static void initMapCover(CaveMap mapCover) {
     }
 }
 
-static void initGameState(GameState *gameState) {
-    gameState->gameIsStarted = true;
-
-    gameState->caveNumber = 0;
-    gameState->cave = decodeCave(gameState->caveNumber);
-    gameState->difficultyLevel = 0;
-    gameState->caveTimeLeft = gameState->cave.info.caveTime[gameState->difficultyLevel];
-
-    gameState->livesLeft = 3;
-    gameState->score = 0;
-    gameState->diamondsCollected = 0;
-    gameState->turn = 0;
-    gameState->turnTimer = 0;
-    gameState->rockfordTurnsTillBirth = ROCKFORD_TURNS_TILL_BIRTH;
-    gameState->mapUncoverTurnsLeft = MAP_UNCOVER_TURNS;
-    gameState->pauseTurnsLeft = 0;
-
-    initMapCover(gameState->mapCover);
+static bool isMapCovered(const GameState& gameState) {
+    return gameState.mapUncoverTurnsLeft > 0;
 }
 
-static bool isMapCovered(int mapUncoverTurnsLeft) {
-    return mapUncoverTurnsLeft > 0;
+static void initGameState(GameState& gameState) {
+    gameState.gameIsStarted = true;
+
+    gameState.caveNumber = 0;
+    gameState.cave = decodeCave(gameState.caveNumber);
+    gameState.difficultyLevel = 0;
+    gameState.caveTimeLeft = gameState.cave.info.caveTime[gameState.difficultyLevel];
+
+    gameState.livesLeft = 3;
+    gameState.score = 0;
+    gameState.diamondsCollected = 0;
+    gameState.turn = 0;
+    gameState.turnTimer = 0;
+    gameState.rockfordTurnsTillBirth = ROCKFORD_TURNS_TILL_BIRTH;
+    gameState.mapUncoverTurnsLeft = MAP_UNCOVER_TURNS;
+    gameState.pauseTurnsLeft = 0;
+
+    initMapCover(gameState.mapCover);
 }
 
-static void updateMapCover(GameState *gameState) {
-    if (!isMapCovered(gameState->mapUncoverTurnsLeft)) {
+static void updateMapCover(GameState& gameState) {
+    if (!isMapCovered(gameState)) {
         return;
     }
 
-    gameState->mapUncoverTurnsLeft--;
-    if (gameState->mapUncoverTurnsLeft > 1) {
+    gameState.mapUncoverTurnsLeft--;
+    if (gameState.mapUncoverTurnsLeft > 1) {
         for (int y = 0; y < CAVE_HEIGHT; ++y) {
             for (int i = 0; i < TILES_PER_LINE_TO_UNCOVER; ++i) {
                 int x = getRandomNumber(0, CAVE_WIDTH - 1);
-                gameState->mapCover[y][x] = OBJ_SPACE;
+                gameState.mapCover[y][x] = OBJ_SPACE;
             }
         }
     }
-    else if (gameState->mapUncoverTurnsLeft == 1) {
-        gameState->pauseTurnsLeft = PAUSE_TURNS_BEFORE_FULL_UNCOVER;
+    else if (gameState.mapUncoverTurnsLeft == 1) {
+        gameState.pauseTurnsLeft = PAUSE_TURNS_BEFORE_FULL_UNCOVER;
     }
-    else if (gameState->mapUncoverTurnsLeft == 0) {
+    else if (gameState.mapUncoverTurnsLeft == 0) {
         for (int y = 0; y < CAVE_HEIGHT; ++y) {
             for (int x = 0; x < CAVE_WIDTH; ++x) {
-                gameState->mapCover[y][x] = OBJ_SPACE;
+                gameState.mapCover[y][x] = OBJ_SPACE;
             }
         }
     }
 }
 
-static void updatePreRockford(GameState *gameState) {
-    if (!isMapCovered(gameState->mapUncoverTurnsLeft)) {
-        gameState->rockfordTurnsTillBirth--;
-        if (gameState->rockfordTurnsTillBirth < 0) {
-            gameState->rockfordTurnsTillBirth = 0;
+static void updatePreRockford(GameState& gameState) {
+    if (!isMapCovered(gameState)) {
+        gameState.rockfordTurnsTillBirth--;
+        if (gameState.rockfordTurnsTillBirth < 0) {
+            gameState.rockfordTurnsTillBirth = 0;
         }
     }
 }
 
-static void updatePause(int *pauseTurnsLeft) {
-    (*pauseTurnsLeft)--;
-    if (*pauseTurnsLeft < 0) {
-        *pauseTurnsLeft = 0;
+static void updatePause(GameState& gameState) {
+    gameState.pauseTurnsLeft--;
+    if (gameState.pauseTurnsLeft < 0) {
+        gameState.pauseTurnsLeft = 0;
     }
 }
 
-static bool isPaused(int pauseTurnsLeft) {
-    return pauseTurnsLeft > 0;
+static bool isPaused(const GameState& gameState) {
+    return gameState.pauseTurnsLeft > 0;
 }
 
-static void doCaveTurn(GameState *gameState) {
-    if (isPaused(gameState->pauseTurnsLeft)) {
-        updatePause(&gameState->pauseTurnsLeft);
+static void doCaveTurn(GameState& gameState) {
+    if (isPaused(gameState)) {
+        updatePause(gameState);
     }
     else {
-        gameState->turn++;
+        gameState.turn++;
 
         for (int y = 0; y < CAVE_HEIGHT; ++y) {
             for (int x = 0; x < CAVE_WIDTH; ++x) {
-                switch (getObject(gameState->cave.map, x, y)) {
+                switch (getObject(gameState.cave.map, x, y)) {
                     case OBJ_PRE_ROCKFORD_STAGE_1:
                         updatePreRockford(gameState);
                         break;
@@ -131,14 +131,14 @@ static void doCaveTurn(GameState *gameState) {
     }
 }
 
-static void gameUpdate(GameState *gameState, float dt) {
-    if (!gameState->gameIsStarted) {
+static void gameUpdate(GameState& gameState, float dt) {
+    if (!gameState.gameIsStarted) {
         initGameState(gameState);
     }
 
-    gameState->turnTimer += dt;
-    if (gameState->turnTimer >= TURN_DURATION) {
-        gameState->turnTimer -= TURN_DURATION;
+    gameState.turnTimer += dt;
+    if (gameState.turnTimer >= TURN_DURATION) {
+        gameState.turnTimer -= TURN_DURATION;
         doCaveTurn(gameState);
     }
 }
@@ -149,18 +149,18 @@ static bool isTileVisible(Position tilePos) {
         tilePos.x >= 0 && tilePos.x < PLAYFIELD_WIDTH_IN_TILES;
 }
 
-static bool isBeforeRockfordBirth(const GameState *gameState) {
-    return gameState->rockfordTurnsTillBirth > 0;
+static bool isBeforeRockfordBirth(const GameState& gameState) {
+    return gameState.rockfordTurnsTillBirth > 0;
 }
 
-static void drawCave(const GameState *gameState) {
+static void drawCave(const GameState& gameState) {
     for (int y = 0; y < CAVE_HEIGHT; ++y) {
         for (int x = 0; x < CAVE_WIDTH; ++x) {
             Position tilePos(x, y);
             if (!isTileVisible(tilePos)) {
                 continue;
             }
-            switch (gameState->cave.map[y][x]) {
+            switch (gameState.cave.map[y][x]) {
                 case OBJ_SPACE:
                     drawSpaceTile(tilePos);
                     break;
@@ -183,7 +183,7 @@ static void drawCave(const GameState *gameState) {
                     break;
                 case OBJ_PRE_ROCKFORD_STAGE_1:
                     if (isBeforeRockfordBirth(gameState)) {
-                        if (gameState->rockfordTurnsTillBirth % 2) {
+                        if (gameState.rockfordTurnsTillBirth % 2) {
                             drawSteelWallTile(tilePos, 4, 0);
                         }
                         else {
@@ -199,18 +199,18 @@ static void drawCave(const GameState *gameState) {
     }
 }
 
-static void drawTextArea(const GameState *gameState) {
+static void drawTextArea(const GameState& gameState) {
     char text[64];
     if (isBeforeRockfordBirth(gameState)) {
-        sprintf_s(text, sizeof(text), "  PLAYER 1,  %d MEN,  ROOM %c/1", gameState->livesLeft, 'A' + gameState->caveNumber);
+        sprintf_s(text, sizeof(text), "  PLAYER 1,  %d MEN,  ROOM %c/1", gameState.livesLeft, 'A' + gameState.caveNumber);
     }
     else {
         sprintf_s(text, sizeof(text), "   %d*%d   %02d   %03d   %06d",
-            gameState->cave.info.diamondsNeeded[gameState->difficultyLevel],
-            gameState->cave.info.initialDiamondValue,
-            gameState->diamondsCollected,
-            gameState->caveTimeLeft,
-            gameState->score);
+            gameState.cave.info.diamondsNeeded[gameState.difficultyLevel],
+            gameState.cave.info.initialDiamondValue,
+            gameState.diamondsCollected,
+            gameState.caveTimeLeft,
+            gameState.score);
     }
     drawText(text);
 }
@@ -227,16 +227,16 @@ static void drawMapCover(const CaveMap mapCover, int turn) {
     }
 }
 
-static void gameRender(const GameState *gameState) {
+static void gameRender(const GameState& gameState) {
     drawBorder(0);
     drawCave(gameState);
-    drawMapCover(gameState->mapCover, gameState->turn);
+    drawMapCover(gameState.mapCover, gameState.turn);
     drawTextArea(gameState);
     displayBackbuffer();
 }
 
 void gameUpdateAndRender(float dt) {
     static GameState gameState = { 0 };
-    gameUpdate(&gameState, dt);
-    gameRender(&gameState);
+    gameUpdate(gameState, dt);
+    gameRender(gameState);
 }

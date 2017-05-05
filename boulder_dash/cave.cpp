@@ -6,30 +6,30 @@
 #include "common.h"
 #include "data_caves.h"
 
-static void nextRandom(int *randSeed1, int *randSeed2) {
-    assert((*randSeed1 >= 0x00) && (*randSeed1 <= 0xFF));
-    assert((*randSeed2 >= 0x00) && (*randSeed2 <= 0xFF));
+static void nextRandom(int& randSeed1, int& randSeed2) {
+    assert((randSeed1 >= 0x00) && (randSeed1 <= 0xFF));
+    assert((randSeed2 >= 0x00) && (randSeed2 <= 0xFF));
 
-    int tempRand1 = (*randSeed1 & 0x0001) * 0x0080;
-    int tempRand2 = (*randSeed2 >> 1) & 0x007F;
+    int tempRand1 = (randSeed1 & 0x0001) * 0x0080;
+    int tempRand2 = (randSeed2 >> 1) & 0x007F;
 
-    int result = (*randSeed2) + (*randSeed2 & 0x0001) * 0x0080;
+    int result = (randSeed2) + (randSeed2 & 0x0001) * 0x0080;
     int carry = (result > 0x00FF);
     result = result & 0x00FF;
 
     result = result + carry + 0x13;
     carry = (result > 0x00FF);
-    *randSeed2 = result & 0x00FF;
+    randSeed2 = result & 0x00FF;
 
-    result = *randSeed1 + carry + tempRand1;
+    result = randSeed1 + carry + tempRand1;
     carry = (result > 0x00FF);
     result = result & 0x00FF;
 
     result = result + carry + tempRand2;
-    *randSeed1 = result & 0x00FF;
+    randSeed1 = result & 0x00FF;
 
-    assert((*randSeed1 >= 0x00) && (*randSeed1 <= 0xFF));
-    assert((*randSeed2 >= 0x00) && (*randSeed2 <= 0xFF));
+    assert((randSeed1 >= 0x00) && (randSeed1 <= 0xFF));
+    assert((randSeed2 >= 0x00) && (randSeed2 <= 0xFF));
 }
 
 static void setObject(CaveMap map, CaveObject object, Position pos) {
@@ -114,7 +114,7 @@ Cave decodeCave(uint8_t caveIndex) {
         for (int y = 1; y < CAVE_HEIGHT; y++) {
             for (int x = 0; x < CAVE_WIDTH; x++) {
                 CaveObject object = OBJ_DIRT;
-                nextRandom(&randSeed1, &randSeed2);
+                nextRandom(randSeed1, randSeed2);
                 for (int i = 0; i < NUM_RANDOM_OBJECTS; i++) {
                     if (randSeed1 < cave.info.objectProbability[i]) {
                         object = cave.info.randomObject[i];
