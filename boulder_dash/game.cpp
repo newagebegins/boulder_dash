@@ -7,7 +7,9 @@
 
 #define TURN_DURATION 0.15f
 #define ROCKFORD_TURNS_TILL_BIRTH 12
-#define MAP_UNCOVER_TURNS 69
+#define MAP_UNCOVER_TURNS 40
+#define PAUSE_TURNS_BEFORE_FULL_UNCOVER 2
+#define TILES_PER_LINE_TO_UNCOVER 3
 
 struct GameState {
     bool gameIsStarted;
@@ -21,6 +23,7 @@ struct GameState {
     int caveTimeLeft;
     int score;
     int mapUncoverTurnsLeft;
+    int pauseTurnsLeft;
     Cave cave;
     CaveMap mapCover;
 };
@@ -52,37 +55,43 @@ static void initGameState(GameState *gameState) {
     gameState->turnTimer = 0;
     gameState->rockfordTurnsTillBirth = ROCKFORD_TURNS_TILL_BIRTH;
     gameState->mapUncoverTurnsLeft = MAP_UNCOVER_TURNS;
+    gameState->pauseTurnsLeft = 0;
 
     initMapCover(gameState->mapCover);
 }
 
-static bool isMapUncovered(int mapUncoverTurnsLeft) {
-    return mapUncoverTurnsLeft <= 0;
+static bool isMapCovered(int mapUncoverTurnsLeft) {
+    return mapUncoverTurnsLeft > 0;
 }
 
-static void updateMapCover(CaveMap mapCover, int *mapUncoverTurnsLeft) {
-    if (isMapUncovered(*mapUncoverTurnsLeft)) {
+static void updateMapCover(GameState *gameState) {
+    if (!isMapCovered(gameState->mapUncoverTurnsLeft)) {
         return;
     }
 
-    (*mapUncoverTurnsLeft)--;
-    if (*mapUncoverTurnsLeft == 0) {
+    gameState->mapUncoverTurnsLeft--;
+    if (gameState->mapUncoverTurnsLeft > 1) {
         for (int y = 0; y < CAVE_HEIGHT; ++y) {
-            for (int x = 0; x < CAVE_WIDTH; ++x) {
-                mapCover[y][x] = OBJ_SPACE;
+            for (int i = 0; i < TILES_PER_LINE_TO_UNCOVER; ++i) {
+                int x = getRandomNumber(0, CAVE_WIDTH - 1);
+                gameState->mapCover[y][x] = OBJ_SPACE;
             }
         }
     }
-    else {
+    else if (gameState->mapUncoverTurnsLeft == 1) {
+        gameState->pauseTurnsLeft = PAUSE_TURNS_BEFORE_FULL_UNCOVER;
+    }
+    else if (gameState->mapUncoverTurnsLeft == 0) {
         for (int y = 0; y < CAVE_HEIGHT; ++y) {
-            int x = getRandomNumber(0, CAVE_WIDTH - 1);
-            mapCover[y][x] = OBJ_SPACE;
+            for (int x = 0; x < CAVE_WIDTH; ++x) {
+                gameState->mapCover[y][x] = OBJ_SPACE;
+            }
         }
     }
 }
 
 static void updatePreRockford(GameState *gameState) {
-    if (isMapUncovered(gameState->mapUncoverTurnsLeft)) {
+    if (!isMapCovered(gameState->mapUncoverTurnsLeft)) {
         gameState->rockfordTurnsTillBirth--;
         if (gameState->rockfordTurnsTillBirth < 0) {
             gameState->rockfordTurnsTillBirth = 0;
@@ -90,20 +99,36 @@ static void updatePreRockford(GameState *gameState) {
     }
 }
 
-static void doCaveTurn(GameState *gameState) {
-    gameState->turn++;
+static void updatePause(int *pauseTurnsLeft) {
+    (*pauseTurnsLeft)--;
+    if (*pauseTurnsLeft < 0) {
+        *pauseTurnsLeft = 0;
+    }
+}
 
-    for (int y = 0; y < CAVE_HEIGHT; ++y) {
-        for (int x = 0; x < CAVE_WIDTH; ++x) {
-            switch (getObject(gameState->cave.map, x, y)) {
-                case OBJ_PRE_ROCKFORD_STAGE_1:
-                    updatePreRockford(gameState);
-                    break;
+static bool isPaused(int pauseTurnsLeft) {
+    return pauseTurnsLeft > 0;
+}
+
+static void doCaveTurn(GameState *gameState) {
+    if (isPaused(gameState->pauseTurnsLeft)) {
+        updatePause(&gameState->pauseTurnsLeft);
+    }
+    else {
+        gameState->turn++;
+
+        for (int y = 0; y < CAVE_HEIGHT; ++y) {
+            for (int x = 0; x < CAVE_WIDTH; ++x) {
+                switch (getObject(gameState->cave.map, x, y)) {
+                    case OBJ_PRE_ROCKFORD_STAGE_1:
+                        updatePreRockford(gameState);
+                        break;
+                }
             }
         }
-    }
 
-    updateMapCover(gameState->mapCover, &gameState->mapUncoverTurnsLeft);
+        updateMapCover(gameState);
+    }
 }
 
 static void gameUpdate(GameState *gameState, float dt) {
