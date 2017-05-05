@@ -106,10 +106,10 @@ static void gameUpdate(GameState *gameState, float dt) {
     }
 }
 
-static bool isTileVisible(int tileRow, int tileCol) {
+static bool isTileVisible(Position tilePos) {
     return
-        tileRow >= 0 && tileRow < PLAYFIELD_HEIGHT_IN_TILES &&
-        tileCol >= 0 && tileCol < PLAYFIELD_WIDTH_IN_TILES;
+        tilePos.y >= 0 && tilePos.y < PLAYFIELD_HEIGHT_IN_TILES &&
+        tilePos.x >= 0 && tilePos.x < PLAYFIELD_WIDTH_IN_TILES;
 }
 
 static bool isBeforeRockfordBirth(const GameState *gameState) {
@@ -119,43 +119,42 @@ static bool isBeforeRockfordBirth(const GameState *gameState) {
 static void drawCave(const GameState *gameState) {
     for (int y = 0; y < CAVE_HEIGHT; ++y) {
         for (int x = 0; x < CAVE_WIDTH; ++x) {
-            int tileRow = y;
-            int tileCol = x;
-            if (!isTileVisible(tileRow, tileCol)) {
+            Position tilePos = makePosition(x, y);
+            if (!isTileVisible(tilePos)) {
                 continue;
             }
             switch (gameState->cave.map[y][x]) {
                 case OBJ_SPACE:
-                    drawSpaceTile(tileRow, tileCol);
+                    drawSpaceTile(tilePos);
                     break;
                 case OBJ_STEEL_WALL:
-                    drawSteelWallTile(tileRow, tileCol, 4, 0);
+                    drawSteelWallTile(tilePos, 4, 0);
                     break;
                 case OBJ_DIRT:
-                    drawDirtTile(tileRow, tileCol, 3, 0);
+                    drawDirtTile(tilePos, 3, 0);
                     break;
                 case OBJ_BRICK_WALL:
-                    drawBrickWallTile(tileRow, tileCol, 1, 3);
+                    drawBrickWallTile(tilePos, 1, 3);
                     break;
                 case OBJ_BOULDER_STATIONARY:
                 case OBJ_BOULDER_FALLING:
-                    drawBoulderTile(tileRow, tileCol, 4, 0);
+                    drawBoulderTile(tilePos, 4, 0);
                     break;
                 case OBJ_DIAMOND_STATIONARY:
                 case OBJ_DIAMOND_FALLING:
-                    drawDiamond1Tile(tileRow, tileCol, 2, 0);
+                    drawDiamond1Tile(tilePos, 2, 0);
                     break;
                 case OBJ_PRE_ROCKFORD_STAGE_1:
                     if (isBeforeRockfordBirth(gameState)) {
                         if (gameState->rockfordTurnsTillBirth % 2) {
-                            drawSteelWallTile(tileRow, tileCol, 4, 0);
+                            drawSteelWallTile(tilePos, 4, 0);
                         }
                         else {
-                            drawOutboxTile(tileRow, tileCol, 4, 0);
+                            drawOutboxTile(tilePos, 4, 0);
                         }
                     }
                     else {
-                        drawExplosion1Tile(tileRow, tileCol, 2, 0);
+                        drawExplosion1Tile(tilePos, 2, 0);
                     }
                     break;
             }
@@ -182,10 +181,11 @@ static void drawTextArea(const GameState *gameState) {
 static void drawMapCover(const CaveMap mapCover, int turn) {
     for (int y = 0; y < CAVE_HEIGHT; ++y) {
         for (int x = 0; x < CAVE_WIDTH; ++x) {
-            if (mapCover[y][x] == OBJ_SPACE || !isTileVisible(y, x)) {
+            Position tilePos = makePosition(x, y);
+            if (mapCover[y][x] == OBJ_SPACE || !isTileVisible(tilePos)) {
                 continue;
             }
-            drawAnimatedSteelWallTile(y, x, 4, 0, turn);
+            drawAnimatedSteelWallTile(tilePos, 4, 0, turn);
         }
     }
 }
