@@ -63,6 +63,8 @@ void drawExplosion1Tile(Position tilePos, uint8_t fgColor, uint8_t bgColor);
 void drawExplosion2Tile(Position tilePos, uint8_t fgColor, uint8_t bgColor);
 void drawExplosion3Tile(Position tilePos, uint8_t fgColor, uint8_t bgColor);
 void drawOutboxTile(Position tilePos, uint8_t fgColor, uint8_t bgColor);
+void drawMovingRockfordTile(Position tilePos, bool isFacingRight, int animationStep);
+void drawIdleRockfordTile(Position tilePos);
 void drawBorder(uint8_t color);
 void drawText(const char *text);
 

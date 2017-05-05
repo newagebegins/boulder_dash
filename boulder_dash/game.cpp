@@ -1,4 +1,3 @@
-#include <stdbool.h>
 #include <stdio.h>
 #include <assert.h>
 
@@ -229,7 +228,10 @@ static void drawCave(const GameState& gameState) {
                     drawExplosion3Tile(tilePos, 2, 0);
                     break;
                 case OBJ_PRE_ROCKFORD_STAGE_4:
-                    //drawRockford1Tile(tilePos, 2, 0);
+                    drawMovingRockfordTile(tilePos, true, gameState.turn);
+                    break;
+                case OBJ_ROCKFORD:
+                    drawIdleRockfordTile(tilePos);
                     break;
             }
         }

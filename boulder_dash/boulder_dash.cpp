@@ -1,5 +1,4 @@
 #include <windows.h>
-#include <stdbool.h>
 #include <stdio.h>
 
 #include "graphics.h"

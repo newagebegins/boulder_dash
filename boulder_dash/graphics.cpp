@@ -1,4 +1,3 @@
-#include <stdbool.h>
 #include <assert.h>
 #include "graphics.h"
 #include "../embed_sprites/data_sprites.h"
@@ -156,6 +155,57 @@ void drawOutboxTile(Position tilePos, uint8_t fgColor, uint8_t bgColor) {
     drawSprite(gSpriteOutbox, Position(spritePos.x + 1, spritePos.y), fgColor, bgColor, true, false, 0);
     drawSprite(gSpriteOutbox, Position(spritePos.x, spritePos.y + 1), fgColor, bgColor, false, true, 0);
     drawSprite(gSpriteOutbox, Position(spritePos.x + 1, spritePos.y + 1), fgColor, bgColor, true, true, 0);
+}
+
+void drawMovingRockfordTile(Position tilePos, bool isFacingRight, int animationStep) {
+    const int MOVING_ROCKFORD_FRAMES_COUNT = 6;
+    Position spritePos = tileToSpritePos(tilePos);
+    switch (animationStep % MOVING_ROCKFORD_FRAMES_COUNT) {
+        case 0:
+            drawSprite(gSpriteRockfordHead1A, spritePos, 1, 0, false, false, 0);
+            drawSprite(gSpriteRockfordHead1B, Position(spritePos.x + 1, spritePos.y), 1, 0, false, false, 0);
+            drawSprite(gSpriteRockfordBottomRun1A, Position(spritePos.x, spritePos.y + 1), 1, 0, false, false, 0);
+            drawSprite(gSpriteRockfordBottomRun1B, Position(spritePos.x + 1, spritePos.y + 1), 1, 0, false, false, 0);
+            break;
+        case 1:
+            drawSprite(gSpriteRockfordHead1A, spritePos, 1, 0, false, false, 0);
+            drawSprite(gSpriteRockfordHead1B, Position(spritePos.x + 1, spritePos.y), 1, 0, false, false, 0);
+            drawSprite(gSpriteRockfordBottomRun2A, Position(spritePos.x, spritePos.y + 1), 1, 0, false, false, 0);
+            drawSprite(gSpriteRockfordBottomRun2B, Position(spritePos.x + 1, spritePos.y + 1), 1, 0, false, false, 0);
+            break;
+        case 2:
+            drawSprite(gSpriteRockfordHead2A, spritePos, 1, 0, false, false, 0);
+            drawSprite(gSpriteRockfordHead2B, Position(spritePos.x + 1, spritePos.y), 1, 0, false, false, 0);
+            drawSprite(gSpriteRockfordBottomRun3A, Position(spritePos.x, spritePos.y + 1), 1, 0, false, false, 0);
+            drawSprite(gSpriteRockfordBottomRun3B, Position(spritePos.x + 1, spritePos.y + 1), 1, 0, false, false, 0);
+            break;
+        case 3:
+            drawSprite(gSpriteRockfordHead2A, spritePos, 1, 0, false, false, 0);
+            drawSprite(gSpriteRockfordHead2B, Position(spritePos.x + 1, spritePos.y), 1, 0, false, false, 0);
+            drawSprite(gSpriteRockfordBottomRun4A, Position(spritePos.x, spritePos.y + 1), 1, 0, false, false, 0);
+            drawSprite(gSpriteRockfordBottomRun4B, Position(spritePos.x + 1, spritePos.y + 1), 1, 0, false, false, 0);
+            break;
+        case 4:
+            drawSprite(gSpriteRockfordHead1A, spritePos, 1, 0, false, false, 0);
+            drawSprite(gSpriteRockfordHead1B, Position(spritePos.x + 1, spritePos.y), 1, 0, false, false, 0);
+            drawSprite(gSpriteRockfordBottomRun5A, Position(spritePos.x, spritePos.y + 1), 1, 0, false, false, 0);
+            drawSprite(gSpriteRockfordBottomRun5B, Position(spritePos.x + 1, spritePos.y + 1), 1, 0, false, false, 0);
+            break;
+        case 5:
+            drawSprite(gSpriteRockfordHead1A, spritePos, 1, 0, false, false, 0);
+            drawSprite(gSpriteRockfordHead1B, Position(spritePos.x + 1, spritePos.y), 1, 0, false, false, 0);
+            drawSprite(gSpriteRockfordBottomRun3A, Position(spritePos.x, spritePos.y + 1), 1, 0, false, false, 0);
+            drawSprite(gSpriteRockfordBottomRun3B, Position(spritePos.x + 1, spritePos.y + 1), 1, 0, false, false, 0);
+            break;
+    }
+}
+
+void drawIdleRockfordTile(Position tilePos) {
+    Position spritePos = tileToSpritePos(tilePos);
+    drawSprite(gSpriteRockfordEye1, spritePos, 1, 0, false, false, 0);
+    drawSprite(gSpriteRockfordEye1, Position(spritePos.x + 1, spritePos.y), 1, 0, true, false, 0);
+    drawSprite(gSpriteRockfordBottomIdle1, Position(spritePos.x, spritePos.y + 1), 1, 0, false, false, 0);
+    drawSprite(gSpriteRockfordBottomIdle1, Position(spritePos.x + 1, spritePos.y + 1), 1, 0, true, false, 0);
 }
 
 static const uint8_t* getCharSprite(char ch) {
