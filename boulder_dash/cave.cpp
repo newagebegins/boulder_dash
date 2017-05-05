@@ -38,6 +38,12 @@ static void setObject(CaveMap map, CaveObject object, Position pos) {
     map[pos.y][pos.x] = object;
 }
 
+CaveObject getObject(CaveMap map, int x, int y) {
+    assert((x >= 0) && (x < CAVE_WIDTH));
+    assert((y >= 0) && (y < CAVE_HEIGHT));
+    return map[y][x];
+}
+
 static void drawLine(CaveMap map, CaveObject object, Position pos, int length, int direction) {
     static int ldx[8] = { 0,  1, 1, 1, 0, -1, -1, -1 };
     static int ldy[8] = { -1, -1, 0, 1, 1,  1,  0, -1 };

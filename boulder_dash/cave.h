@@ -82,5 +82,6 @@ struct Cave {
 };
 
 Cave decodeCave(uint8_t caveIndex);
+CaveObject getObject(CaveMap map, int x, int y);
 
 #endif

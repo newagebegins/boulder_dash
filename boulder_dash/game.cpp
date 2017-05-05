@@ -81,13 +81,25 @@ static void updateMapCover(CaveMap mapCover, int *mapUncoverTurnsLeft) {
     }
 }
 
-static void doCaveTurn(GameState *gameState) {
-    gameState->turn++;
-
+static void updatePreRockford(GameState *gameState) {
     if (isMapUncovered(gameState->mapUncoverTurnsLeft)) {
         gameState->rockfordTurnsTillBirth--;
         if (gameState->rockfordTurnsTillBirth < 0) {
             gameState->rockfordTurnsTillBirth = 0;
+        }
+    }
+}
+
+static void doCaveTurn(GameState *gameState) {
+    gameState->turn++;
+
+    for (int y = 0; y < CAVE_HEIGHT; ++y) {
+        for (int x = 0; x < CAVE_WIDTH; ++x) {
+            switch (getObject(gameState->cave.map, x, y)) {
+                case OBJ_PRE_ROCKFORD_STAGE_1:
+                    updatePreRockford(gameState);
+                    break;
+            }
         }
     }
 
