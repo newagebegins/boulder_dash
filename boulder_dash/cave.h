@@ -1,6 +1,8 @@
 #ifndef CAVE_H
 #define CAVE_H
 
+#include "common.h"
+
 #define CAVE_HEIGHT 22
 #define CAVE_WIDTH 40
 #define NUM_DIFFICULTY_LEVELS 5
@@ -82,6 +84,7 @@ struct Cave {
 };
 
 Cave decodeCave(uint8_t caveIndex);
-CaveObject getObject(CaveMap map, int x, int y);
+CaveObject getObject(CaveMap map, Position pos);
+void placeObject(CaveMap map, CaveObject object, Position pos);
 
 #endif

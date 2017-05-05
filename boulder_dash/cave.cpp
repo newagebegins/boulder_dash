@@ -3,7 +3,6 @@
 #include <stdint.h>
 
 #include "cave.h"
-#include "common.h"
 #include "data_caves.h"
 
 static void nextRandom(int& randSeed1, int& randSeed2) {
@@ -32,16 +31,16 @@ static void nextRandom(int& randSeed1, int& randSeed2) {
     assert((randSeed2 >= 0x00) && (randSeed2 <= 0xFF));
 }
 
-static void setObject(CaveMap map, CaveObject object, Position pos) {
+void placeObject(CaveMap map, CaveObject object, Position pos) {
     assert((pos.x >= 0) && (pos.x < CAVE_WIDTH));
     assert((pos.y >= 0) && (pos.y < CAVE_HEIGHT));
     map[pos.y][pos.x] = object;
 }
 
-CaveObject getObject(CaveMap map, int x, int y) {
-    assert((x >= 0) && (x < CAVE_WIDTH));
-    assert((y >= 0) && (y < CAVE_HEIGHT));
-    return map[y][x];
+CaveObject getObject(CaveMap map, Position pos) {
+    assert((pos.x >= 0) && (pos.x < CAVE_WIDTH));
+    assert((pos.y >= 0) && (pos.y < CAVE_HEIGHT));
+    return map[pos.y][pos.x];
 }
 
 static void drawLine(CaveMap map, CaveObject object, Position pos, int length, int direction) {
@@ -52,7 +51,7 @@ static void drawLine(CaveMap map, CaveObject object, Position pos, int length, i
     assert((direction >= 0) && (direction < ARRAY_LENGTH(ldx)));
 
     for (int i = 0; i < length; i++) {
-        setObject(map, object, Position(pos.x + i*ldx[direction], pos.y + i*ldy[direction]));
+        placeObject(map, object, Position(pos.x + i*ldx[direction], pos.y + i*ldy[direction]));
     }
 }
 
@@ -63,14 +62,14 @@ static void drawFilledRect(CaveMap map, CaveObject object, Position pos, int wid
     for (int i = 0; i < width; i++) {
         for (int j = 0; j < height; j++) {
             if ((j == 0) || (j == height - 1)) {
-                setObject(map, object, Position(pos.x + i, pos.y + j));
+                placeObject(map, object, Position(pos.x + i, pos.y + j));
             }
             else {
-                setObject(map, fillObject, Position(pos.x + i, pos.y + j));
+                placeObject(map, fillObject, Position(pos.x + i, pos.y + j));
             }
         }
-        setObject(map, object, Position(pos.x + i, pos.y));
-        setObject(map, object, Position(pos.x + i, pos.y + height - 1));
+        placeObject(map, object, Position(pos.x + i, pos.y));
+        placeObject(map, object, Position(pos.x + i, pos.y + height - 1));
     }
 }
 
@@ -79,12 +78,12 @@ static void drawRect(CaveMap map, CaveObject object, Position pos, int width, in
     assert((height >= 1) && (height <= CAVE_HEIGHT));
 
     for (int i = 0; i < width; i++) {
-        setObject(map, object, Position(pos.x + i, pos.y));
-        setObject(map, object, Position(pos.x + i, pos.y + height - 1));
+        placeObject(map, object, Position(pos.x + i, pos.y));
+        placeObject(map, object, Position(pos.x + i, pos.y + height - 1));
     }
     for (int i = 0; i < height; i++) {
-        setObject(map, object, Position(pos.x, pos.y + i));
-        setObject(map, object, Position(pos.x + width - 1, pos.y + i));
+        placeObject(map, object, Position(pos.x, pos.y + i));
+        placeObject(map, object, Position(pos.x + width - 1, pos.y + i));
     }
 }
 
@@ -102,7 +101,7 @@ Cave decodeCave(uint8_t caveIndex) {
     // Clear out the map
     for (int y = 0; y < CAVE_HEIGHT; y++) {
         for (int x = 0; x < CAVE_WIDTH; x++) {
-            setObject(cave.map, OBJ_STEEL_WALL, Position(x, y));
+            placeObject(cave.map, OBJ_STEEL_WALL, Position(x, y));
         }
     }
 
@@ -120,7 +119,7 @@ Cave decodeCave(uint8_t caveIndex) {
                         object = cave.info.randomObject[i];
                     }
                 }
-                setObject(cave.map, object, Position(x, y));
+                placeObject(cave.map, object, Position(x, y));
             }
         }
     }
@@ -137,7 +136,7 @@ Cave decodeCave(uint8_t caveIndex) {
                 case 0: {
                     int x = explicitData[++i];
                     int y = explicitData[++i] - uselessTopBorderHeight;
-                    setObject(cave.map, object, Position(x, y));
+                    placeObject(cave.map, object, Position(x, y));
                     break;
                 }
                 case 1: {

@@ -60,6 +60,8 @@ void drawBrickWallTile(Position tilePos, uint8_t fgColor, uint8_t bgColor);
 void drawBoulderTile(Position tilePos, uint8_t fgColor, uint8_t bgColor);
 void drawDiamond1Tile(Position tilePos, uint8_t fgColor, uint8_t bgColor);
 void drawExplosion1Tile(Position tilePos, uint8_t fgColor, uint8_t bgColor);
+void drawExplosion2Tile(Position tilePos, uint8_t fgColor, uint8_t bgColor);
+void drawExplosion3Tile(Position tilePos, uint8_t fgColor, uint8_t bgColor);
 void drawOutboxTile(Position tilePos, uint8_t fgColor, uint8_t bgColor);
 void drawBorder(uint8_t color);
 void drawText(const char *text);

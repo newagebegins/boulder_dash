@@ -142,6 +142,14 @@ void drawExplosion1Tile(Position tilePos, uint8_t fgColor, uint8_t bgColor) {
     drawTile(gSpriteExplosion1A, gSpriteExplosion1B, gSpriteExplosion1C, gSpriteExplosion1D, tilePos, fgColor, bgColor, 0);
 }
 
+void drawExplosion2Tile(Position tilePos, uint8_t fgColor, uint8_t bgColor) {
+    drawTile(gSpriteExplosion2A, gSpriteExplosion2B, gSpriteExplosion2C, gSpriteExplosion2D, tilePos, fgColor, bgColor, 0);
+}
+
+void drawExplosion3Tile(Position tilePos, uint8_t fgColor, uint8_t bgColor) {
+    drawTile(gSpriteExplosion3A, gSpriteExplosion3B, gSpriteExplosion3C, gSpriteExplosion3D, tilePos, fgColor, bgColor, 0);
+}
+
 void drawOutboxTile(Position tilePos, uint8_t fgColor, uint8_t bgColor) {
     Position spritePos = tileToSpritePos(tilePos);
     drawSprite(gSpriteOutbox, spritePos, fgColor, bgColor, false, false, 0);

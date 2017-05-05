@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stdio.h>
+#include <assert.h>
 
 #include "game.h"
 #include "graphics.h"
@@ -90,12 +91,27 @@ static void updateMapCover(GameState& gameState) {
     }
 }
 
-static void updatePreRockford(GameState& gameState) {
-    if (!isMapCovered(gameState)) {
-        gameState.rockfordTurnsTillBirth--;
-        if (gameState.rockfordTurnsTillBirth < 0) {
-            gameState.rockfordTurnsTillBirth = 0;
-        }
+static void updatePreRockford(GameState& gameState, Position pos, int stage) {
+    switch (stage) {
+        case 1:
+            if (gameState.rockfordTurnsTillBirth == 0) {
+                placeObject(gameState.cave.map, OBJ_PRE_ROCKFORD_STAGE_2, pos);
+            }
+            else if (!isMapCovered(gameState)) {
+                gameState.rockfordTurnsTillBirth--;
+            }
+            break;
+        case 2:
+            placeObject(gameState.cave.map, OBJ_PRE_ROCKFORD_STAGE_3, pos);
+            break;
+        case 3:
+            placeObject(gameState.cave.map, OBJ_PRE_ROCKFORD_STAGE_4, pos);
+            break;
+        case 4:
+            placeObject(gameState.cave.map, OBJ_ROCKFORD, pos);
+            break;
+        default:
+            assert(!"Unknown prerockford stage");
     }
 }
 
@@ -110,23 +126,35 @@ static bool isPaused(const GameState& gameState) {
     return gameState.pauseTurnsLeft > 0;
 }
 
+static void scanCave(GameState& gameState) {
+    for (int y = 0; y < CAVE_HEIGHT; ++y) {
+        for (int x = 0; x < CAVE_WIDTH; ++x) {
+            Position pos(x, y);
+            switch (getObject(gameState.cave.map, pos)) {
+                case OBJ_PRE_ROCKFORD_STAGE_1:
+                    updatePreRockford(gameState, pos, 1);
+                    break;
+                case OBJ_PRE_ROCKFORD_STAGE_2:
+                    updatePreRockford(gameState, pos, 2);
+                    break;
+                case OBJ_PRE_ROCKFORD_STAGE_3:
+                    updatePreRockford(gameState, pos, 3);
+                    break;
+                case OBJ_PRE_ROCKFORD_STAGE_4:
+                    updatePreRockford(gameState, pos, 4);
+                    break;
+            }
+        }
+    }
+}
+
 static void doCaveTurn(GameState& gameState) {
     if (isPaused(gameState)) {
         updatePause(gameState);
     }
     else {
         gameState.turn++;
-
-        for (int y = 0; y < CAVE_HEIGHT; ++y) {
-            for (int x = 0; x < CAVE_WIDTH; ++x) {
-                switch (getObject(gameState.cave.map, x, y)) {
-                    case OBJ_PRE_ROCKFORD_STAGE_1:
-                        updatePreRockford(gameState);
-                        break;
-                }
-            }
-        }
-
+        scanCave(gameState);
         updateMapCover(gameState);
     }
 }
@@ -193,6 +221,15 @@ static void drawCave(const GameState& gameState) {
                     else {
                         drawExplosion1Tile(tilePos, 2, 0);
                     }
+                    break;
+                case OBJ_PRE_ROCKFORD_STAGE_2:
+                    drawExplosion2Tile(tilePos, 2, 0);
+                    break;
+                case OBJ_PRE_ROCKFORD_STAGE_3:
+                    drawExplosion3Tile(tilePos, 2, 0);
+                    break;
+                case OBJ_PRE_ROCKFORD_STAGE_4:
+                    //drawRockford1Tile(tilePos, 2, 0);
                     break;
             }
         }
