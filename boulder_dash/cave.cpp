@@ -32,55 +32,53 @@ static void nextRandom(int *randSeed1, int *randSeed2) {
     assert((*randSeed2 >= 0x00) && (*randSeed2 <= 0xFF));
 }
 
-static void storeObject(CaveMap map, int x, int y, CaveObject object) {
-    assert((x >= 0) && (x < CAVE_WIDTH));
-    assert((y >= 0) && (y < CAVE_HEIGHT));
-    map[y][x] = object;
+static void setObject(CaveMap map, CaveObject object, Position pos) {
+    assert((pos.x >= 0) && (pos.x < CAVE_WIDTH));
+    assert((pos.y >= 0) && (pos.y < CAVE_HEIGHT));
+    map[pos.y][pos.x] = object;
 }
 
-static void drawLine(CaveMap map, CaveObject object, int x, int y, int length, int direction) {
+static void drawLine(CaveMap map, CaveObject object, Position pos, int length, int direction) {
     static int ldx[8] = { 0,  1, 1, 1, 0, -1, -1, -1 };
     static int ldy[8] = { -1, -1, 0, 1, 1,  1,  0, -1 };
 
     assert((length >= 1) && (length <= CAVE_WIDTH));
     assert((direction >= 0) && (direction < ARRAY_LENGTH(ldx)));
 
-    for (int i = 1; i <= length; i++) {
-        storeObject(map, x, y, object);
-        x += ldx[direction];
-        y += ldy[direction];
+    for (int i = 0; i < length; i++) {
+        setObject(map, object, Position(pos.x + i*ldx[direction], pos.y + i*ldy[direction]));
     }
 }
 
-static void drawFilledRect(CaveMap map, CaveObject object, int x, int y, int width, int height, CaveObject fillObject) {
+static void drawFilledRect(CaveMap map, CaveObject object, Position pos, int width, int height, CaveObject fillObject) {
     assert((width >= 1) && (width <= CAVE_WIDTH));
     assert((height >= 1) && (height <= CAVE_HEIGHT));
 
     for (int i = 0; i < width; i++) {
         for (int j = 0; j < height; j++) {
             if ((j == 0) || (j == height - 1)) {
-                storeObject(map, x + i, y + j, object);
+                setObject(map, object, Position(pos.x + i, pos.y + j));
             }
             else {
-                storeObject(map, x + i, y + j, fillObject);
+                setObject(map, fillObject, Position(pos.x + i, pos.y + j));
             }
         }
-        storeObject(map, x + i, y, object);
-        storeObject(map, x + i, y + height - 1, object);
+        setObject(map, object, Position(pos.x + i, pos.y));
+        setObject(map, object, Position(pos.x + i, pos.y + height - 1));
     }
 }
 
-static void drawRect(CaveMap map, CaveObject object, int x, int y, int width, int height) {
+static void drawRect(CaveMap map, CaveObject object, Position pos, int width, int height) {
     assert((width >= 1) && (width <= CAVE_WIDTH));
     assert((height >= 1) && (height <= CAVE_HEIGHT));
 
     for (int i = 0; i < width; i++) {
-        storeObject(map, x + i, y, object);
-        storeObject(map, x + i, y + height - 1, object);
+        setObject(map, object, Position(pos.x + i, pos.y));
+        setObject(map, object, Position(pos.x + i, pos.y + height - 1));
     }
     for (int i = 0; i < height; i++) {
-        storeObject(map, x, y + i, object);
-        storeObject(map, x + width - 1, y + i, object);
+        setObject(map, object, Position(pos.x, pos.y + i));
+        setObject(map, object, Position(pos.x + width - 1, pos.y + i));
     }
 }
 
@@ -98,7 +96,7 @@ Cave decodeCave(uint8_t caveIndex) {
     // Clear out the map
     for (int y = 0; y < CAVE_HEIGHT; y++) {
         for (int x = 0; x < CAVE_WIDTH; x++) {
-            storeObject(cave.map, x, y, OBJ_STEEL_WALL);
+            setObject(cave.map, OBJ_STEEL_WALL, Position(x, y));
         }
     }
 
@@ -116,7 +114,7 @@ Cave decodeCave(uint8_t caveIndex) {
                         object = cave.info.randomObject[i];
                     }
                 }
-                storeObject(cave.map, x, y, object);
+                setObject(cave.map, object, Position(x, y));
             }
         }
     }
@@ -133,7 +131,7 @@ Cave decodeCave(uint8_t caveIndex) {
                 case 0: {
                     int x = explicitData[++i];
                     int y = explicitData[++i] - uselessTopBorderHeight;
-                    storeObject(cave.map, x, y, object);
+                    setObject(cave.map, object, Position(x, y));
                     break;
                 }
                 case 1: {
@@ -141,7 +139,7 @@ Cave decodeCave(uint8_t caveIndex) {
                     int y = explicitData[++i] - uselessTopBorderHeight;
                     int length = explicitData[++i];
                     int direction = explicitData[++i];
-                    drawLine(cave.map, object, x, y, length, direction);
+                    drawLine(cave.map, object, Position(x, y), length, direction);
                     break;
                 }
                 case 2: {
@@ -150,7 +148,7 @@ Cave decodeCave(uint8_t caveIndex) {
                     int width = explicitData[++i];
                     int height = explicitData[++i];
                     CaveObject fill = (CaveObject)explicitData[++i];
-                    drawFilledRect(cave.map, object, x, y, width, height, fill);
+                    drawFilledRect(cave.map, object, Position(x, y), width, height, fill);
                     break;
                 }
                 case 3: {
@@ -158,7 +156,7 @@ Cave decodeCave(uint8_t caveIndex) {
                     int y = explicitData[++i] - uselessTopBorderHeight;
                     int width = explicitData[++i];
                     int height = explicitData[++i];
-                    drawRect(cave.map, object, x, y, width, height);
+                    drawRect(cave.map, object, Position(x, y), width, height);
                     break;
                 }
             }
@@ -166,7 +164,7 @@ Cave decodeCave(uint8_t caveIndex) {
     }
 
     // Steel bounds
-    drawRect(cave.map, OBJ_STEEL_WALL, 0, 0, CAVE_WIDTH, CAVE_HEIGHT);
+    drawRect(cave.map, OBJ_STEEL_WALL, Position(0, 0), CAVE_WIDTH, CAVE_HEIGHT);
 
     return cave;
 }

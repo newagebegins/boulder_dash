@@ -4,6 +4,8 @@
 #include <windows.h>
 #include <stdint.h>
 
+#include "common.h"
+
 #define SPRITE_SIZE 8
 #define TILE_SIZE_IN_SPRITES 2
 #define TILE_SIZE (SPRITE_SIZE*TILE_SIZE_IN_SPRITES)
@@ -47,15 +49,6 @@
 #define PLAYFIELD_Y_MIN (PLAYFIELD_Y_MIN_IN_TILES*TILE_SIZE)
 
 typedef uint8_t Sprite[SPRITE_SIZE];
-
-struct Position {
-    int x, y;
-
-    Position(int X, int Y) {
-        x = X;
-        y = Y;
-    }
-};
 
 void initGraphics(HDC deviceContext);
 void displayBackbuffer();
