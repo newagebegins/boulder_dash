@@ -52,9 +52,9 @@ typedef uint8_t Sprite[SPRITE_SIZE];
 
 #include "data_sprites.h"
 
-static uint8_t *gBackbuffer;
-static BITMAPINFO *gBitmapInfo;
-static HDC gDeviceContext;
+uint8_t *gBackbuffer;
+BITMAPINFO *gBitmapInfo;
+HDC gDeviceContext;
 
 void initGraphics(HDC deviceContext) {
   gDeviceContext = deviceContext;
@@ -69,15 +69,15 @@ void initGraphics(HDC deviceContext) {
   gBitmapInfo->bmiHeader.biCompression = BI_RGB;
   gBitmapInfo->bmiHeader.biClrUsed = PALETTE_COLORS;
 
-  static RGBQUAD black = { 0x00, 0x00, 0x00, 0x00 };
-  static RGBQUAD red = { 0x00, 0x00, 0xCC, 0x00 };
-  static RGBQUAD green = { 0x00, 0xCC, 0x00, 0x00 };
+  static RGBQUAD black  = { 0x00, 0x00, 0x00, 0x00 };
+  static RGBQUAD red    = { 0x00, 0x00, 0xCC, 0x00 };
+  static RGBQUAD green  = { 0x00, 0xCC, 0x00, 0x00 };
   static RGBQUAD yellow = { 0x00, 0xCC, 0xCC, 0x00 };
-  static RGBQUAD blue = { 0xCC, 0x00, 0x00, 0x00 };
+  static RGBQUAD blue   = { 0xCC, 0x00, 0x00, 0x00 };
   static RGBQUAD purple = { 0xCC, 0x00, 0xCC, 0x00 };
-  static RGBQUAD cyan = { 0xCC, 0xCC, 0x00, 0x00 };
-  static RGBQUAD gray = { 0xCC, 0xCC, 0xCC, 0x00 };
-  static RGBQUAD white = { 0xFF, 0xFF, 0xFF, 0x00 };
+  static RGBQUAD cyan   = { 0xCC, 0xCC, 0x00, 0x00 };
+  static RGBQUAD gray   = { 0xCC, 0xCC, 0xCC, 0x00 };
+  static RGBQUAD white  = { 0xFF, 0xFF, 0xFF, 0x00 };
 
   gBitmapInfo->bmiColors[0] = black;
   gBitmapInfo->bmiColors[1] = gray;
@@ -94,7 +94,7 @@ void displayBackbuffer() {
                 DIB_RGB_COLORS, SRCCOPY);
 }
 
-static void setPixel(int x, int y, uint8_t color) {
+void setPixel(int x, int y, uint8_t color) {
   assert(color < PALETTE_COLORS);
   assert((color & 0xF0) == 0);
 
@@ -114,7 +114,7 @@ static void setPixel(int x, int y, uint8_t color) {
   gBackbuffer[byteOffset] = newColor;
 }
 
-static void drawFilledRectPx(int left, int top, int right, int bottom, uint8_t color) {
+void drawFilledRectPx(int left, int top, int right, int bottom, uint8_t color) {
   for (int y = top; y <= bottom; ++y) {
     for (int x = left; x <= right; ++x) {
       setPixel(x, y, color);
@@ -126,7 +126,7 @@ void drawBorder(uint8_t color) {
   drawFilledRectPx(0, 0, BACKBUFFER_WIDTH - 1, BACKBUFFER_HEIGHT - 1, color);
 }
 
-static void drawSprite(const Sprite sprite, int spriteRow, int spriteCol, uint8_t fgColor, uint8_t bgColor,
+void drawSprite(const Sprite sprite, int spriteRow, int spriteCol, uint8_t fgColor, uint8_t bgColor,
                        bool flipHorz, bool flipVert, int animationStep) {
   for (uint8_t bmpY = 0; bmpY < SPRITE_SIZE; ++bmpY) {
     int y = flipVert ? (spriteRow*SPRITE_SIZE + SPRITE_SIZE - 1 - bmpY) : (spriteRow*SPRITE_SIZE + bmpY);
@@ -143,12 +143,12 @@ static void drawSprite(const Sprite sprite, int spriteRow, int spriteCol, uint8_
   }
 }
 
-static void tileToSpritePos(int tileRow, int tileCol, int *spriteRow, int *spriteCol) {
+void tileToSpritePos(int tileRow, int tileCol, int *spriteRow, int *spriteCol) {
   *spriteRow = (PLAYFIELD_Y_MIN_IN_TILES + tileRow) * TILE_SIZE_IN_SPRITES;
   *spriteCol = (PLAYFIELD_X_MIN_IN_TILES + tileCol) * TILE_SIZE_IN_SPRITES;
 }
 
-static void drawTile(const Sprite spriteA, const Sprite spriteB, const Sprite spriteC, const Sprite spriteD,
+void drawTile(const Sprite spriteA, const Sprite spriteB, const Sprite spriteC, const Sprite spriteD,
                      int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor, int animationStep) {
   int spriteRow, spriteCol;
   tileToSpritePos(tileRow, tileCol, &spriteRow, &spriteCol);
@@ -265,7 +265,7 @@ void drawIdleRockfordTile(int tileRow, int tileCol) {
   drawSprite(gSpriteRockfordBottomIdle1, spriteRow+1, spriteCol+1, 1, 0, true, false, 0);
 }
 
-static const uint8_t* getCharSprite(char ch) {
+const uint8_t* getCharSprite(char ch) {
   switch (ch) {
     case '0': return gSpriteLetter0;
     case '1': return gSpriteLetter1;
@@ -409,7 +409,7 @@ Cave decodeCave(uint8_t caveIndex);
 
 #include "data_caves.h"
 
-static void nextRandom(int *randSeed1, int *randSeed2) {
+void nextRandom(int *randSeed1, int *randSeed2) {
   int tempRand1 = (*randSeed1 & 0x0001) * 0x0080;
   int tempRand2 = (*randSeed2 >> 1) & 0x007F;
 
@@ -429,7 +429,7 @@ static void nextRandom(int *randSeed1, int *randSeed2) {
   *randSeed1 = result & 0x00FF;
 }
 
-static void drawLine(CaveMap map, CaveObject object, int row, int col, int length, int direction) {
+void drawLine(CaveMap map, CaveObject object, int row, int col, int length, int direction) {
   static int ldx[8] = { 0,  1, 1, 1, 0, -1, -1, -1 };
   static int ldy[8] = { -1, -1, 0, 1, 1,  1,  0, -1 };
 
@@ -438,7 +438,7 @@ static void drawLine(CaveMap map, CaveObject object, int row, int col, int lengt
   }
 }
 
-static void drawFilledRect(CaveMap map, CaveObject object, int row, int col, int width, int height, CaveObject fillObject) {
+void drawFilledRect(CaveMap map, CaveObject object, int row, int col, int width, int height, CaveObject fillObject) {
   for (int i = 0; i < width; i++) {
     for (int j = 0; j < height; j++) {
       if ((j == 0) || (j == height - 1)) {
@@ -453,7 +453,7 @@ static void drawFilledRect(CaveMap map, CaveObject object, int row, int col, int
   }
 }
 
-static void drawRect(CaveMap map, CaveObject object, int row, int col, int width, int height) {
+void drawRect(CaveMap map, CaveObject object, int row, int col, int width, int height) {
   for (int i = 0; i < width; i++) {
     map[row][col+i] = object;
     map[row+height-1][col+i] = object;
@@ -465,7 +465,7 @@ static void drawRect(CaveMap map, CaveObject object, int row, int col, int width
 }
 
 Cave decodeCave(uint8_t caveIndex) {
-  static const uint8_t *caves[] = {
+  const uint8_t *caves[] = {
     gCave1, gCave2, gCave3, gCave4, gCave5, gCave6, gCave7, gCave8, gCave9, gCave10,
     gCave11, gCave12, gCave13, gCave14, gCave15, gCave16, gCave17, gCave18, gCave19, gCave20
   };
@@ -574,11 +574,11 @@ typedef struct {
   CaveMap mapCover;
 } GameState;
 
-static int getRandomNumber(int min, int max) {
+int getRandomNumber(int min, int max) {
   return min + rand() % (max - min + 1);
 }
 
-static void initMapCover(CaveMap mapCover) {
+void initMapCover(CaveMap mapCover) {
   for (int y = 0; y < CAVE_HEIGHT; ++y) {
     for (int x = 0; x < CAVE_WIDTH; ++x) {
       mapCover[y][x] = OBJ_STEEL_WALL;
@@ -586,11 +586,11 @@ static void initMapCover(CaveMap mapCover) {
   }
 }
 
-static bool isMapCovered(const GameState *gameState) {
+bool isMapCovered(const GameState *gameState) {
   return gameState->mapUncoverTurnsLeft > 0;
 }
 
-static void initGameState(GameState *gameState) {
+void initGameState(GameState *gameState) {
   gameState->gameIsStarted = true;
 
   gameState->caveNumber = 0;
@@ -610,7 +610,7 @@ static void initGameState(GameState *gameState) {
   initMapCover(gameState->mapCover);
 }
 
-static void updateMapCover(GameState *gameState) {
+void updateMapCover(GameState *gameState) {
   if (!isMapCovered(gameState)) {
     return;
   }
@@ -636,7 +636,7 @@ static void updateMapCover(GameState *gameState) {
   }
 }
 
-static void updatePreRockford(GameState *gameState, int tileRow, int tileCol, int stage) {
+void updatePreRockford(GameState *gameState, int tileRow, int tileCol, int stage) {
   switch (stage) {
     case 1:
       if (gameState->rockfordTurnsTillBirth == 0) {
@@ -660,18 +660,18 @@ static void updatePreRockford(GameState *gameState, int tileRow, int tileCol, in
   }
 }
 
-static void updatePause(GameState *gameState) {
+void updatePause(GameState *gameState) {
   gameState->pauseTurnsLeft--;
   if (gameState->pauseTurnsLeft < 0) {
     gameState->pauseTurnsLeft = 0;
   }
 }
 
-static bool isPaused(const GameState *gameState) {
+bool isPaused(const GameState *gameState) {
   return gameState->pauseTurnsLeft > 0;
 }
 
-static void scanCave(GameState *gameState) {
+void scanCave(GameState *gameState) {
   for (int y = 0; y < CAVE_HEIGHT; ++y) {
     for (int x = 0; x < CAVE_WIDTH; ++x) {
       switch (gameState->cave.map[y][x]) {
@@ -692,7 +692,7 @@ static void scanCave(GameState *gameState) {
   }
 }
 
-static void doCaveTurn(GameState *gameState) {
+void doCaveTurn(GameState *gameState) {
   if (isPaused(gameState)) {
     updatePause(gameState);
   }
@@ -703,7 +703,7 @@ static void doCaveTurn(GameState *gameState) {
   }
 }
 
-static void gameUpdate(GameState *gameState, float dt) {
+void gameUpdate(GameState *gameState, float dt) {
   if (!gameState->gameIsStarted) {
     initGameState(gameState);
   }
@@ -715,17 +715,17 @@ static void gameUpdate(GameState *gameState, float dt) {
   }
 }
 
-static bool isTileVisible(int tileRow, int tileCol) {
+bool isTileVisible(int tileRow, int tileCol) {
   return
     tileRow >= 0 && tileRow < PLAYFIELD_HEIGHT_IN_TILES &&
     tileCol >= 0 && tileCol < PLAYFIELD_WIDTH_IN_TILES;
 }
 
-static bool isBeforeRockfordBirth(const GameState *gameState) {
+bool isBeforeRockfordBirth(const GameState *gameState) {
   return gameState->rockfordTurnsTillBirth > 0;
 }
 
-static void drawCave(const GameState *gameState) {
+void drawCave(const GameState *gameState) {
   for (int y = 0; y < CAVE_HEIGHT; ++y) {
     for (int x = 0; x < CAVE_WIDTH; ++x) {
       if (!isTileVisible(y, x)) {
@@ -782,7 +782,7 @@ static void drawCave(const GameState *gameState) {
   }
 }
 
-static void drawTextArea(const GameState *gameState) {
+void drawTextArea(const GameState *gameState) {
   char text[64];
   if (isBeforeRockfordBirth(gameState)) {
     sprintf_s(text, sizeof(text), "  PLAYER 1,  %d MEN,  ROOM %c/1", gameState->livesLeft, 'A' + gameState->caveNumber);
@@ -798,7 +798,7 @@ static void drawTextArea(const GameState *gameState) {
   drawText(text);
 }
 
-static void drawMapCover(const CaveMap mapCover, int turn) {
+void drawMapCover(const CaveMap mapCover, int turn) {
   for (int y = 0; y < CAVE_HEIGHT; ++y) {
     for (int x = 0; x < CAVE_WIDTH; ++x) {
       if (mapCover[y][x] == OBJ_SPACE || !isTileVisible(y, x)) {
@@ -809,7 +809,7 @@ static void drawMapCover(const CaveMap mapCover, int turn) {
   }
 }
 
-static void gameRender(const GameState *gameState) {
+void gameRender(const GameState *gameState) {
   drawBorder(0);
   drawCave(gameState);
   drawMapCover(gameState->mapCover, gameState->turn);
