@@ -77,8 +77,6 @@ void main() {
     fprintf(out, "//\n");
     fprintf(out, "// IMPORTANT: This is a generated file, don't edit by hand!\n");
     fprintf(out, "//\n");
-    fprintf(out, "#ifndef DATA_SPRITES_H\n");
-    fprintf(out, "#define DATA_SPRITES_H\n\n");
 
     outputSprite(out, "gSpriteRockfordEye1", spritesheet, 0, 0);
     outputSprite(out, "gSpriteRockfordEye2", spritesheet, 0, 1);
@@ -268,6 +266,4 @@ void main() {
     outputSprite(out, "gSpriteSpaceFlash4", spritesheet, 24, 1);
     outputSprite(out, "gSpriteSpaceFlash5", spritesheet, 25, 0);
     outputSprite(out, "gSpriteSpaceFlash6", spritesheet, 25, 1);
-
-    fprintf(out, "\n#endif\n");
 }
