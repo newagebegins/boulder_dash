@@ -1,6 +1,6 @@
 #include <assert.h>
 #include "graphics.h"
-#include "../embed_sprites/data_sprites.h"
+#include "data_sprites.h"
 
 static uint8_t *gBackbuffer;
 static BITMAPINFO *gBitmapInfo;
@@ -158,6 +158,7 @@ void drawOutboxTile(Position tilePos, uint8_t fgColor, uint8_t bgColor) {
 }
 
 void drawMovingRockfordTile(Position tilePos, bool isFacingRight, int animationStep) {
+    UNREFERENCED_PARAMETER(isFacingRight);
     const int MOVING_ROCKFORD_FRAMES_COUNT = 6;
     Position spritePos = tileToSpritePos(tilePos);
     switch (animationStep % MOVING_ROCKFORD_FRAMES_COUNT) {
