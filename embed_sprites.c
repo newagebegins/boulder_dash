@@ -5,11 +5,11 @@
 
 #define SPRITE_SIZE 8
 
-struct Spritesheet {
+typedef struct {
   int width;
   int height;
   uint32_t *pixels;
-};
+} Spritesheet;
 
 Spritesheet loadSpritesheet() {
   Spritesheet result;
