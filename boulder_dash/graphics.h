@@ -50,9 +50,13 @@ typedef uint8_t Sprite[SPRITE_SIZE];
 
 struct Position {
     int x, y;
+
+    Position(int X, int Y) {
+        x = X;
+        y = Y;
+    }
 };
 
-Position makePosition(int x, int y);
 void initGraphics(HDC deviceContext);
 void displayBackbuffer();
 void drawSpaceTile(Position tilePos);

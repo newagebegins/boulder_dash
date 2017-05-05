@@ -7,13 +7,6 @@ static uint8_t *gBackbuffer;
 static BITMAPINFO *gBitmapInfo;
 static HDC gDeviceContext;
 
-Position makePosition(int x, int y) {
-    Position result;
-    result.x = x;
-    result.y = y;
-    return result;
-}
-
 void initGraphics(HDC deviceContext) {
     gDeviceContext = deviceContext;
     gBackbuffer = (uint8_t *)malloc(BACKBUFFER_PIXELS);
@@ -102,18 +95,15 @@ static void drawSprite(const Sprite sprite, Position spritePos, uint8_t fgColor,
 }
 
 Position tileToSpritePos(Position tilePos) {
-    Position result;
-    result.x = (PLAYFIELD_X_MIN_IN_TILES + tilePos.x) * TILE_SIZE_IN_SPRITES;
-    result.y = (PLAYFIELD_Y_MIN_IN_TILES + tilePos.y) * TILE_SIZE_IN_SPRITES;
-    return result;
+    return Position((PLAYFIELD_X_MIN_IN_TILES + tilePos.x) * TILE_SIZE_IN_SPRITES, (PLAYFIELD_Y_MIN_IN_TILES + tilePos.y) * TILE_SIZE_IN_SPRITES);
 }
 
 static void drawTile(const Sprite spriteA, const Sprite spriteB, const Sprite spriteC, const Sprite spriteD, Position tilePos, uint8_t fgColor, uint8_t bgColor, int animationStep) {
     Position spritePos = tileToSpritePos(tilePos);
     drawSprite(spriteA, spritePos, fgColor, bgColor, false, false, animationStep);
-    drawSprite(spriteB, makePosition(spritePos.x + 1, spritePos.y), fgColor, bgColor, false, false, animationStep);
-    drawSprite(spriteC, makePosition(spritePos.x, spritePos.y + 1), fgColor, bgColor, false, false, animationStep);
-    drawSprite(spriteD, makePosition(spritePos.x + 1, spritePos.y + 1), fgColor, bgColor, false, false, animationStep);
+    drawSprite(spriteB, Position(spritePos.x + 1, spritePos.y), fgColor, bgColor, false, false, animationStep);
+    drawSprite(spriteC, Position(spritePos.x, spritePos.y + 1), fgColor, bgColor, false, false, animationStep);
+    drawSprite(spriteD, Position(spritePos.x + 1, spritePos.y + 1), fgColor, bgColor, false, false, animationStep);
 }
 
 void drawSpaceTile(Position tilePos) {
@@ -155,9 +145,9 @@ void drawExplosion1Tile(Position tilePos, uint8_t fgColor, uint8_t bgColor) {
 void drawOutboxTile(Position tilePos, uint8_t fgColor, uint8_t bgColor) {
     Position spritePos = tileToSpritePos(tilePos);
     drawSprite(gSpriteOutbox, spritePos, fgColor, bgColor, false, false, 0);
-    drawSprite(gSpriteOutbox, makePosition(spritePos.x + 1, spritePos.y), fgColor, bgColor, true, false, 0);
-    drawSprite(gSpriteOutbox, makePosition(spritePos.x, spritePos.y + 1), fgColor, bgColor, false, true, 0);
-    drawSprite(gSpriteOutbox, makePosition(spritePos.x + 1, spritePos.y + 1), fgColor, bgColor, true, true, 0);
+    drawSprite(gSpriteOutbox, Position(spritePos.x + 1, spritePos.y), fgColor, bgColor, true, false, 0);
+    drawSprite(gSpriteOutbox, Position(spritePos.x, spritePos.y + 1), fgColor, bgColor, false, true, 0);
+    drawSprite(gSpriteOutbox, Position(spritePos.x + 1, spritePos.y + 1), fgColor, bgColor, true, true, 0);
 }
 
 static const uint8_t* getCharSprite(char ch) {
@@ -216,6 +206,6 @@ void drawText(const char *text) {
         if (text[i] == ' ') {
             continue;
         }
-        drawSprite(getCharSprite(text[i]), makePosition(2 + i, 3), 1, 0, false, false, 0);
+        drawSprite(getCharSprite(text[i]), Position(2 + i, 3), 1, 0, false, false, 0);
     }
 }

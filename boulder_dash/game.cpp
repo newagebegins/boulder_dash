@@ -119,7 +119,7 @@ static bool isBeforeRockfordBirth(const GameState *gameState) {
 static void drawCave(const GameState *gameState) {
     for (int y = 0; y < CAVE_HEIGHT; ++y) {
         for (int x = 0; x < CAVE_WIDTH; ++x) {
-            Position tilePos = makePosition(x, y);
+            Position tilePos(x, y);
             if (!isTileVisible(tilePos)) {
                 continue;
             }
@@ -181,7 +181,7 @@ static void drawTextArea(const GameState *gameState) {
 static void drawMapCover(const CaveMap mapCover, int turn) {
     for (int y = 0; y < CAVE_HEIGHT; ++y) {
         for (int x = 0; x < CAVE_WIDTH; ++x) {
-            Position tilePos = makePosition(x, y);
+            Position tilePos(x, y);
             if (mapCover[y][x] == OBJ_SPACE || !isTileVisible(tilePos)) {
                 continue;
             }
