@@ -6,18 +6,6 @@
 
 #define ARRAY_LENGTH(array) (sizeof(array)/sizeof(*array))
 
-typedef struct {
-  int x;
-  int y;
-} Position;
-
-inline Position makePosition(int X, int Y) {
-  Position result;
-  result.x = X;
-  result.y = Y;
-  return result;
-}
-
 #define SPRITE_SIZE 8
 #define TILE_SIZE_IN_SPRITES 2
 #define TILE_SIZE (SPRITE_SIZE*TILE_SIZE_IN_SPRITES)
@@ -138,14 +126,14 @@ void drawBorder(uint8_t color) {
   drawFilledRectPx(0, 0, BACKBUFFER_WIDTH - 1, BACKBUFFER_HEIGHT - 1, color);
 }
 
-static void drawSprite(const Sprite sprite, Position spritePos, uint8_t fgColor, uint8_t bgColor,
+static void drawSprite(const Sprite sprite, int spriteRow, int spriteCol, uint8_t fgColor, uint8_t bgColor,
                        bool flipHorz, bool flipVert, int animationStep) {
   for (uint8_t bmpY = 0; bmpY < SPRITE_SIZE; ++bmpY) {
-    int y = flipVert ? (spritePos.y*SPRITE_SIZE + SPRITE_SIZE - 1 - bmpY) : (spritePos.y*SPRITE_SIZE + bmpY);
+    int y = flipVert ? (spriteRow*SPRITE_SIZE + SPRITE_SIZE - 1 - bmpY) : (spriteRow*SPRITE_SIZE + bmpY);
     uint8_t byte = sprite[(bmpY + animationStep) % SPRITE_SIZE];
 
     for (uint8_t bmpX = 0; bmpX < SPRITE_SIZE; ++bmpX) {
-      int x = flipHorz ? (spritePos.x*SPRITE_SIZE + SPRITE_SIZE - 1 - bmpX) : (spritePos.x*SPRITE_SIZE + bmpX);
+      int x = flipHorz ? (spriteCol*SPRITE_SIZE + SPRITE_SIZE - 1 - bmpX) : (spriteCol*SPRITE_SIZE + bmpX);
       uint8_t mask = 1 << ((SPRITE_SIZE - 1) - bmpX);
       uint8_t bit = byte & mask;
       uint8_t color = bit ? fgColor : bgColor;
@@ -155,120 +143,126 @@ static void drawSprite(const Sprite sprite, Position spritePos, uint8_t fgColor,
   }
 }
 
-Position tileToSpritePos(Position tilePos) {
-  return makePosition((PLAYFIELD_X_MIN_IN_TILES + tilePos.x) * TILE_SIZE_IN_SPRITES, (PLAYFIELD_Y_MIN_IN_TILES + tilePos.y) * TILE_SIZE_IN_SPRITES);
+static void tileToSpritePos(int tileRow, int tileCol, int *spriteRow, int *spriteCol) {
+  *spriteRow = (PLAYFIELD_Y_MIN_IN_TILES + tileRow) * TILE_SIZE_IN_SPRITES;
+  *spriteCol = (PLAYFIELD_X_MIN_IN_TILES + tileCol) * TILE_SIZE_IN_SPRITES;
 }
 
-static void drawTile(const Sprite spriteA, const Sprite spriteB, const Sprite spriteC, const Sprite spriteD, Position tilePos, uint8_t fgColor, uint8_t bgColor, int animationStep) {
-  Position spritePos = tileToSpritePos(tilePos);
-  drawSprite(spriteA, spritePos, fgColor, bgColor, false, false, animationStep);
-  drawSprite(spriteB, makePosition(spritePos.x + 1, spritePos.y), fgColor, bgColor, false, false, animationStep);
-  drawSprite(spriteC, makePosition(spritePos.x, spritePos.y + 1), fgColor, bgColor, false, false, animationStep);
-  drawSprite(spriteD, makePosition(spritePos.x + 1, spritePos.y + 1), fgColor, bgColor, false, false, animationStep);
+static void drawTile(const Sprite spriteA, const Sprite spriteB, const Sprite spriteC, const Sprite spriteD,
+                     int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor, int animationStep) {
+  int spriteRow, spriteCol;
+  tileToSpritePos(tileRow, tileCol, &spriteRow, &spriteCol);
+  drawSprite(spriteA, spriteRow, spriteCol, fgColor, bgColor, false, false, animationStep);
+  drawSprite(spriteB, spriteRow, spriteCol + 1, fgColor, bgColor, false, false, animationStep);
+  drawSprite(spriteC, spriteRow + 1, spriteCol, fgColor, bgColor, false, false, animationStep);
+  drawSprite(spriteD, spriteRow + 1, spriteCol + 1, fgColor, bgColor, false, false, animationStep);
 }
 
-void drawSpaceTile(Position tilePos) {
-  int left = PLAYFIELD_X_MIN + tilePos.x*TILE_SIZE;
-  int top = PLAYFIELD_Y_MIN + tilePos.y*TILE_SIZE;
+void drawSpaceTile(int tileRow, int tileCol) {
+  int left = PLAYFIELD_X_MIN + tileCol*TILE_SIZE;
+  int top = PLAYFIELD_Y_MIN + tileRow*TILE_SIZE;
   int bottom = top + TILE_SIZE - 1;
   int right = left + TILE_SIZE - 1;
   drawFilledRectPx(left, top, right, bottom, 0);
 }
 
-void drawSteelWallTile(Position tilePos, uint8_t fgColor, uint8_t bgColor) {
-  drawTile(gSpriteSteelWall, gSpriteSteelWall, gSpriteSteelWall, gSpriteSteelWall, tilePos, fgColor, bgColor, 0);
+void drawSteelWallTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
+  drawTile(gSpriteSteelWall, gSpriteSteelWall, gSpriteSteelWall, gSpriteSteelWall, tileRow, tileCol, fgColor, bgColor, 0);
 }
 
-void drawAnimatedSteelWallTile(Position tilePos, uint8_t fgColor, uint8_t bgColor, int animationStep) {
-  drawTile(gSpriteSteelWall, gSpriteSteelWall, gSpriteSteelWall, gSpriteSteelWall, tilePos, fgColor, bgColor, animationStep);
+void drawAnimatedSteelWallTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor, int animationStep) {
+  drawTile(gSpriteSteelWall, gSpriteSteelWall, gSpriteSteelWall, gSpriteSteelWall, tileRow, tileCol, fgColor, bgColor, animationStep);
 }
 
-void drawDirtTile(Position tilePos, uint8_t fgColor, uint8_t bgColor) {
-  drawTile(gSpriteDirtA, gSpriteDirtB, gSpriteDirtC, gSpriteDirtD, tilePos, fgColor, bgColor, 0);
+void drawDirtTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
+  drawTile(gSpriteDirtA, gSpriteDirtB, gSpriteDirtC, gSpriteDirtD, tileRow, tileCol, fgColor, bgColor, 0);
 }
 
-void drawBrickWallTile(Position tilePos, uint8_t fgColor, uint8_t bgColor) {
-  drawTile(gSpriteBrick1, gSpriteBrick1, gSpriteBrick1, gSpriteBrick1, tilePos, fgColor, bgColor, 0);
+void drawBrickWallTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
+  drawTile(gSpriteBrick1, gSpriteBrick1, gSpriteBrick1, gSpriteBrick1, tileRow, tileCol, fgColor, bgColor, 0);
 }
 
-void drawBoulderTile(Position tilePos, uint8_t fgColor, uint8_t bgColor) {
-  drawTile(gSpriteBoulderA, gSpriteBoulderB, gSpriteBoulderC, gSpriteBoulderD, tilePos, fgColor, bgColor, 0);
+void drawBoulderTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
+  drawTile(gSpriteBoulderA, gSpriteBoulderB, gSpriteBoulderC, gSpriteBoulderD, tileRow, tileCol, fgColor, bgColor, 0);
 }
 
-void drawDiamond1Tile(Position tilePos, uint8_t fgColor, uint8_t bgColor) {
-  drawTile(gSpriteDiamond1A, gSpriteDiamond1B, gSpriteDiamond1C, gSpriteDiamond1D, tilePos, fgColor, bgColor, 0);
+void drawDiamond1Tile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
+  drawTile(gSpriteDiamond1A, gSpriteDiamond1B, gSpriteDiamond1C, gSpriteDiamond1D, tileRow, tileCol, fgColor, bgColor, 0);
 }
 
-void drawExplosion1Tile(Position tilePos, uint8_t fgColor, uint8_t bgColor) {
-  drawTile(gSpriteExplosion1A, gSpriteExplosion1B, gSpriteExplosion1C, gSpriteExplosion1D, tilePos, fgColor, bgColor, 0);
+void drawExplosion1Tile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
+  drawTile(gSpriteExplosion1A, gSpriteExplosion1B, gSpriteExplosion1C, gSpriteExplosion1D, tileRow, tileCol, fgColor, bgColor, 0);
 }
 
-void drawExplosion2Tile(Position tilePos, uint8_t fgColor, uint8_t bgColor) {
-  drawTile(gSpriteExplosion2A, gSpriteExplosion2B, gSpriteExplosion2C, gSpriteExplosion2D, tilePos, fgColor, bgColor, 0);
+void drawExplosion2Tile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
+  drawTile(gSpriteExplosion2A, gSpriteExplosion2B, gSpriteExplosion2C, gSpriteExplosion2D, tileRow, tileCol, fgColor, bgColor, 0);
 }
 
-void drawExplosion3Tile(Position tilePos, uint8_t fgColor, uint8_t bgColor) {
-  drawTile(gSpriteExplosion3A, gSpriteExplosion3B, gSpriteExplosion3C, gSpriteExplosion3D, tilePos, fgColor, bgColor, 0);
+void drawExplosion3Tile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
+  drawTile(gSpriteExplosion3A, gSpriteExplosion3B, gSpriteExplosion3C, gSpriteExplosion3D, tileRow, tileCol, fgColor, bgColor, 0);
 }
 
-void drawOutboxTile(Position tilePos, uint8_t fgColor, uint8_t bgColor) {
-  Position spritePos = tileToSpritePos(tilePos);
-  drawSprite(gSpriteOutbox, spritePos, fgColor, bgColor, false, false, 0);
-  drawSprite(gSpriteOutbox, makePosition(spritePos.x + 1, spritePos.y), fgColor, bgColor, true, false, 0);
-  drawSprite(gSpriteOutbox, makePosition(spritePos.x, spritePos.y + 1), fgColor, bgColor, false, true, 0);
-  drawSprite(gSpriteOutbox, makePosition(spritePos.x + 1, spritePos.y + 1), fgColor, bgColor, true, true, 0);
+void drawOutboxTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
+  int spriteRow, spriteCol;
+  tileToSpritePos(tileRow, tileCol, &spriteRow, &spriteCol);
+  drawSprite(gSpriteOutbox, spriteRow, spriteCol, fgColor, bgColor, false, false, 0);
+  drawSprite(gSpriteOutbox, spriteRow, spriteCol + 1, fgColor, bgColor, true, false, 0);
+  drawSprite(gSpriteOutbox, spriteRow + 1, spriteCol, fgColor, bgColor, false, true, 0);
+  drawSprite(gSpriteOutbox, spriteRow + 1, spriteCol + 1, fgColor, bgColor, true, true, 0);
 }
 
-void drawMovingRockfordTile(Position tilePos, bool isFacingRight, int animationStep) {
+void drawMovingRockfordTile(int tileRow, int tileCol, bool isFacingRight, int animationStep) {
   UNREFERENCED_PARAMETER(isFacingRight);
   const int MOVING_ROCKFORD_FRAMES_COUNT = 6;
-  Position spritePos = tileToSpritePos(tilePos);
+  int spriteRow, spriteCol;
+  tileToSpritePos(tileRow, tileCol, &spriteRow, &spriteCol);
   switch (animationStep % MOVING_ROCKFORD_FRAMES_COUNT) {
     case 0:
-      drawSprite(gSpriteRockfordHead1A, spritePos, 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordHead1B, makePosition(spritePos.x + 1, spritePos.y), 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordBottomRun1A, makePosition(spritePos.x, spritePos.y + 1), 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordBottomRun1B, makePosition(spritePos.x + 1, spritePos.y + 1), 1, 0, false, false, 0);
+      drawSprite(gSpriteRockfordHead1A, spriteRow, spriteCol, 1, 0, false, false, 0);
+      drawSprite(gSpriteRockfordHead1B, spriteRow, spriteCol + 1, 1, 0, false, false, 0);
+      drawSprite(gSpriteRockfordBottomRun1A, spriteRow + 1, spriteCol, 1, 0, false, false, 0);
+      drawSprite(gSpriteRockfordBottomRun1B, spriteRow + 1, spriteCol + 1, 1, 0, false, false, 0);
       break;
     case 1:
-      drawSprite(gSpriteRockfordHead1A, spritePos, 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordHead1B, makePosition(spritePos.x + 1, spritePos.y), 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordBottomRun2A, makePosition(spritePos.x, spritePos.y + 1), 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordBottomRun2B, makePosition(spritePos.x + 1, spritePos.y + 1), 1, 0, false, false, 0);
+      drawSprite(gSpriteRockfordHead1A, spriteRow, spriteCol, 1, 0, false, false, 0);
+      drawSprite(gSpriteRockfordHead1B, spriteRow, spriteCol + 1, 1, 0, false, false, 0);
+      drawSprite(gSpriteRockfordBottomRun2A, spriteRow + 1, spriteCol, 1, 0, false, false, 0);
+      drawSprite(gSpriteRockfordBottomRun2B, spriteRow + 1, spriteCol + 1, 1, 0, false, false, 0);
       break;
     case 2:
-      drawSprite(gSpriteRockfordHead2A, spritePos, 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordHead2B, makePosition(spritePos.x + 1, spritePos.y), 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordBottomRun3A, makePosition(spritePos.x, spritePos.y + 1), 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordBottomRun3B, makePosition(spritePos.x + 1, spritePos.y + 1), 1, 0, false, false, 0);
+      drawSprite(gSpriteRockfordHead2A, spriteRow, spriteCol, 1, 0, false, false, 0);
+      drawSprite(gSpriteRockfordHead2B, spriteRow, spriteCol + 1, 1, 0, false, false, 0);
+      drawSprite(gSpriteRockfordBottomRun3A, spriteRow + 1, spriteCol, 1, 0, false, false, 0);
+      drawSprite(gSpriteRockfordBottomRun3B, spriteRow + 1, spriteCol + 1, 1, 0, false, false, 0);
       break;
     case 3:
-      drawSprite(gSpriteRockfordHead2A, spritePos, 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordHead2B, makePosition(spritePos.x + 1, spritePos.y), 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordBottomRun4A, makePosition(spritePos.x, spritePos.y + 1), 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordBottomRun4B, makePosition(spritePos.x + 1, spritePos.y + 1), 1, 0, false, false, 0);
+      drawSprite(gSpriteRockfordHead2A, spriteRow, spriteCol, 1, 0, false, false, 0);
+      drawSprite(gSpriteRockfordHead2B, spriteRow, spriteCol + 1, 1, 0, false, false, 0);
+      drawSprite(gSpriteRockfordBottomRun4A, spriteRow + 1, spriteCol, 1, 0, false, false, 0);
+      drawSprite(gSpriteRockfordBottomRun4B, spriteRow + 1, spriteCol + 1, 1, 0, false, false, 0);
       break;
     case 4:
-      drawSprite(gSpriteRockfordHead1A, spritePos, 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordHead1B, makePosition(spritePos.x + 1, spritePos.y), 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordBottomRun5A, makePosition(spritePos.x, spritePos.y + 1), 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordBottomRun5B, makePosition(spritePos.x + 1, spritePos.y + 1), 1, 0, false, false, 0);
+      drawSprite(gSpriteRockfordHead1A, spriteRow, spriteCol, 1, 0, false, false, 0);
+      drawSprite(gSpriteRockfordHead1B, spriteRow, spriteCol + 1, 1, 0, false, false, 0);
+      drawSprite(gSpriteRockfordBottomRun5A, spriteRow + 1, spriteCol, 1, 0, false, false, 0);
+      drawSprite(gSpriteRockfordBottomRun5B, spriteRow + 1, spriteCol + 1, 1, 0, false, false, 0);
       break;
     case 5:
-      drawSprite(gSpriteRockfordHead1A, spritePos, 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordHead1B, makePosition(spritePos.x + 1, spritePos.y), 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordBottomRun3A, makePosition(spritePos.x, spritePos.y + 1), 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordBottomRun3B, makePosition(spritePos.x + 1, spritePos.y + 1), 1, 0, false, false, 0);
+      drawSprite(gSpriteRockfordHead1A, spriteRow, spriteCol, 1, 0, false, false, 0);
+      drawSprite(gSpriteRockfordHead1B, spriteRow, spriteCol + 1, 1, 0, false, false, 0);
+      drawSprite(gSpriteRockfordBottomRun3A, spriteRow + 1, spriteCol, 1, 0, false, false, 0);
+      drawSprite(gSpriteRockfordBottomRun3B, spriteRow + 1, spriteCol + 1, 1, 0, false, false, 0);
       break;
   }
 }
 
-void drawIdleRockfordTile(Position tilePos) {
-  Position spritePos = tileToSpritePos(tilePos);
-  drawSprite(gSpriteRockfordEye1, spritePos, 1, 0, false, false, 0);
-  drawSprite(gSpriteRockfordEye1, makePosition(spritePos.x + 1, spritePos.y), 1, 0, true, false, 0);
-  drawSprite(gSpriteRockfordBottomIdle1, makePosition(spritePos.x, spritePos.y + 1), 1, 0, false, false, 0);
-  drawSprite(gSpriteRockfordBottomIdle1, makePosition(spritePos.x + 1, spritePos.y + 1), 1, 0, true, false, 0);
+void drawIdleRockfordTile(int tileRow, int tileCol) {
+  int spriteRow, spriteCol;
+  tileToSpritePos(tileRow, tileCol, &spriteRow, &spriteCol);
+  drawSprite(gSpriteRockfordEye1, spriteRow, spriteCol, 1, 0, false, false, 0);
+  drawSprite(gSpriteRockfordEye1, spriteRow, spriteCol+1, 1, 0, true, false, 0);
+  drawSprite(gSpriteRockfordBottomIdle1, spriteRow+1, spriteCol, 1, 0, false, false, 0);
+  drawSprite(gSpriteRockfordBottomIdle1, spriteRow+1, spriteCol+1, 1, 0, true, false, 0);
 }
 
 static const uint8_t* getCharSprite(char ch) {
@@ -327,7 +321,7 @@ void drawText(const char *text) {
     if (text[i] == ' ') {
       continue;
     }
-    drawSprite(getCharSprite(text[i]), makePosition(2 + i, 3), 1, 0, false, false, 0);
+    drawSprite(getCharSprite(text[i]), 3, 2 + i, 1, 0, false, false, 0);
   }
 }
 
@@ -412,15 +406,10 @@ typedef struct {
 } Cave;
 
 Cave decodeCave(uint8_t caveIndex);
-CaveObject getObject(CaveMap map, Position pos);
-void placeObject(CaveMap map, CaveObject object, Position pos);
 
 #include "data_caves.h"
 
 static void nextRandom(int *randSeed1, int *randSeed2) {
-  assert((*randSeed1 >= 0x00) && (*randSeed1 <= 0xFF));
-  assert((*randSeed2 >= 0x00) && (*randSeed2 <= 0xFF));
-
   int tempRand1 = (*randSeed1 & 0x0001) * 0x0080;
   int tempRand2 = (*randSeed2 >> 1) & 0x007F;
 
@@ -438,64 +427,40 @@ static void nextRandom(int *randSeed1, int *randSeed2) {
 
   result = result + carry + tempRand2;
   *randSeed1 = result & 0x00FF;
-
-  assert((*randSeed1 >= 0x00) && (*randSeed1 <= 0xFF));
-  assert((*randSeed2 >= 0x00) && (*randSeed2 <= 0xFF));
 }
 
-void placeObject(CaveMap map, CaveObject object, Position pos) {
-  assert((pos.x >= 0) && (pos.x < CAVE_WIDTH));
-  assert((pos.y >= 0) && (pos.y < CAVE_HEIGHT));
-  map[pos.y][pos.x] = object;
-}
-
-CaveObject getObject(CaveMap map, Position pos) {
-  assert((pos.x >= 0) && (pos.x < CAVE_WIDTH));
-  assert((pos.y >= 0) && (pos.y < CAVE_HEIGHT));
-  return map[pos.y][pos.x];
-}
-
-static void drawLine(CaveMap map, CaveObject object, Position pos, int length, int direction) {
+static void drawLine(CaveMap map, CaveObject object, int row, int col, int length, int direction) {
   static int ldx[8] = { 0,  1, 1, 1, 0, -1, -1, -1 };
   static int ldy[8] = { -1, -1, 0, 1, 1,  1,  0, -1 };
 
-  assert((length >= 1) && (length <= CAVE_WIDTH));
-  assert((direction >= 0) && (direction < ARRAY_LENGTH(ldx)));
-
   for (int i = 0; i < length; i++) {
-    placeObject(map, object, makePosition(pos.x + i*ldx[direction], pos.y + i*ldy[direction]));
+    map[row + i*ldy[direction]][col + i*ldx[direction]] = object;
   }
 }
 
-static void drawFilledRect(CaveMap map, CaveObject object, Position pos, int width, int height, CaveObject fillObject) {
-  assert((width >= 1) && (width <= CAVE_WIDTH));
-  assert((height >= 1) && (height <= CAVE_HEIGHT));
-
+static void drawFilledRect(CaveMap map, CaveObject object, int row, int col, int width, int height, CaveObject fillObject) {
   for (int i = 0; i < width; i++) {
     for (int j = 0; j < height; j++) {
       if ((j == 0) || (j == height - 1)) {
-        placeObject(map, object, makePosition(pos.x + i, pos.y + j));
+        map[row+j][col+i] = object;
       }
       else {
-        placeObject(map, fillObject, makePosition(pos.x + i, pos.y + j));
+        map[row+j][col+i] = fillObject;
       }
     }
-    placeObject(map, object, makePosition(pos.x + i, pos.y));
-    placeObject(map, object, makePosition(pos.x + i, pos.y + height - 1));
+    map[row][col+i] = object;
+    map[row+height-1][col+i] = object;
   }
 }
 
-static void drawRect(CaveMap map, CaveObject object, Position pos, int width, int height) {
-  assert((width >= 1) && (width <= CAVE_WIDTH));
-  assert((height >= 1) && (height <= CAVE_HEIGHT));
-
+static void drawRect(CaveMap map, CaveObject object, int row, int col, int width, int height) {
   for (int i = 0; i < width; i++) {
-    placeObject(map, object, makePosition(pos.x + i, pos.y));
-    placeObject(map, object, makePosition(pos.x + i, pos.y + height - 1));
+    map[row][col+i] = object;
+    map[row+height-1][col+i] = object;
   }
   for (int i = 0; i < height; i++) {
-    placeObject(map, object, makePosition(pos.x, pos.y + i));
-    placeObject(map, object, makePosition(pos.x + width - 1, pos.y + i));
+    map[row+i][col] = object;
+    map[row+i][col+width-1] = object;
   }
 }
 
@@ -513,7 +478,7 @@ Cave decodeCave(uint8_t caveIndex) {
   // Clear out the map
   for (int y = 0; y < CAVE_HEIGHT; y++) {
     for (int x = 0; x < CAVE_WIDTH; x++) {
-      placeObject(cave.map, OBJ_STEEL_WALL, makePosition(x, y));
+      cave.map[y][x] = OBJ_STEEL_WALL;
     }
   }
 
@@ -531,7 +496,7 @@ Cave decodeCave(uint8_t caveIndex) {
             object = cave.info.randomObject[i];
           }
         }
-        placeObject(cave.map, object, makePosition(x, y));
+        cave.map[y][x] = object;
       }
     }
   }
@@ -548,7 +513,7 @@ Cave decodeCave(uint8_t caveIndex) {
         case 0: {
           int x = explicitData[++i];
           int y = explicitData[++i] - uselessTopBorderHeight;
-          placeObject(cave.map, object, makePosition(x, y));
+          cave.map[y][x] = object;
           break;
         }
         case 1: {
@@ -556,7 +521,7 @@ Cave decodeCave(uint8_t caveIndex) {
           int y = explicitData[++i] - uselessTopBorderHeight;
           int length = explicitData[++i];
           int direction = explicitData[++i];
-          drawLine(cave.map, object, makePosition(x, y), length, direction);
+          drawLine(cave.map, object, y, x, length, direction);
           break;
         }
         case 2: {
@@ -565,7 +530,7 @@ Cave decodeCave(uint8_t caveIndex) {
           int width = explicitData[++i];
           int height = explicitData[++i];
           CaveObject fill = (CaveObject)explicitData[++i];
-          drawFilledRect(cave.map, object, makePosition(x, y), width, height, fill);
+          drawFilledRect(cave.map, object, y, x, width, height, fill);
           break;
         }
         case 3: {
@@ -573,7 +538,7 @@ Cave decodeCave(uint8_t caveIndex) {
           int y = explicitData[++i] - uselessTopBorderHeight;
           int width = explicitData[++i];
           int height = explicitData[++i];
-          drawRect(cave.map, object, makePosition(x, y), width, height);
+          drawRect(cave.map, object, y, x, width, height);
           break;
         }
       }
@@ -581,7 +546,7 @@ Cave decodeCave(uint8_t caveIndex) {
   }
 
   // Steel bounds
-  drawRect(cave.map, OBJ_STEEL_WALL, makePosition(0, 0), CAVE_WIDTH, CAVE_HEIGHT);
+  drawRect(cave.map, OBJ_STEEL_WALL, 0, 0, CAVE_WIDTH, CAVE_HEIGHT);
 
   return cave;
 }
@@ -671,24 +636,24 @@ static void updateMapCover(GameState *gameState) {
   }
 }
 
-static void updatePreRockford(GameState *gameState, Position pos, int stage) {
+static void updatePreRockford(GameState *gameState, int tileRow, int tileCol, int stage) {
   switch (stage) {
     case 1:
       if (gameState->rockfordTurnsTillBirth == 0) {
-        placeObject(gameState->cave.map, OBJ_PRE_ROCKFORD_STAGE_2, pos);
+        gameState->cave.map[tileRow][tileCol] = OBJ_PRE_ROCKFORD_STAGE_2;
       }
       else if (!isMapCovered(gameState)) {
         gameState->rockfordTurnsTillBirth--;
       }
       break;
     case 2:
-      placeObject(gameState->cave.map, OBJ_PRE_ROCKFORD_STAGE_3, pos);
+        gameState->cave.map[tileRow][tileCol] = OBJ_PRE_ROCKFORD_STAGE_3;
       break;
     case 3:
-      placeObject(gameState->cave.map, OBJ_PRE_ROCKFORD_STAGE_4, pos);
+        gameState->cave.map[tileRow][tileCol] = OBJ_PRE_ROCKFORD_STAGE_4;
       break;
     case 4:
-      placeObject(gameState->cave.map, OBJ_ROCKFORD, pos);
+        gameState->cave.map[tileRow][tileCol] = OBJ_ROCKFORD;
       break;
     default:
       assert(!"Unknown prerockford stage");
@@ -709,19 +674,18 @@ static bool isPaused(const GameState *gameState) {
 static void scanCave(GameState *gameState) {
   for (int y = 0; y < CAVE_HEIGHT; ++y) {
     for (int x = 0; x < CAVE_WIDTH; ++x) {
-      Position pos = makePosition(x, y);
-      switch (getObject(gameState->cave.map, pos)) {
+      switch (gameState->cave.map[y][x]) {
         case OBJ_PRE_ROCKFORD_STAGE_1:
-          updatePreRockford(gameState, pos, 1);
+          updatePreRockford(gameState, y, x, 1);
           break;
         case OBJ_PRE_ROCKFORD_STAGE_2:
-          updatePreRockford(gameState, pos, 2);
+          updatePreRockford(gameState, y, x, 2);
           break;
         case OBJ_PRE_ROCKFORD_STAGE_3:
-          updatePreRockford(gameState, pos, 3);
+          updatePreRockford(gameState, y, x, 3);
           break;
         case OBJ_PRE_ROCKFORD_STAGE_4:
-          updatePreRockford(gameState, pos, 4);
+          updatePreRockford(gameState, y, x, 4);
           break;
       }
     }
@@ -751,10 +715,10 @@ static void gameUpdate(GameState *gameState, float dt) {
   }
 }
 
-static bool isTileVisible(Position tilePos) {
+static bool isTileVisible(int tileRow, int tileCol) {
   return
-    tilePos.y >= 0 && tilePos.y < PLAYFIELD_HEIGHT_IN_TILES &&
-                                  tilePos.x >= 0 && tilePos.x < PLAYFIELD_WIDTH_IN_TILES;
+    tileRow >= 0 && tileRow < PLAYFIELD_HEIGHT_IN_TILES &&
+    tileCol >= 0 && tileCol < PLAYFIELD_WIDTH_IN_TILES;
 }
 
 static bool isBeforeRockfordBirth(const GameState *gameState) {
@@ -764,55 +728,54 @@ static bool isBeforeRockfordBirth(const GameState *gameState) {
 static void drawCave(const GameState *gameState) {
   for (int y = 0; y < CAVE_HEIGHT; ++y) {
     for (int x = 0; x < CAVE_WIDTH; ++x) {
-      Position tilePos = makePosition(x, y);
-      if (!isTileVisible(tilePos)) {
+      if (!isTileVisible(y, x)) {
         continue;
       }
       switch (gameState->cave.map[y][x]) {
         case OBJ_SPACE:
-          drawSpaceTile(tilePos);
+          drawSpaceTile(y, x);
           break;
         case OBJ_STEEL_WALL:
-          drawSteelWallTile(tilePos, 4, 0);
+          drawSteelWallTile(y, x, 4, 0);
           break;
         case OBJ_DIRT:
-          drawDirtTile(tilePos, 3, 0);
+          drawDirtTile(y, x, 3, 0);
           break;
         case OBJ_BRICK_WALL:
-          drawBrickWallTile(tilePos, 1, 3);
+          drawBrickWallTile(y, x, 1, 3);
           break;
         case OBJ_BOULDER_STATIONARY:
         case OBJ_BOULDER_FALLING:
-          drawBoulderTile(tilePos, 4, 0);
+          drawBoulderTile(y, x, 4, 0);
           break;
         case OBJ_DIAMOND_STATIONARY:
         case OBJ_DIAMOND_FALLING:
-          drawDiamond1Tile(tilePos, 2, 0);
+          drawDiamond1Tile(y, x, 2, 0);
           break;
         case OBJ_PRE_ROCKFORD_STAGE_1:
           if (isBeforeRockfordBirth(gameState)) {
             if (gameState->rockfordTurnsTillBirth % 2) {
-              drawSteelWallTile(tilePos, 4, 0);
+              drawSteelWallTile(y, x, 4, 0);
             }
             else {
-              drawOutboxTile(tilePos, 4, 0);
+              drawOutboxTile(y, x, 4, 0);
             }
           }
           else {
-            drawExplosion1Tile(tilePos, 2, 0);
+            drawExplosion1Tile(y, x, 2, 0);
           }
           break;
         case OBJ_PRE_ROCKFORD_STAGE_2:
-          drawExplosion2Tile(tilePos, 2, 0);
+          drawExplosion2Tile(y, x, 2, 0);
           break;
         case OBJ_PRE_ROCKFORD_STAGE_3:
-          drawExplosion3Tile(tilePos, 2, 0);
+          drawExplosion3Tile(y, x, 2, 0);
           break;
         case OBJ_PRE_ROCKFORD_STAGE_4:
-          drawMovingRockfordTile(tilePos, true, gameState->turn);
+          drawMovingRockfordTile(y, x, true, gameState->turn);
           break;
         case OBJ_ROCKFORD:
-          drawIdleRockfordTile(tilePos);
+          drawIdleRockfordTile(y, x);
           break;
       }
     }
@@ -838,11 +801,10 @@ static void drawTextArea(const GameState *gameState) {
 static void drawMapCover(const CaveMap mapCover, int turn) {
   for (int y = 0; y < CAVE_HEIGHT; ++y) {
     for (int x = 0; x < CAVE_WIDTH; ++x) {
-      Position tilePos = makePosition(x, y);
-      if (mapCover[y][x] == OBJ_SPACE || !isTileVisible(tilePos)) {
+      if (mapCover[y][x] == OBJ_SPACE || !isTileVisible(y, x)) {
         continue;
       }
-      drawAnimatedSteelWallTile(tilePos, 4, 0, turn);
+      drawAnimatedSteelWallTile(y, x, 4, 0, turn);
     }
   }
 }
