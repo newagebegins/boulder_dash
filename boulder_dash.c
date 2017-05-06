@@ -543,27 +543,34 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                     map[row][col] = OBJ_ROCKFORD;
                     break;
 
-                  case OBJ_ROCKFORD:
+                  case OBJ_ROCKFORD: {
+                    int newRow = row;
+                    int newCol = col;
+
                     if (isKeyDown(VK_DOWN)) {
                       rockfordIsMoving = true;
-                      map[row][col] = OBJ_SPACE;
-                      map[row+1][col] = OBJ_ROCKFORD_SCANNED;
+                      ++newRow;
                     } else if (isKeyDown(VK_UP)) {
                       rockfordIsMoving = true;
-                      map[row][col] = OBJ_SPACE;
-                      map[row-1][col] = OBJ_ROCKFORD_SCANNED;
+                      --newRow;
                     } else if (isKeyDown(VK_RIGHT)) {
                       rockfordIsMoving = true;
                       rockfordIsFacingRight = true;
-                      map[row][col] = OBJ_SPACE;
-                      map[row][col+1] = OBJ_ROCKFORD_SCANNED;
+                      ++newCol;
                     } else if (isKeyDown(VK_LEFT)) {
                       rockfordIsMoving = true;
                       rockfordIsFacingRight = false;
-                      map[row][col] = OBJ_SPACE;
-                      map[row][col-1] = OBJ_ROCKFORD_SCANNED;
+                      --newCol;
                     } else {
                       rockfordIsMoving = false;
+                    }
+
+                    switch (map[newRow][newCol]) {
+                      case OBJ_SPACE:
+                      case OBJ_DIRT:
+                        map[row][col] = OBJ_SPACE;
+                        map[newRow][newCol] = OBJ_ROCKFORD_SCANNED;
+                        break;
                     }
 
                     if (rockfordIsMoving) {
@@ -578,6 +585,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                       }
                     }
                     break;
+                  }
                 }
               }
             }
