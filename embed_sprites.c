@@ -3,34 +3,33 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define TILE_SIZE 8
+
 uint32_t *spritesheetPixels;
 int spritesheetWidth;
 int spritesheetHeight;
 FILE *out;
 
-void printSpriteBytes(int row, int col) {
-  int startX = col*8;
-  int startY = row*8;
-
-  for (int spriteY = 0; spriteY < 8; ++spriteY) {
+void printSpriteBytes(int startX, int startY) {
+  for (int spriteY = 0; spriteY < TILE_SIZE; ++spriteY) {
     uint8_t outByte = 0;
-    for (int spriteX = 0; spriteX < 8; ++spriteX) {
+    for (int spriteX = 0; spriteX < TILE_SIZE; ++spriteX) {
       int x = startX + spriteX;
       int y = startY + spriteY;
       uint32_t pixel = spritesheetPixels[y*spritesheetWidth + x];
       uint8_t outBit = pixel == 0x00FFFFFF ? 1 : 0;
-      outByte |= (outBit << (7 - spriteX));
+      outByte |= (outBit << ((TILE_SIZE-1) - spriteX));
     }
     fprintf(out, "0x%02X,", outByte);
   }
 }
 
-void printSprite(char *name, int frames, int height, int width, int startRow, int startCol) {
-  fprintf(out, "uint8_t %s[] = {%d,%d,%d,", name, frames, height, width);
+void printSprite(char *name, int frames, int size, int startX, int startY) {
+  fprintf(out, "uint8_t %s[] = {%d,%d,", name, frames, size);
   for (int frame = 0; frame < frames; ++frame) {
-    for (int row = 0; row < height; ++row) {
-      for (int col = 0; col < width; ++col) {
-        printSpriteBytes(startRow + row, startCol + frame*width + col);
+    for (int row = 0; row < size; ++row) {
+      for (int col = 0; col < size; ++col) {
+        printSpriteBytes(startX + (frame*size + col)*TILE_SIZE, startY + row*TILE_SIZE);
       }
     }
   }
@@ -76,17 +75,19 @@ void main() {
 
   fopen_s(&out, "data_sprites.h", "w");
 
-  printSprite("spriteRockfordIdleHead", 3, 1, 2, 0, 0);
-  printSprite("spriteRockfordIdleBody", 3, 1, 2, 1, 0);
-  printSprite("spriteRockfordMoveRight", 6, 2, 2, 0, 6);
-  printSprite("spriteRockfordMoveLeft", 6, 2, 2, 2, 6);
-  printSprite("spriteSpace", 1, 2, 2, 2, 0);
-  printSprite("spriteSteelWall", 1, 2, 2, 4, 0);
-  printSprite("spriteOutbox", 1, 2, 2, 4, 2);
-  printSprite("spriteBoulder", 1, 2, 2, 4, 4);
-  printSprite("spriteDirt", 1, 2, 2, 4, 6);
-  printSprite("spriteBrickWall", 1, 2, 2, 6, 0);
-  printSprite("spriteExplosion", 3, 2, 2, 8, 0);
-  printSprite("spriteDiamond", 8, 2, 2, 10, 0);
-  printSprite("spriteAscii", 59, 1, 1, 20, 0);
+  printSprite("spriteRockfordIdle", 1, 2, 0, 0);
+  printSprite("spriteRockfordBlink", 8, 2, 0, 16);
+  printSprite("spriteRockfordTap", 8, 2, 0, 32);
+  printSprite("spriteRockfordBlinkTap", 8, 2, 0, 48);
+  printSprite("spriteRockfordLeft", 8, 2, 0, 64);
+  printSprite("spriteRockfordRight", 8, 2, 0, 80);
+  printSprite("spriteSpace", 1, 2, 16, 0);
+  printSprite("spriteSteelWall", 1, 2, 0, 96);
+  printSprite("spriteOutbox", 1, 2, 16, 96);
+  printSprite("spriteBoulder", 1, 2, 32, 96);
+  printSprite("spriteDirt", 1, 2, 48, 96);
+  printSprite("spriteBrickWall", 1, 2, 0, 112);
+  printSprite("spriteExplosion", 3, 2, 0, 128);
+  printSprite("spriteDiamond", 8, 2, 0, 144);
+  printSprite("spriteAscii", 59, 1, 0, 224);
 }

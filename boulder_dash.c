@@ -178,17 +178,16 @@ void drawTile(uint8_t *tile, int dstX, int dstY, uint8_t fgColor, uint8_t bgColo
 
 void drawSprite(uint8_t *sprite, int frame, int dstX, int dstY, uint8_t fgColor, uint8_t bgColor, int vOffset) {
   int frames = sprite[0];
-  int height = sprite[1];
-  int width = sprite[2];
-  int bytesPerFrame = width*height*TILE_SIZE;
-  int bytesPerRow = width*TILE_SIZE;
+  int size = sprite[1];
+  int bytesPerFrame = size*size*TILE_SIZE;
+  int bytesPerRow = size*TILE_SIZE;
 
-  for (int row = 0; row < height; ++row) {
-    for (int col = 0; col < width; ++col) {
+  for (int row = 0; row < size; ++row) {
+    for (int col = 0; col < size; ++col) {
       int x = dstX + col*TILE_SIZE;
       int y = dstY + row*TILE_SIZE;
 
-      uint8_t *data = sprite + 3 + (frame%frames)*bytesPerFrame + row*bytesPerRow + col*TILE_SIZE;
+      uint8_t *data = sprite + 2 + (frame%frames)*bytesPerFrame + row*bytesPerRow + col*TILE_SIZE;
       drawTile(data, x, y, fgColor, bgColor, vOffset);
     }
   }
@@ -430,7 +429,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int score = 0;
   int diamondsCollected = 0;
   int turn = 0;
+  int tick = 0;
+  bool rockfordIsBlinking = false;
+  bool rockfordIsTapping = false;
   float turnTimer = 0;
+  float tickTimer = 0;
   int rockfordTurnsTillBirth = 12;
   int mapUncoverTurnsLeft = 40;
   int pauseTurnsLeft = 0;
@@ -485,6 +488,13 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     // Update
     //
 
+    float tickDuration = 0.03375f;
+    tickTimer += dt;
+    if (tickTimer >= tickDuration) {
+      tickTimer -= tickDuration;
+      tick++;
+    }
+
     float turnDuration = 0.15f;
     turnTimer += dt;
 
@@ -520,6 +530,15 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
               case OBJ_PRE_ROCKFORD_STAGE_4:
                 map[row][col] = OBJ_ROCKFORD;
+                break;
+
+              case OBJ_ROCKFORD:
+                if (tick % 8 == 0) {
+                  rockfordIsBlinking = rand() % 4 == 0;
+                  if (rand() % 16 == 0) {
+                    rockfordIsTapping = !rockfordIsTapping;
+                  }
+                }
                 break;
             }
           }
@@ -607,11 +626,18 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               drawSprite(spriteExplosion, 2, x, y, 2, 0, 0);
               break;
             case OBJ_PRE_ROCKFORD_STAGE_4:
-              drawSprite(spriteRockfordMoveRight, turn, x, y, 1, 0, 0);
+              drawSprite(spriteRockfordRight, turn, x, y, 1, 0, 0);
               break;
             case OBJ_ROCKFORD:
-              drawSprite(spriteRockfordIdleHead, 0, x, y, 1, 0, 0);
-              drawSprite(spriteRockfordIdleBody, 0, x, y+TILE_SIZE, 1, 0, 0);
+              if (rockfordIsBlinking && rockfordIsTapping) {
+                drawSprite(spriteRockfordBlinkTap, tick, x, y, 1, 0, 0);
+              } else if (rockfordIsBlinking) {
+                drawSprite(spriteRockfordBlink, tick, x, y, 1, 0, 0);
+              } else if (rockfordIsTapping) {
+                drawSprite(spriteRockfordTap, tick, x, y, 1, 0, 0);
+              } else {
+                drawSprite(spriteRockfordIdle, 0, x, y, 1, 0, 0);
+              }
               break;
           }
         }
