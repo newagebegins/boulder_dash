@@ -133,26 +133,17 @@ typedef struct {
   CaveMap map;
 } Cave;
 
-typedef struct {
-  bool gameIsStarted;
-  uint8_t caveNumber;
-  int livesLeft;
-  int turn;
-  float turnTimer;
-  int rockfordTurnsTillBirth;
-  int diamondsCollected;
-  int difficultyLevel;
-  int caveTimeLeft;
-  int score;
-  int pauseTurnsLeft;
-  Cave cave;
-  CaveMap mapCover;
-} GameState;
+//
+// Global variables
+//
 
 uint8_t *gBackbuffer;
 BITMAPINFO *gBitmapInfo;
 HDC gDeviceContext;
-int mapUncoverTurnsLeft;
+
+//
+//
+//
 
 void debugPrint(char *format, ...) {
   va_list argptr;
@@ -452,8 +443,35 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   QueryPerformanceFrequency(&perfcFreq);
   QueryPerformanceCounter(&perfc);
 
+  //
+  // Initialize game state
+  //
+
+  uint8_t caveNumber = 0;
+  Cave cave = decodeCave(caveNumber);
+  CaveMap mapCover;
+  int difficultyLevel = 0;
+  int caveTimeLeft = cave.info.caveTime[difficultyLevel];
+  int livesLeft = 3;
+  int score = 0;
+  int diamondsCollected = 0;
+  int turn = 0;
+  float turnTimer = 0;
+  int rockfordTurnsTillBirth = ROCKFORD_TURNS_TILL_BIRTH;
+  int mapUncoverTurnsLeft = MAP_UNCOVER_TURNS;
+  int pauseTurnsLeft = 0;
+
+  for (int y = 0; y < CAVE_HEIGHT; ++y) {
+    for (int x = 0; x < CAVE_WIDTH; ++x) {
+      mapCover[y][x] = OBJ_STEEL_WALL;
+    }
+  }
+
+  //
+  // Game loop
+  //
+
   bool running = true;
-  GameState gameState = {0};
 
   while (running) {
     perfcPrev = perfc;
@@ -491,67 +509,41 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     // Update
     //
 
-    if (!gameState.gameIsStarted) {
-      // Initialize game state
-
-      gameState.gameIsStarted = true;
-
-      gameState.caveNumber = 0;
-      gameState.cave = decodeCave(gameState.caveNumber);
-      gameState.difficultyLevel = 0;
-      gameState.caveTimeLeft = gameState.cave.info.caveTime[gameState.difficultyLevel];
-
-      gameState.livesLeft = 3;
-      gameState.score = 0;
-      gameState.diamondsCollected = 0;
-      gameState.turn = 0;
-      gameState.turnTimer = 0;
-      gameState.rockfordTurnsTillBirth = ROCKFORD_TURNS_TILL_BIRTH;
-      mapUncoverTurnsLeft = MAP_UNCOVER_TURNS;
-      gameState.pauseTurnsLeft = 0;
-
-      for (int y = 0; y < CAVE_HEIGHT; ++y) {
-        for (int x = 0; x < CAVE_WIDTH; ++x) {
-          gameState.mapCover[y][x] = OBJ_STEEL_WALL;
-        }
-      }
-    }
-
-    gameState.turnTimer += dt;
-    if (gameState.turnTimer >= TURN_DURATION) {
-      gameState.turnTimer -= TURN_DURATION;
+    turnTimer += dt;
+    if (turnTimer >= TURN_DURATION) {
+      turnTimer -= TURN_DURATION;
 
       // Do cave turn
 
-      if (gameState.pauseTurnsLeft > 0) {
-        gameState.pauseTurnsLeft--;
+      if (pauseTurnsLeft > 0) {
+        pauseTurnsLeft--;
       }
       else {
-        gameState.turn++;
+        turn++;
 
         // Scan cave
         for (int y = 0; y < CAVE_HEIGHT; ++y) {
           for (int x = 0; x < CAVE_WIDTH; ++x) {
-            switch (gameState.cave.map[y][x]) {
+            switch (cave.map[y][x]) {
               case OBJ_PRE_ROCKFORD_STAGE_1:
-                if (gameState.rockfordTurnsTillBirth == 0) {
-                  gameState.cave.map[y][x] = OBJ_PRE_ROCKFORD_STAGE_2;
+                if (rockfordTurnsTillBirth == 0) {
+                  cave.map[y][x] = OBJ_PRE_ROCKFORD_STAGE_2;
                 }
                 else if (mapUncoverTurnsLeft == 0) {
-                  gameState.rockfordTurnsTillBirth--;
+                  rockfordTurnsTillBirth--;
                 }
                 break;
 
               case OBJ_PRE_ROCKFORD_STAGE_2:
-                gameState.cave.map[y][x] = OBJ_PRE_ROCKFORD_STAGE_3;
+                cave.map[y][x] = OBJ_PRE_ROCKFORD_STAGE_3;
                 break;
 
               case OBJ_PRE_ROCKFORD_STAGE_3:
-                gameState.cave.map[y][x] = OBJ_PRE_ROCKFORD_STAGE_4;
+                cave.map[y][x] = OBJ_PRE_ROCKFORD_STAGE_4;
                 break;
 
               case OBJ_PRE_ROCKFORD_STAGE_4:
-                gameState.cave.map[y][x] = OBJ_ROCKFORD;
+                cave.map[y][x] = OBJ_ROCKFORD;
                 break;
             }
           }
@@ -563,17 +555,17 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           if (mapUncoverTurnsLeft > 1) {
             for (int y = 0; y < CAVE_HEIGHT; ++y) {
               for (int i = 0; i < CELLS_PER_LINE_TO_UNCOVER; ++i) {
-                gameState.mapCover[y][rand()%CAVE_WIDTH] = OBJ_SPACE;
+                mapCover[y][rand()%CAVE_WIDTH] = OBJ_SPACE;
               }
             }
           }
           else if (mapUncoverTurnsLeft == 1) {
-            gameState.pauseTurnsLeft = PAUSE_TURNS_BEFORE_FULL_UNCOVER;
+            pauseTurnsLeft = PAUSE_TURNS_BEFORE_FULL_UNCOVER;
           }
           else if (mapUncoverTurnsLeft == 0) {
             for (int y = 0; y < CAVE_HEIGHT; ++y) {
               for (int x = 0; x < CAVE_WIDTH; ++x) {
-                gameState.mapCover[y][x] = OBJ_SPACE;
+                mapCover[y][x] = OBJ_SPACE;
               }
             }
           }
@@ -596,7 +588,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         }
         int outRow = (PLAYFIELD_Y_MIN_IN_CELLS + y)*2;
         int outCol = (PLAYFIELD_X_MIN_IN_CELLS + x)*2;
-        switch (gameState.cave.map[y][x]) {
+        switch (cave.map[y][x]) {
           case OBJ_SPACE:
             drawSprite(spriteSpace, outRow, outCol, 0, 0, 0, 0);
             break;
@@ -618,8 +610,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             drawSprite(spriteDiamond, outRow, outCol, 0, 2, 0, 0);
             break;
           case OBJ_PRE_ROCKFORD_STAGE_1:
-            if (gameState.rockfordTurnsTillBirth > 0) {
-              if (gameState.rockfordTurnsTillBirth % 2) {
+            if (rockfordTurnsTillBirth > 0) {
+              if (rockfordTurnsTillBirth % 2) {
                 drawSprite(spriteSteelWall, outRow, outCol, 0, 4, 0, 0);
               }
               else {
@@ -637,7 +629,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             drawSprite(spriteExplosion, outRow, outCol, 2, 2, 0, 0);
             break;
           case OBJ_PRE_ROCKFORD_STAGE_4:
-            drawSprite(spriteRockfordMoveRight, outRow, outCol, gameState.turn, 1, 0, 0);
+            drawSprite(spriteRockfordMoveRight, outRow, outCol, turn, 1, 0, 0);
             break;
           case OBJ_ROCKFORD:
             drawSprite(spriteRockfordIdleHead, outRow, outCol, 0, 1, 0, 0);
@@ -650,26 +642,26 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     // Draw map cover
     for (int y = 0; y < CAVE_HEIGHT; ++y) {
       for (int x = 0; x < CAVE_WIDTH; ++x) {
-        if (gameState.mapCover[y][x] == OBJ_SPACE || !isCellVisible(y, x)) {
+        if (mapCover[y][x] == OBJ_SPACE || !isCellVisible(y, x)) {
           continue;
         }
-        drawSprite(spriteSteelWall, (PLAYFIELD_Y_MIN_IN_CELLS + y)*2, (PLAYFIELD_X_MIN_IN_CELLS + x)*2, 0, 4, 0, gameState.turn);
+        drawSprite(spriteSteelWall, (PLAYFIELD_Y_MIN_IN_CELLS + y)*2, (PLAYFIELD_X_MIN_IN_CELLS + x)*2, 0, 4, 0, turn);
       }
     }
 
     // Draw text
     {
       char text[64];
-      if (gameState.rockfordTurnsTillBirth > 0) {
-        sprintf_s(text, sizeof(text), "  PLAYER 1,  %d MEN,  ROOM %c/1", gameState.livesLeft, 'A' + gameState.caveNumber);
+      if (rockfordTurnsTillBirth > 0) {
+        sprintf_s(text, sizeof(text), "  PLAYER 1,  %d MEN,  ROOM %c/1", livesLeft, 'A' + caveNumber);
       }
       else {
         sprintf_s(text, sizeof(text), "   %d*%d   %02d   %03d   %06d",
-                  gameState.cave.info.diamondsNeeded[gameState.difficultyLevel],
-                  gameState.cave.info.initialDiamondValue,
-                  gameState.diamondsCollected,
-                  gameState.caveTimeLeft,
-                  gameState.score);
+                  cave.info.diamondsNeeded[difficultyLevel],
+                  cave.info.initialDiamondValue,
+                  diamondsCollected,
+                  caveTimeLeft,
+                  score);
       }
       for (int i = 0; text[i]; ++i) {
         drawSprite(spriteAscii, 3, 2 + i, text[i]-' ', 1, 0, 0);
