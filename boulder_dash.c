@@ -9,42 +9,35 @@
 
 #define ARRAY_LENGTH(array) (sizeof(array)/sizeof(*array))
 
-// Cave map consists of cells, each cell contains 4 tiles.
+// Cave map consists of cells, each cell contains 4 tiles
+#define TILE_SIZE 8
+#define CELL_SIZE (TILE_SIZE*2)
 
-#define CELL_SIZE 16
-#define BORDER_SIZE_IN_CELLS 1
-#define BORDER_SIZE (CELL_SIZE*BORDER_SIZE_IN_CELLS)
+#define BORDER_SIZE CELL_SIZE
+#define TEXT_AREA_HEIGHT CELL_SIZE
 
-// Viewport is the whole screen area except the border.
+// Viewport is the whole screen area except the border
 #define VIEWPORT_WIDTH 256
 #define VIEWPORT_HEIGHT 192
-#define VIEWPORT_WIDTH_IN_CELLS (VIEWPORT_WIDTH/CELL_SIZE)
-#define VIEWPORT_HEIGHT_IN_CELLS (VIEWPORT_HEIGHT/CELL_SIZE)
+#define VIEWPORT_LEFT BORDER_SIZE
+#define VIEWPORT_TOP BORDER_SIZE
+#define VIEWPORT_RIGHT (VIEWPORT_LEFT + VIEWPORT_WIDTH - 1)
+#define VIEWPORT_BOTTOM (VIEWPORT_TOP + VIEWPORT_HEIGHT - 1)
 
-#define VIEWPORT_X_MIN BORDER_SIZE
-#define VIEWPORT_Y_MIN BORDER_SIZE
-#define VIEWPORT_X_MAX (VIEWPORT_X_MIN + VIEWPORT_WIDTH - 1)
-#define VIEWPORT_Y_MAX (VIEWPORT_Y_MIN + VIEWPORT_HEIGHT - 1)
+// Playfield is the whole viewport except the text area
+#define PLAYFIELD_WIDTH VIEWPORT_WIDTH
+#define PLAYFIELD_HEIGHT (VIEWPORT_HEIGHT - TEXT_AREA_HEIGHT)
+#define PLAYFIELD_LEFT VIEWPORT_LEFT
+#define PLAYFIELD_TOP (VIEWPORT_TOP + TEXT_AREA_HEIGHT)
+#define PLAYFIELD_RIGHT (PLAYFIELD_LEFT + PLAYFIELD_WIDTH - 1)
+#define PLAYFIELD_BOTTOM (PLAYFIELD_TOP + PLAYFIELD_HEIGHT - 1)
 
-#define VIEWPORT_X_MIN_IN_CELLS BORDER_SIZE_IN_CELLS
-#define VIEWPORT_Y_MIN_IN_CELLS BORDER_SIZE_IN_CELLS
-#define VIEWPORT_X_MAX_IN_CELLS (VIEWPORT_X_MIN_IN_CELLS + VIEWPORT_WIDTH_IN_CELLS - 1)
-#define VIEWPORT_Y_MAX_IN_CELLS (VIEWPORT_Y_MIN_IN_CELLS + VIEWPORT_HEIGHT_IN_CELLS - 1)
-
+// Backbuffer has 4 bits per pixel
 #define BACKBUFFER_WIDTH (VIEWPORT_WIDTH + BORDER_SIZE*2)
 #define BACKBUFFER_HEIGHT (VIEWPORT_HEIGHT + BORDER_SIZE*2)
-// 4 bits per pixel
 #define BACKBUFFER_BYTES (BACKBUFFER_WIDTH*BACKBUFFER_HEIGHT/2)
 
 #define PALETTE_COLORS 5
-
-#define TEXT_AREA_HEIGHT_IN_CELLS 1
-#define PLAYFIELD_WIDTH_IN_CELLS VIEWPORT_WIDTH_IN_CELLS
-#define PLAYFIELD_HEIGHT_IN_CELLS (VIEWPORT_HEIGHT_IN_CELLS - TEXT_AREA_HEIGHT_IN_CELLS)
-#define PLAYFIELD_X_MIN_IN_CELLS VIEWPORT_X_MIN_IN_CELLS
-#define PLAYFIELD_Y_MIN_IN_CELLS (VIEWPORT_Y_MIN_IN_CELLS + TEXT_AREA_HEIGHT_IN_CELLS)
-#define PLAYFIELD_X_MIN (PLAYFIELD_X_MIN_IN_CELLS*CELL_SIZE)
-#define PLAYFIELD_Y_MIN (PLAYFIELD_Y_MIN_IN_CELLS*CELL_SIZE)
 
 #define OBJ_SPACE 0x00
 #define OBJ_DIRT 0x01
@@ -173,14 +166,14 @@ void drawFilledRect(int left, int top, int right, int bottom, uint8_t color) {
   }
 }
 
-void drawTile(uint8_t *tile, int row, int col, uint8_t fgColor, uint8_t bgColor, int vOffset) {
-  for (uint8_t bmpY = 0; bmpY < 8; ++bmpY) {
-    int y = row*8 + bmpY;
-    uint8_t byte = tile[(bmpY + vOffset) % 8];
+void drawTile(uint8_t *tile, int dstX, int dstY, uint8_t fgColor, uint8_t bgColor, int vOffset) {
+  for (uint8_t bmpY = 0; bmpY < TILE_SIZE; ++bmpY) {
+    int y = dstY + bmpY;
+    uint8_t byte = tile[(bmpY + vOffset) % TILE_SIZE];
 
-    for (uint8_t bmpX = 0; bmpX < 8; ++bmpX) {
-      int x = col*8 + bmpX;
-      uint8_t mask = 1 << (7 - bmpX);
+    for (uint8_t bmpX = 0; bmpX < TILE_SIZE; ++bmpX) {
+      int x = dstX + bmpX;
+      uint8_t mask = 1 << ((TILE_SIZE-1) - bmpX);
       uint8_t bit = byte & mask;
       uint8_t color = bit ? fgColor : bgColor;
 
@@ -189,16 +182,20 @@ void drawTile(uint8_t *tile, int row, int col, uint8_t fgColor, uint8_t bgColor,
   }
 }
 
-void drawSprite(uint8_t *sprite, int outRow, int outCol, int frame, uint8_t fgColor, uint8_t bgColor, int vOffset) {
+void drawSprite(uint8_t *sprite, int frame, int dstX, int dstY, uint8_t fgColor, uint8_t bgColor, int vOffset) {
   int frames = sprite[0];
   int height = sprite[1];
   int width = sprite[2];
-  int bytesPerFrame = width*height*8;
-  int bytesPerRow = width*8;
+  int bytesPerFrame = width*height*TILE_SIZE;
+  int bytesPerRow = width*TILE_SIZE;
+
   for (int row = 0; row < height; ++row) {
     for (int col = 0; col < width; ++col) {
-      uint8_t *data = sprite + 3 + (frame%frames)*bytesPerFrame + row*bytesPerRow + col*8;
-      drawTile(data, outRow+row, outCol+col, fgColor, bgColor, vOffset);
+      int x = dstX + col*TILE_SIZE;
+      int y = dstY + row*TILE_SIZE;
+
+      uint8_t *data = sprite + 3 + (frame%frames)*bytesPerFrame + row*bytesPerRow + col*TILE_SIZE;
+      drawTile(data, x, y, fgColor, bgColor, vOffset);
     }
   }
 }
@@ -345,12 +342,6 @@ Cave decodeCave(uint8_t caveIndex) {
   return cave;
 }
 
-bool isCellVisible(int cellRow, int cellCol) {
-  return
-    cellRow >= 0 && cellRow < PLAYFIELD_HEIGHT_IN_CELLS &&
-    cellCol >= 0 && cellCol < PLAYFIELD_WIDTH_IN_CELLS;
-}
-
 LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
   switch (msg) {
     case WM_DESTROY:
@@ -424,6 +415,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     gBitmapInfo->bmiColors[4] = yellow;
   }
 
+  // Clock
+
   float dt = 0.0f;
   float targetFps = 60.0f;
   float maxDt = 1.0f / targetFps;
@@ -472,6 +465,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     if (dt > maxDt) {
       dt = maxDt;
     }
+
+    // Handle Windows messages
 
     MSG msg;
     while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE)) {
@@ -574,71 +569,68 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     drawFilledRect(0, 0, BACKBUFFER_WIDTH - 1, BACKBUFFER_HEIGHT - 1, 0);
 
     // Draw cave
-    for (int y = 0; y < CAVE_HEIGHT; ++y) {
-      for (int x = 0; x < CAVE_WIDTH; ++x) {
-        if (!isCellVisible(y, x)) {
+    for (int row = 0; row < CAVE_HEIGHT; ++row) {
+      for (int col = 0; col < CAVE_WIDTH; ++col) {
+        int x = PLAYFIELD_LEFT + col*CELL_SIZE;
+        int y = PLAYFIELD_TOP + row*CELL_SIZE;
+
+        if (x < PLAYFIELD_LEFT || (x+CELL_SIZE-1) > PLAYFIELD_RIGHT ||
+            y < PLAYFIELD_TOP || (y+CELL_SIZE-1) > PLAYFIELD_BOTTOM) {
           continue;
         }
-        int outRow = (PLAYFIELD_Y_MIN_IN_CELLS + y)*2;
-        int outCol = (PLAYFIELD_X_MIN_IN_CELLS + x)*2;
-        switch (cave.map[y][x]) {
-          case OBJ_SPACE:
-            drawSprite(spriteSpace, outRow, outCol, 0, 0, 0, 0);
-            break;
-          case OBJ_STEEL_WALL:
-            drawSprite(spriteSteelWall, outRow, outCol, 0, 4, 0, 0);
-            break;
-          case OBJ_DIRT:
-            drawSprite(spriteDirt, outRow, outCol, 0, 3, 0, 0);
-            break;
-          case OBJ_BRICK_WALL:
-            drawSprite(spriteBrickWall, outRow, outCol, 0, 1, 3, 0);
-            break;
-          case OBJ_BOULDER_STATIONARY:
-          case OBJ_BOULDER_FALLING:
-            drawSprite(spriteBoulder, outRow, outCol, 0, 4, 0, 0);
-            break;
-          case OBJ_DIAMOND_STATIONARY:
-          case OBJ_DIAMOND_FALLING:
-            drawSprite(spriteDiamond, outRow, outCol, 0, 2, 0, 0);
-            break;
-          case OBJ_PRE_ROCKFORD_STAGE_1:
-            if (rockfordTurnsTillBirth > 0) {
-              if (rockfordTurnsTillBirth % 2) {
-                drawSprite(spriteSteelWall, outRow, outCol, 0, 4, 0, 0);
+
+        if (mapCover[row][col]) {
+          drawSprite(spriteSteelWall, 0, x, y, 4, 0, turn);
+        } else {
+          switch (cave.map[row][col]) {
+            case OBJ_SPACE:
+              drawSprite(spriteSpace, 0, x, y, 0, 0, 0);
+              break;
+            case OBJ_STEEL_WALL:
+              drawSprite(spriteSteelWall, 0, x, y, 4, 0, 0);
+              break;
+            case OBJ_DIRT:
+              drawSprite(spriteDirt, 0, x, y, 3, 0, 0);
+              break;
+            case OBJ_BRICK_WALL:
+              drawSprite(spriteBrickWall, 0, x, y, 1, 3, 0);
+              break;
+            case OBJ_BOULDER_STATIONARY:
+            case OBJ_BOULDER_FALLING:
+              drawSprite(spriteBoulder, 0, x, y, 4, 0, 0);
+              break;
+            case OBJ_DIAMOND_STATIONARY:
+            case OBJ_DIAMOND_FALLING:
+              drawSprite(spriteDiamond, 0, x, y, 2, 0, 0);
+              break;
+            case OBJ_PRE_ROCKFORD_STAGE_1:
+              if (rockfordTurnsTillBirth > 0) {
+                if (rockfordTurnsTillBirth % 2) {
+                  drawSprite(spriteSteelWall, 0, x, y, 4, 0, 0);
+                }
+                else {
+                  drawSprite(spriteOutbox, 0, x, y, 4, 0, 0);
+                }
               }
               else {
-                drawSprite(spriteOutbox, outRow, outCol, 0, 4, 0, 0);
+                drawSprite(spriteExplosion, 0, x, y, 2, 0, 0);
               }
-            }
-            else {
-              drawSprite(spriteExplosion, outRow, outCol, 0, 2, 0, 0);
-            }
-            break;
-          case OBJ_PRE_ROCKFORD_STAGE_2:
-            drawSprite(spriteExplosion, outRow, outCol, 1, 2, 0, 0);
-            break;
-          case OBJ_PRE_ROCKFORD_STAGE_3:
-            drawSprite(spriteExplosion, outRow, outCol, 2, 2, 0, 0);
-            break;
-          case OBJ_PRE_ROCKFORD_STAGE_4:
-            drawSprite(spriteRockfordMoveRight, outRow, outCol, turn, 1, 0, 0);
-            break;
-          case OBJ_ROCKFORD:
-            drawSprite(spriteRockfordIdleHead, outRow, outCol, 0, 1, 0, 0);
-            drawSprite(spriteRockfordIdleBody, outRow+1, outCol, 0, 1, 0, 0);
-            break;
+              break;
+            case OBJ_PRE_ROCKFORD_STAGE_2:
+              drawSprite(spriteExplosion, 1, x, y, 2, 0, 0);
+              break;
+            case OBJ_PRE_ROCKFORD_STAGE_3:
+              drawSprite(spriteExplosion, 2, x, y, 2, 0, 0);
+              break;
+            case OBJ_PRE_ROCKFORD_STAGE_4:
+              drawSprite(spriteRockfordMoveRight, turn, x, y, 1, 0, 0);
+              break;
+            case OBJ_ROCKFORD:
+              drawSprite(spriteRockfordIdleHead, 0, x, y, 1, 0, 0);
+              drawSprite(spriteRockfordIdleBody, 0, x, y+TILE_SIZE, 1, 0, 0);
+              break;
+          }
         }
-      }
-    }
-
-    // Draw map cover
-    for (int y = 0; y < CAVE_HEIGHT; ++y) {
-      for (int x = 0; x < CAVE_WIDTH; ++x) {
-        if (mapCover[y][x] == OBJ_SPACE || !isCellVisible(y, x)) {
-          continue;
-        }
-        drawSprite(spriteSteelWall, (PLAYFIELD_Y_MIN_IN_CELLS + y)*2, (PLAYFIELD_X_MIN_IN_CELLS + x)*2, 0, 4, 0, turn);
       }
     }
 
@@ -657,7 +649,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                   score);
       }
       for (int i = 0; text[i]; ++i) {
-        drawSprite(spriteAscii, 3, 2 + i, text[i]-' ', 1, 0, 0);
+        drawSprite(spriteAscii, text[i]-' ', (2+i)*TILE_SIZE, 3*TILE_SIZE, 1, 0, 0);
       }
     }
 
