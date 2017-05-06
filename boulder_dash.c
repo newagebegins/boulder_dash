@@ -56,44 +56,6 @@ uint8_t *gBackbuffer;
 BITMAPINFO *gBitmapInfo;
 HDC gDeviceContext;
 
-void initGraphics(HDC deviceContext) {
-  gDeviceContext = deviceContext;
-  gBackbuffer = (uint8_t *)malloc(BACKBUFFER_PIXELS);
-
-  gBitmapInfo = (BITMAPINFO *)malloc(sizeof(BITMAPINFOHEADER) + (PALETTE_COLORS * sizeof(RGBQUAD)));
-  gBitmapInfo->bmiHeader.biSize = sizeof(gBitmapInfo->bmiHeader);
-  gBitmapInfo->bmiHeader.biWidth = BACKBUFFER_WIDTH;
-  gBitmapInfo->bmiHeader.biHeight = -BACKBUFFER_HEIGHT;
-  gBitmapInfo->bmiHeader.biPlanes = 1;
-  gBitmapInfo->bmiHeader.biBitCount = 4;
-  gBitmapInfo->bmiHeader.biCompression = BI_RGB;
-  gBitmapInfo->bmiHeader.biClrUsed = PALETTE_COLORS;
-
-  static RGBQUAD black  = { 0x00, 0x00, 0x00, 0x00 };
-  static RGBQUAD red    = { 0x00, 0x00, 0xCC, 0x00 };
-  static RGBQUAD green  = { 0x00, 0xCC, 0x00, 0x00 };
-  static RGBQUAD yellow = { 0x00, 0xCC, 0xCC, 0x00 };
-  static RGBQUAD blue   = { 0xCC, 0x00, 0x00, 0x00 };
-  static RGBQUAD purple = { 0xCC, 0x00, 0xCC, 0x00 };
-  static RGBQUAD cyan   = { 0xCC, 0xCC, 0x00, 0x00 };
-  static RGBQUAD gray   = { 0xCC, 0xCC, 0xCC, 0x00 };
-  static RGBQUAD white  = { 0xFF, 0xFF, 0xFF, 0x00 };
-
-  gBitmapInfo->bmiColors[0] = black;
-  gBitmapInfo->bmiColors[1] = gray;
-  gBitmapInfo->bmiColors[2] = white;
-  gBitmapInfo->bmiColors[3] = red;
-  gBitmapInfo->bmiColors[4] = yellow;
-}
-
-void displayBackbuffer() {
-  StretchDIBits(gDeviceContext,
-                0, 0, WINDOW_WIDTH, WINDOW_HEIGHT,
-                0, 0, BACKBUFFER_WIDTH, BACKBUFFER_HEIGHT,
-                gBackbuffer, gBitmapInfo,
-                DIB_RGB_COLORS, SRCCOPY);
-}
-
 void setPixel(int x, int y, uint8_t color) {
   assert(color < PALETTE_COLORS);
   assert((color & 0xF0) == 0);
@@ -120,10 +82,6 @@ void drawFilledRectPx(int left, int top, int right, int bottom, uint8_t color) {
       setPixel(x, y, color);
     }
   }
-}
-
-void drawBorder(uint8_t color) {
-  drawFilledRectPx(0, 0, BACKBUFFER_WIDTH - 1, BACKBUFFER_HEIGHT - 1, color);
 }
 
 void drawSprite(const Sprite sprite, int spriteRow, int spriteCol, uint8_t fgColor, uint8_t bgColor,
@@ -405,8 +363,6 @@ typedef struct {
   CaveMap map;
 } Cave;
 
-Cave decodeCave(uint8_t caveIndex);
-
 #include "data_caves.h"
 
 void nextRandom(int *randSeed1, int *randSeed2) {
@@ -578,141 +534,8 @@ int getRandomNumber(int min, int max) {
   return min + rand() % (max - min + 1);
 }
 
-void initMapCover(CaveMap mapCover) {
-  for (int y = 0; y < CAVE_HEIGHT; ++y) {
-    for (int x = 0; x < CAVE_WIDTH; ++x) {
-      mapCover[y][x] = OBJ_STEEL_WALL;
-    }
-  }
-}
-
 bool isMapCovered(const GameState *gameState) {
   return gameState->mapUncoverTurnsLeft > 0;
-}
-
-void initGameState(GameState *gameState) {
-  gameState->gameIsStarted = true;
-
-  gameState->caveNumber = 0;
-  gameState->cave = decodeCave(gameState->caveNumber);
-  gameState->difficultyLevel = 0;
-  gameState->caveTimeLeft = gameState->cave.info.caveTime[gameState->difficultyLevel];
-
-  gameState->livesLeft = 3;
-  gameState->score = 0;
-  gameState->diamondsCollected = 0;
-  gameState->turn = 0;
-  gameState->turnTimer = 0;
-  gameState->rockfordTurnsTillBirth = ROCKFORD_TURNS_TILL_BIRTH;
-  gameState->mapUncoverTurnsLeft = MAP_UNCOVER_TURNS;
-  gameState->pauseTurnsLeft = 0;
-
-  initMapCover(gameState->mapCover);
-}
-
-void updateMapCover(GameState *gameState) {
-  if (!isMapCovered(gameState)) {
-    return;
-  }
-
-  gameState->mapUncoverTurnsLeft--;
-  if (gameState->mapUncoverTurnsLeft > 1) {
-    for (int y = 0; y < CAVE_HEIGHT; ++y) {
-      for (int i = 0; i < TILES_PER_LINE_TO_UNCOVER; ++i) {
-        int x = getRandomNumber(0, CAVE_WIDTH - 1);
-        gameState->mapCover[y][x] = OBJ_SPACE;
-      }
-    }
-  }
-  else if (gameState->mapUncoverTurnsLeft == 1) {
-    gameState->pauseTurnsLeft = PAUSE_TURNS_BEFORE_FULL_UNCOVER;
-  }
-  else if (gameState->mapUncoverTurnsLeft == 0) {
-    for (int y = 0; y < CAVE_HEIGHT; ++y) {
-      for (int x = 0; x < CAVE_WIDTH; ++x) {
-        gameState->mapCover[y][x] = OBJ_SPACE;
-      }
-    }
-  }
-}
-
-void updatePreRockford(GameState *gameState, int tileRow, int tileCol, int stage) {
-  switch (stage) {
-    case 1:
-      if (gameState->rockfordTurnsTillBirth == 0) {
-        gameState->cave.map[tileRow][tileCol] = OBJ_PRE_ROCKFORD_STAGE_2;
-      }
-      else if (!isMapCovered(gameState)) {
-        gameState->rockfordTurnsTillBirth--;
-      }
-      break;
-    case 2:
-        gameState->cave.map[tileRow][tileCol] = OBJ_PRE_ROCKFORD_STAGE_3;
-      break;
-    case 3:
-        gameState->cave.map[tileRow][tileCol] = OBJ_PRE_ROCKFORD_STAGE_4;
-      break;
-    case 4:
-        gameState->cave.map[tileRow][tileCol] = OBJ_ROCKFORD;
-      break;
-    default:
-      assert(!"Unknown prerockford stage");
-  }
-}
-
-void updatePause(GameState *gameState) {
-  gameState->pauseTurnsLeft--;
-  if (gameState->pauseTurnsLeft < 0) {
-    gameState->pauseTurnsLeft = 0;
-  }
-}
-
-bool isPaused(const GameState *gameState) {
-  return gameState->pauseTurnsLeft > 0;
-}
-
-void scanCave(GameState *gameState) {
-  for (int y = 0; y < CAVE_HEIGHT; ++y) {
-    for (int x = 0; x < CAVE_WIDTH; ++x) {
-      switch (gameState->cave.map[y][x]) {
-        case OBJ_PRE_ROCKFORD_STAGE_1:
-          updatePreRockford(gameState, y, x, 1);
-          break;
-        case OBJ_PRE_ROCKFORD_STAGE_2:
-          updatePreRockford(gameState, y, x, 2);
-          break;
-        case OBJ_PRE_ROCKFORD_STAGE_3:
-          updatePreRockford(gameState, y, x, 3);
-          break;
-        case OBJ_PRE_ROCKFORD_STAGE_4:
-          updatePreRockford(gameState, y, x, 4);
-          break;
-      }
-    }
-  }
-}
-
-void doCaveTurn(GameState *gameState) {
-  if (isPaused(gameState)) {
-    updatePause(gameState);
-  }
-  else {
-    gameState->turn++;
-    scanCave(gameState);
-    updateMapCover(gameState);
-  }
-}
-
-void gameUpdate(GameState *gameState, float dt) {
-  if (!gameState->gameIsStarted) {
-    initGameState(gameState);
-  }
-
-  gameState->turnTimer += dt;
-  if (gameState->turnTimer >= TURN_DURATION) {
-    gameState->turnTimer -= TURN_DURATION;
-    doCaveTurn(gameState);
-  }
 }
 
 bool isTileVisible(int tileRow, int tileCol) {
@@ -723,104 +546,6 @@ bool isTileVisible(int tileRow, int tileCol) {
 
 bool isBeforeRockfordBirth(const GameState *gameState) {
   return gameState->rockfordTurnsTillBirth > 0;
-}
-
-void drawCave(const GameState *gameState) {
-  for (int y = 0; y < CAVE_HEIGHT; ++y) {
-    for (int x = 0; x < CAVE_WIDTH; ++x) {
-      if (!isTileVisible(y, x)) {
-        continue;
-      }
-      switch (gameState->cave.map[y][x]) {
-        case OBJ_SPACE:
-          drawSpaceTile(y, x);
-          break;
-        case OBJ_STEEL_WALL:
-          drawSteelWallTile(y, x, 4, 0);
-          break;
-        case OBJ_DIRT:
-          drawDirtTile(y, x, 3, 0);
-          break;
-        case OBJ_BRICK_WALL:
-          drawBrickWallTile(y, x, 1, 3);
-          break;
-        case OBJ_BOULDER_STATIONARY:
-        case OBJ_BOULDER_FALLING:
-          drawBoulderTile(y, x, 4, 0);
-          break;
-        case OBJ_DIAMOND_STATIONARY:
-        case OBJ_DIAMOND_FALLING:
-          drawDiamond1Tile(y, x, 2, 0);
-          break;
-        case OBJ_PRE_ROCKFORD_STAGE_1:
-          if (isBeforeRockfordBirth(gameState)) {
-            if (gameState->rockfordTurnsTillBirth % 2) {
-              drawSteelWallTile(y, x, 4, 0);
-            }
-            else {
-              drawOutboxTile(y, x, 4, 0);
-            }
-          }
-          else {
-            drawExplosion1Tile(y, x, 2, 0);
-          }
-          break;
-        case OBJ_PRE_ROCKFORD_STAGE_2:
-          drawExplosion2Tile(y, x, 2, 0);
-          break;
-        case OBJ_PRE_ROCKFORD_STAGE_3:
-          drawExplosion3Tile(y, x, 2, 0);
-          break;
-        case OBJ_PRE_ROCKFORD_STAGE_4:
-          drawMovingRockfordTile(y, x, true, gameState->turn);
-          break;
-        case OBJ_ROCKFORD:
-          drawIdleRockfordTile(y, x);
-          break;
-      }
-    }
-  }
-}
-
-void drawTextArea(const GameState *gameState) {
-  char text[64];
-  if (isBeforeRockfordBirth(gameState)) {
-    sprintf_s(text, sizeof(text), "  PLAYER 1,  %d MEN,  ROOM %c/1", gameState->livesLeft, 'A' + gameState->caveNumber);
-  }
-  else {
-    sprintf_s(text, sizeof(text), "   %d*%d   %02d   %03d   %06d",
-              gameState->cave.info.diamondsNeeded[gameState->difficultyLevel],
-              gameState->cave.info.initialDiamondValue,
-              gameState->diamondsCollected,
-              gameState->caveTimeLeft,
-              gameState->score);
-  }
-  drawText(text);
-}
-
-void drawMapCover(const CaveMap mapCover, int turn) {
-  for (int y = 0; y < CAVE_HEIGHT; ++y) {
-    for (int x = 0; x < CAVE_WIDTH; ++x) {
-      if (mapCover[y][x] == OBJ_SPACE || !isTileVisible(y, x)) {
-        continue;
-      }
-      drawAnimatedSteelWallTile(y, x, 4, 0, turn);
-    }
-  }
-}
-
-void gameRender(const GameState *gameState) {
-  drawBorder(0);
-  drawCave(gameState);
-  drawMapCover(gameState->mapCover, gameState->turn);
-  drawTextArea(gameState);
-  displayBackbuffer();
-}
-
-void gameUpdateAndRender(float dt) {
-  static GameState gameState = { 0 };
-  gameUpdate(&gameState, dt);
-  gameRender(&gameState);
 }
 
 void debugPrint(char *format, ...) {
@@ -847,7 +572,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   UNREFERENCED_PARAMETER(prevInst);
   UNREFERENCED_PARAMETER(cmdLine);
 
-  WNDCLASS wndClass = { 0 };
+  WNDCLASS wndClass = {0};
   wndClass.style = CS_HREDRAW | CS_VREDRAW;
   wndClass.lpfnWndProc = wndProc;
   wndClass.hInstance = inst;
@@ -855,7 +580,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   wndClass.lpszClassName = "Boulder Dash";
   RegisterClass(&wndClass);
 
-  RECT crect = { 0 };
+  RECT crect = {0};
   crect.right = WINDOW_WIDTH;
   crect.bottom = WINDOW_HEIGHT;
 
@@ -868,19 +593,51 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   ShowWindow(wnd, cmdShow);
   UpdateWindow(wnd);
 
-  initGraphics(GetDC(wnd));
+  // Initialize graphics
+  {
+    HDC deviceContext = GetDC(wnd);
+
+    gDeviceContext = deviceContext;
+    gBackbuffer = malloc(BACKBUFFER_PIXELS);
+
+    gBitmapInfo = malloc(sizeof(BITMAPINFOHEADER) + (PALETTE_COLORS * sizeof(RGBQUAD)));
+    gBitmapInfo->bmiHeader.biSize = sizeof(gBitmapInfo->bmiHeader);
+    gBitmapInfo->bmiHeader.biWidth = BACKBUFFER_WIDTH;
+    gBitmapInfo->bmiHeader.biHeight = -BACKBUFFER_HEIGHT;
+    gBitmapInfo->bmiHeader.biPlanes = 1;
+    gBitmapInfo->bmiHeader.biBitCount = 4;
+    gBitmapInfo->bmiHeader.biCompression = BI_RGB;
+    gBitmapInfo->bmiHeader.biClrUsed = PALETTE_COLORS;
+
+    RGBQUAD black  = {0x00, 0x00, 0x00, 0x00};
+    RGBQUAD red    = {0x00, 0x00, 0xCC, 0x00};
+    //RGBQUAD green  = {0x00, 0xCC, 0x00, 0x00};
+    RGBQUAD yellow = {0x00, 0xCC, 0xCC, 0x00};
+    //RGBQUAD blue   = {0xCC, 0x00, 0x00, 0x00};
+    //RGBQUAD purple = {0xCC, 0x00, 0xCC, 0x00};
+    //RGBQUAD cyan   = {0xCC, 0xCC, 0x00, 0x00};
+    RGBQUAD gray   = {0xCC, 0xCC, 0xCC, 0x00};
+    RGBQUAD white  = {0xFF, 0xFF, 0xFF, 0x00};
+
+    gBitmapInfo->bmiColors[0] = black;
+    gBitmapInfo->bmiColors[1] = gray;
+    gBitmapInfo->bmiColors[2] = white;
+    gBitmapInfo->bmiColors[3] = red;
+    gBitmapInfo->bmiColors[4] = yellow;
+  }
 
   float dt = 0.0f;
   float targetFps = 60.0f;
   float maxDt = 1.0f / targetFps;
-  LARGE_INTEGER perfcFreq = { 0 };
-  LARGE_INTEGER perfc = { 0 };
-  LARGE_INTEGER perfcPrev = { 0 };
+  LARGE_INTEGER perfcFreq = {0};
+  LARGE_INTEGER perfc = {0};
+  LARGE_INTEGER perfcPrev = {0};
 
   QueryPerformanceFrequency(&perfcFreq);
   QueryPerformanceCounter(&perfc);
 
   bool running = true;
+  GameState gameState = {0};
 
   while (running) {
     perfcPrev = perfc;
@@ -914,7 +671,198 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       }
     }
 
-    gameUpdateAndRender(dt);
+    //
+    // Update
+    //
+
+    if (!gameState.gameIsStarted) {
+      // Initialize game state
+
+      gameState.gameIsStarted = true;
+
+      gameState.caveNumber = 0;
+      gameState.cave = decodeCave(gameState.caveNumber);
+      gameState.difficultyLevel = 0;
+      gameState.caveTimeLeft = gameState.cave.info.caveTime[gameState.difficultyLevel];
+
+      gameState.livesLeft = 3;
+      gameState.score = 0;
+      gameState.diamondsCollected = 0;
+      gameState.turn = 0;
+      gameState.turnTimer = 0;
+      gameState.rockfordTurnsTillBirth = ROCKFORD_TURNS_TILL_BIRTH;
+      gameState.mapUncoverTurnsLeft = MAP_UNCOVER_TURNS;
+      gameState.pauseTurnsLeft = 0;
+
+      for (int y = 0; y < CAVE_HEIGHT; ++y) {
+        for (int x = 0; x < CAVE_WIDTH; ++x) {
+          gameState.mapCover[y][x] = OBJ_STEEL_WALL;
+        }
+      }
+    }
+
+    gameState.turnTimer += dt;
+    if (gameState.turnTimer >= TURN_DURATION) {
+      gameState.turnTimer -= TURN_DURATION;
+
+      // Do cave turn
+
+      if (gameState.pauseTurnsLeft > 0) {
+        gameState.pauseTurnsLeft--;
+      }
+      else {
+        gameState.turn++;
+
+        // Scan cave
+        for (int y = 0; y < CAVE_HEIGHT; ++y) {
+          for (int x = 0; x < CAVE_WIDTH; ++x) {
+            switch (gameState.cave.map[y][x]) {
+              case OBJ_PRE_ROCKFORD_STAGE_1:
+                if (gameState.rockfordTurnsTillBirth == 0) {
+                  gameState.cave.map[y][x] = OBJ_PRE_ROCKFORD_STAGE_2;
+                }
+                else if (!isMapCovered(&gameState)) {
+                  gameState.rockfordTurnsTillBirth--;
+                }
+                break;
+
+              case OBJ_PRE_ROCKFORD_STAGE_2:
+                gameState.cave.map[y][x] = OBJ_PRE_ROCKFORD_STAGE_3;
+                break;
+
+              case OBJ_PRE_ROCKFORD_STAGE_3:
+                gameState.cave.map[y][x] = OBJ_PRE_ROCKFORD_STAGE_4;
+                break;
+
+              case OBJ_PRE_ROCKFORD_STAGE_4:
+                gameState.cave.map[y][x] = OBJ_ROCKFORD;
+                break;
+            }
+          }
+        }
+
+        if (isMapCovered(&gameState)) {
+          // Update map cover
+
+          gameState.mapUncoverTurnsLeft--;
+          if (gameState.mapUncoverTurnsLeft > 1) {
+            for (int y = 0; y < CAVE_HEIGHT; ++y) {
+              for (int i = 0; i < TILES_PER_LINE_TO_UNCOVER; ++i) {
+                int x = getRandomNumber(0, CAVE_WIDTH - 1);
+                gameState.mapCover[y][x] = OBJ_SPACE;
+              }
+            }
+          }
+          else if (gameState.mapUncoverTurnsLeft == 1) {
+            gameState.pauseTurnsLeft = PAUSE_TURNS_BEFORE_FULL_UNCOVER;
+          }
+          else if (gameState.mapUncoverTurnsLeft == 0) {
+            for (int y = 0; y < CAVE_HEIGHT; ++y) {
+              for (int x = 0; x < CAVE_WIDTH; ++x) {
+                gameState.mapCover[y][x] = OBJ_SPACE;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    //
+    // Render
+    //
+
+    // Draw border
+    drawFilledRectPx(0, 0, BACKBUFFER_WIDTH - 1, BACKBUFFER_HEIGHT - 1, 0);
+
+    // Draw cave
+    for (int y = 0; y < CAVE_HEIGHT; ++y) {
+      for (int x = 0; x < CAVE_WIDTH; ++x) {
+        if (!isTileVisible(y, x)) {
+          continue;
+        }
+        switch (gameState.cave.map[y][x]) {
+          case OBJ_SPACE:
+            drawSpaceTile(y, x);
+            break;
+          case OBJ_STEEL_WALL:
+            drawSteelWallTile(y, x, 4, 0);
+            break;
+          case OBJ_DIRT:
+            drawDirtTile(y, x, 3, 0);
+            break;
+          case OBJ_BRICK_WALL:
+            drawBrickWallTile(y, x, 1, 3);
+            break;
+          case OBJ_BOULDER_STATIONARY:
+          case OBJ_BOULDER_FALLING:
+            drawBoulderTile(y, x, 4, 0);
+            break;
+          case OBJ_DIAMOND_STATIONARY:
+          case OBJ_DIAMOND_FALLING:
+            drawDiamond1Tile(y, x, 2, 0);
+            break;
+          case OBJ_PRE_ROCKFORD_STAGE_1:
+            if (isBeforeRockfordBirth(&gameState)) {
+              if (gameState.rockfordTurnsTillBirth % 2) {
+                drawSteelWallTile(y, x, 4, 0);
+              }
+              else {
+                drawOutboxTile(y, x, 4, 0);
+              }
+            }
+            else {
+              drawExplosion1Tile(y, x, 2, 0);
+            }
+            break;
+          case OBJ_PRE_ROCKFORD_STAGE_2:
+            drawExplosion2Tile(y, x, 2, 0);
+            break;
+          case OBJ_PRE_ROCKFORD_STAGE_3:
+            drawExplosion3Tile(y, x, 2, 0);
+            break;
+          case OBJ_PRE_ROCKFORD_STAGE_4:
+            drawMovingRockfordTile(y, x, true, gameState.turn);
+            break;
+          case OBJ_ROCKFORD:
+            drawIdleRockfordTile(y, x);
+            break;
+        }
+      }
+    }
+
+    // Draw map cover
+    for (int y = 0; y < CAVE_HEIGHT; ++y) {
+      for (int x = 0; x < CAVE_WIDTH; ++x) {
+        if (gameState.mapCover[y][x] == OBJ_SPACE || !isTileVisible(y, x)) {
+          continue;
+        }
+        drawAnimatedSteelWallTile(y, x, 4, 0, gameState.turn);
+      }
+    }
+
+    // Draw text area
+    {
+      char text[64];
+      if (isBeforeRockfordBirth(&gameState)) {
+        sprintf_s(text, sizeof(text), "  PLAYER 1,  %d MEN,  ROOM %c/1", gameState.livesLeft, 'A' + gameState.caveNumber);
+      }
+      else {
+        sprintf_s(text, sizeof(text), "   %d*%d   %02d   %03d   %06d",
+                  gameState.cave.info.diamondsNeeded[gameState.difficultyLevel],
+                  gameState.cave.info.initialDiamondValue,
+                  gameState.diamondsCollected,
+                  gameState.caveTimeLeft,
+                  gameState.score);
+      }
+      drawText(text);
+    }
+
+    // Display backbuffer
+    StretchDIBits(gDeviceContext,
+                  0, 0, WINDOW_WIDTH, WINDOW_HEIGHT,
+                  0, 0, BACKBUFFER_WIDTH, BACKBUFFER_HEIGHT,
+                  gBackbuffer, gBitmapInfo,
+                  DIB_RGB_COLORS, SRCCOPY);
   }
 
   return 0;
