@@ -5,6 +5,7 @@
 #include <assert.h>
 
 #include "data_sprites.h"
+#include "data_caves.h"
 
 #define ARRAY_LENGTH(array) (sizeof(array)/sizeof(*array))
 
@@ -50,72 +51,16 @@
 #define PLAYFIELD_X_MIN (PLAYFIELD_X_MIN_IN_CELLS*CELL_SIZE)
 #define PLAYFIELD_Y_MIN (PLAYFIELD_Y_MIN_IN_CELLS*CELL_SIZE)
 
-uint8_t *gBackbuffer;
-BITMAPINFO *gBitmapInfo;
-HDC gDeviceContext;
-
-void setPixel(int x, int y, uint8_t color) {
-  assert(color < PALETTE_COLORS);
-  assert((color & 0xF0) == 0);
-
-  int pixelOffset = y*BACKBUFFER_WIDTH + x;
-  int byteOffset = pixelOffset / 2;
-
-  assert(byteOffset >= 0 && byteOffset < BACKBUFFER_BYTES);
-
-  uint8_t oldColor = gBackbuffer[byteOffset];
-  uint8_t newColor;
-  if (pixelOffset % 2 == 0) {
-    newColor = (color << 4) | (oldColor & 0x0F);
-  }
-  else {
-    newColor = (oldColor & 0xF0) | color;
-  }
-  gBackbuffer[byteOffset] = newColor;
-}
-
-void drawFilledRect(int left, int top, int right, int bottom, uint8_t color) {
-  for (int y = top; y <= bottom; ++y) {
-    for (int x = left; x <= right; ++x) {
-      setPixel(x, y, color);
-    }
-  }
-}
-
-void drawSprite8x8(uint8_t *sprite, int row, int col, uint8_t fgColor, uint8_t bgColor, int vOffset) {
-  for (uint8_t bmpY = 0; bmpY < 8; ++bmpY) {
-    int y = row*8 + bmpY;
-    uint8_t byte = sprite[(bmpY + vOffset) % 8];
-
-    for (uint8_t bmpX = 0; bmpX < 8; ++bmpX) {
-      int x = col*8 + bmpX;
-      uint8_t mask = 1 << (7 - bmpX);
-      uint8_t bit = byte & mask;
-      uint8_t color = bit ? fgColor : bgColor;
-
-      setPixel(x, y, color);
-    }
-  }
-}
-
-void drawSprite(uint8_t *sprite, int outRow, int outCol, int frame, uint8_t fgColor, uint8_t bgColor, int vOffset) {
-  int frames = sprite[0];
-  int height = sprite[1];
-  int width = sprite[2];
-  int bytesPerFrame = width*height*8;
-  int bytesPerRow = width*8;
-  for (int row = 0; row < height; ++row) {
-    for (int col = 0; col < width; ++col) {
-      uint8_t *data = sprite + 3 + (frame%frames)*bytesPerFrame + row*bytesPerRow + col*8;
-      drawSprite8x8(data, outRow+row, outCol+col, fgColor, bgColor, vOffset);
-    }
-  }
-}
-
 #define CAVE_HEIGHT 22
 #define CAVE_WIDTH 40
 #define NUM_DIFFICULTY_LEVELS 5
 #define NUM_RANDOM_OBJECTS 4
+
+#define TURN_DURATION 0.15f
+#define ROCKFORD_TURNS_TILL_BIRTH 12
+#define MAP_UNCOVER_TURNS 40
+#define PAUSE_TURNS_BEFORE_FULL_UNCOVER 2
+#define CELLS_PER_LINE_TO_UNCOVER 3
 
 typedef enum {
   OBJ_SPACE = 0x00,
@@ -192,7 +137,93 @@ typedef struct {
   CaveMap map;
 } Cave;
 
-#include "data_caves.h"
+typedef struct {
+  bool gameIsStarted;
+  uint8_t caveNumber;
+  int livesLeft;
+  int turn;
+  float turnTimer;
+  int rockfordTurnsTillBirth;
+  int diamondsCollected;
+  int difficultyLevel;
+  int caveTimeLeft;
+  int score;
+  int pauseTurnsLeft;
+  Cave cave;
+  CaveMap mapCover;
+} GameState;
+
+uint8_t *gBackbuffer;
+BITMAPINFO *gBitmapInfo;
+HDC gDeviceContext;
+int mapUncoverTurnsLeft;
+
+void debugPrint(char *format, ...) {
+  va_list argptr;
+  va_start(argptr, format);
+  char str[1024];
+  vsprintf_s(str, sizeof(str), format, argptr);
+  va_end(argptr);
+  OutputDebugString(str);
+}
+
+void setPixel(int x, int y, uint8_t color) {
+  assert(color < PALETTE_COLORS);
+  assert((color & 0xF0) == 0);
+
+  int pixelOffset = y*BACKBUFFER_WIDTH + x;
+  int byteOffset = pixelOffset / 2;
+
+  assert(byteOffset >= 0 && byteOffset < BACKBUFFER_BYTES);
+
+  uint8_t oldColor = gBackbuffer[byteOffset];
+  uint8_t newColor;
+  if (pixelOffset % 2 == 0) {
+    newColor = (color << 4) | (oldColor & 0x0F);
+  }
+  else {
+    newColor = (oldColor & 0xF0) | color;
+  }
+  gBackbuffer[byteOffset] = newColor;
+}
+
+void drawFilledRect(int left, int top, int right, int bottom, uint8_t color) {
+  for (int y = top; y <= bottom; ++y) {
+    for (int x = left; x <= right; ++x) {
+      setPixel(x, y, color);
+    }
+  }
+}
+
+void drawSprite8x8(uint8_t *sprite, int row, int col, uint8_t fgColor, uint8_t bgColor, int vOffset) {
+  for (uint8_t bmpY = 0; bmpY < 8; ++bmpY) {
+    int y = row*8 + bmpY;
+    uint8_t byte = sprite[(bmpY + vOffset) % 8];
+
+    for (uint8_t bmpX = 0; bmpX < 8; ++bmpX) {
+      int x = col*8 + bmpX;
+      uint8_t mask = 1 << (7 - bmpX);
+      uint8_t bit = byte & mask;
+      uint8_t color = bit ? fgColor : bgColor;
+
+      setPixel(x, y, color);
+    }
+  }
+}
+
+void drawSprite(uint8_t *sprite, int outRow, int outCol, int frame, uint8_t fgColor, uint8_t bgColor, int vOffset) {
+  int frames = sprite[0];
+  int height = sprite[1];
+  int width = sprite[2];
+  int bytesPerFrame = width*height*8;
+  int bytesPerRow = width*8;
+  for (int row = 0; row < height; ++row) {
+    for (int col = 0; col < width; ++col) {
+      uint8_t *data = sprite + 3 + (frame%frames)*bytesPerFrame + row*bytesPerRow + col*8;
+      drawSprite8x8(data, outRow+row, outCol+col, fgColor, bgColor, vOffset);
+    }
+  }
+}
 
 void nextRandom(int *randSeed1, int *randSeed2) {
   int tempRand1 = (*randSeed1 & 0x0001) * 0x0080;
@@ -336,43 +367,10 @@ Cave decodeCave(uint8_t caveIndex) {
   return cave;
 }
 
-#define TURN_DURATION 0.15f
-#define ROCKFORD_TURNS_TILL_BIRTH 12
-#define MAP_UNCOVER_TURNS 40
-#define PAUSE_TURNS_BEFORE_FULL_UNCOVER 2
-#define CELLS_PER_LINE_TO_UNCOVER 3
-
-int mapUncoverTurnsLeft;
-
-typedef struct {
-  bool gameIsStarted;
-  uint8_t caveNumber;
-  int livesLeft;
-  int turn;
-  float turnTimer;
-  int rockfordTurnsTillBirth;
-  int diamondsCollected;
-  int difficultyLevel;
-  int caveTimeLeft;
-  int score;
-  int pauseTurnsLeft;
-  Cave cave;
-  CaveMap mapCover;
-} GameState;
-
 bool isCellVisible(int cellRow, int cellCol) {
   return
     cellRow >= 0 && cellRow < PLAYFIELD_HEIGHT_IN_CELLS &&
     cellCol >= 0 && cellCol < PLAYFIELD_WIDTH_IN_CELLS;
-}
-
-void debugPrint(char *format, ...) {
-  va_list argptr;
-  va_start(argptr, format);
-  char str[1024];
-  vsprintf_s(str, sizeof(str), format, argptr);
-  va_end(argptr);
-  OutputDebugString(str);
 }
 
 LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
