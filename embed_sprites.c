@@ -65,7 +65,7 @@ void outputSpriteBytes(FILE *out, Spritesheet spritesheet, int row, int col) {
 }
 
 void outputSprite(FILE *out, char *name, Spritesheet spritesheet, int row, int col) {
-  fprintf(out, "static const Sprite %s = {", name);
+  fprintf(out, "Sprite %s = {", name);
   outputSpriteBytes(out, spritesheet, row, col);
   fprintf(out, "};\n");
 }

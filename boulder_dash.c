@@ -84,8 +84,8 @@ void drawFilledRect(int left, int top, int right, int bottom, uint8_t color) {
   }
 }
 
-void drawSprite(const Sprite sprite, int spriteRow, int spriteCol, uint8_t fgColor, uint8_t bgColor,
-                       bool flipHorz, bool flipVert, int animationStep) {
+void drawSprite(Sprite sprite, int spriteRow, int spriteCol, uint8_t fgColor, uint8_t bgColor,
+                bool flipHorz, bool flipVert, int animationStep) {
   for (uint8_t bmpY = 0; bmpY < SPRITE_SIZE; ++bmpY) {
     int y = flipVert ? (spriteRow*SPRITE_SIZE + SPRITE_SIZE - 1 - bmpY) : (spriteRow*SPRITE_SIZE + bmpY);
     uint8_t byte = sprite[(bmpY + animationStep) % SPRITE_SIZE];
@@ -106,8 +106,8 @@ void tileToSpritePos(int tileRow, int tileCol, int *spriteRow, int *spriteCol) {
   *spriteCol = (PLAYFIELD_X_MIN_IN_TILES + tileCol) * TILE_SIZE_IN_SPRITES;
 }
 
-void drawTile(const Sprite spriteA, const Sprite spriteB, const Sprite spriteC, const Sprite spriteD,
-                     int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor, int animationStep) {
+void drawTile(Sprite spriteA, Sprite spriteB, Sprite spriteC, Sprite spriteD,
+              int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor, int animationStep) {
   int spriteRow, spriteCol;
   tileToSpritePos(tileRow, tileCol, &spriteRow, &spriteCol);
   drawSprite(spriteA, spriteRow, spriteCol, fgColor, bgColor, false, false, animationStep);
@@ -171,10 +171,9 @@ void drawOutboxTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) 
 
 void drawMovingRockfordTile(int tileRow, int tileCol, bool isFacingRight, int animationStep) {
   UNREFERENCED_PARAMETER(isFacingRight);
-  const int MOVING_ROCKFORD_FRAMES_COUNT = 6;
   int spriteRow, spriteCol;
   tileToSpritePos(tileRow, tileCol, &spriteRow, &spriteCol);
-  switch (animationStep % MOVING_ROCKFORD_FRAMES_COUNT) {
+  switch (animationStep % 6) {
     case 0:
       drawSprite(gSpriteRockfordHead1A, spriteRow, spriteCol, 1, 0, false, false, 0);
       drawSprite(gSpriteRockfordHead1B, spriteRow, spriteCol + 1, 1, 0, false, false, 0);
@@ -223,7 +222,7 @@ void drawIdleRockfordTile(int tileRow, int tileCol) {
   drawSprite(gSpriteRockfordBottomIdle1, spriteRow+1, spriteCol+1, 1, 0, true, false, 0);
 }
 
-void drawText(const char *text) {
+void drawText(char *text) {
   for (int i = 0; text[i]; ++i) {
     drawSprite(asciiSprites[text[i] - ' '], 3, 2 + i, 1, 0, false, false, 0);
   }
@@ -332,8 +331,8 @@ void nextRandom(int *randSeed1, int *randSeed2) {
 }
 
 void placeObjectLine(CaveMap map, CaveObject object, int row, int col, int length, int direction) {
-  static int ldx[8] = { 0,  1, 1, 1, 0, -1, -1, -1 };
-  static int ldy[8] = { -1, -1, 0, 1, 1,  1,  0, -1 };
+  int ldx[8] = { 0,  1, 1, 1, 0, -1, -1, -1 };
+  int ldy[8] = { -1, -1, 0, 1, 1,  1,  0, -1 };
 
   for (int i = 0; i < length; i++) {
     map[row + i*ldy[direction]][col + i*ldx[direction]] = object;
@@ -367,7 +366,7 @@ void placeObjectRect(CaveMap map, CaveObject object, int row, int col, int width
 }
 
 Cave decodeCave(uint8_t caveIndex) {
-  const uint8_t *caves[] = {
+  uint8_t *caves[] = {
     gCave1, gCave2, gCave3, gCave4, gCave5, gCave6, gCave7, gCave8, gCave9, gCave10,
     gCave11, gCave12, gCave13, gCave14, gCave15, gCave16, gCave17, gCave18, gCave19, gCave20
   };
@@ -405,8 +404,8 @@ Cave decodeCave(uint8_t caveIndex) {
 
   // Decode explicit map data
   {
-    const uint8_t *explicitData = caves[caveIndex] + sizeof(CaveInfo);
-    const int uselessTopBorderHeight = 2;
+    uint8_t *explicitData = caves[caveIndex] + sizeof(CaveInfo);
+    int uselessTopBorderHeight = 2;
 
     for (int i = 0; explicitData[i] != 0xFF; i++) {
       CaveObject object = (CaveObject)(explicitData[i] & 0x3F);
