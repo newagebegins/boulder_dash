@@ -21,29 +21,18 @@ void printSpriteBytes(int row, int col) {
       uint8_t outBit = pixel == 0x00FFFFFF ? 1 : 0;
       outByte |= (outBit << (7 - spriteX));
     }
-    fprintf(out, "0x%02X", outByte);
-    if (spriteY != 7) fprintf(out, ",");
+    fprintf(out, "0x%02X,", outByte);
   }
 }
 
 void printSprite(char *name, int frames, int height, int width, int startRow, int startCol) {
-  fprintf(out, "uint8_t %s[%d][%d][%d][8] = {\n", name, frames, height, width);
+  fprintf(out, "uint8_t %s[] = {%d,%d,%d,", name, frames, height, width);
   for (int frame = 0; frame < frames; ++frame) {
-    fprintf(out, "  {");
     for (int row = 0; row < height; ++row) {
-      fprintf(out, "{");
       for (int col = 0; col < width; ++col) {
-        fprintf(out, "{");
         printSpriteBytes(startRow + row, startCol + frame*width + col);
-        fprintf(out, "}");
-        if (col != width-1) fprintf(out, ",");
       }
-      fprintf(out, "}");
-      if (row != height-1) fprintf(out, ",");
     }
-    fprintf(out, "}");
-    if (frame != frames-1) fprintf(out, ",");
-    fprintf(out, "\n");
   }
   fprintf(out, "};\n");
 }
