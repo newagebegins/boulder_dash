@@ -613,10 +613,14 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                     switch (map[newRow][newCol]) {
                       case OBJ_SPACE:
                       case OBJ_DIRT:
-                        map[row][col] = OBJ_SPACE;
-                        map[newRow][newCol] = OBJ_ROCKFORD_SCANNED;
-                        rockfordRow = newRow;
-                        rockfordCol = newCol;
+                        if (isKeyDown(VK_SPACE)) {
+                          map[newRow][newCol] = OBJ_SPACE;
+                        } else {
+                          map[row][col] = OBJ_SPACE;
+                          map[newRow][newCol] = OBJ_ROCKFORD_SCANNED;
+                          rockfordRow = newRow;
+                          rockfordCol = newCol;
+                        }
                         break;
                     }
 
