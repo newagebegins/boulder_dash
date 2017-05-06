@@ -39,10 +39,6 @@
 
 #define PALETTE_COLORS 5
 
-#define WINDOW_SCALE 3
-#define WINDOW_WIDTH (BACKBUFFER_WIDTH * WINDOW_SCALE)
-#define WINDOW_HEIGHT (BACKBUFFER_HEIGHT * WINDOW_SCALE)
-
 #define TEXT_AREA_HEIGHT_IN_CELLS 1
 #define PLAYFIELD_WIDTH_IN_CELLS VIEWPORT_WIDTH_IN_CELLS
 #define PLAYFIELD_HEIGHT_IN_CELLS (VIEWPORT_HEIGHT_IN_CELLS - TEXT_AREA_HEIGHT_IN_CELLS)
@@ -396,9 +392,13 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   wndClass.lpszClassName = "Boulder Dash";
   RegisterClass(&wndClass);
 
+  int windowScale = 3;
+  int windowWidth = BACKBUFFER_WIDTH * windowScale;
+  int windowHeight = BACKBUFFER_HEIGHT * windowScale;
+
   RECT crect = {0};
-  crect.right = WINDOW_WIDTH;
-  crect.bottom = WINDOW_HEIGHT;
+  crect.right = windowWidth;
+  crect.bottom = windowHeight;
 
   DWORD wndStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
   AdjustWindowRect(&crect, wndStyle, 0);
@@ -678,7 +678,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
     // Display backbuffer
     StretchDIBits(gDeviceContext,
-                  0, 0, WINDOW_WIDTH, WINDOW_HEIGHT,
+                  0, 0, windowWidth, windowHeight,
                   0, 0, BACKBUFFER_WIDTH, BACKBUFFER_HEIGHT,
                   gBackbuffer, gBitmapInfo,
                   DIB_RGB_COLORS, SRCCOPY);
