@@ -214,8 +214,11 @@ void drawSprite(uint8_t *sprite, int frame, int dstX, int dstY, uint8_t fgColor,
       int x = dstX + col*TILE_SIZE;
       int y = dstY + row*TILE_SIZE;
 
-      uint8_t *data = sprite + 2 + (frame%frames)*bytesPerFrame + row*bytesPerRow + col*TILE_SIZE;
-      drawTile(data, x, y, fgColor, bgColor, vOffset);
+      if (x >= VIEWPORT_LEFT && (x+TILE_SIZE-1) <= VIEWPORT_RIGHT &&
+          y >= VIEWPORT_TOP && (y+TILE_SIZE-1) <= VIEWPORT_BOTTOM) {
+        uint8_t *data = sprite + 2 + (frame%frames)*bytesPerFrame + row*bytesPerRow + col*TILE_SIZE;
+        drawTile(data, x, y, fgColor, bgColor, vOffset);
+      }
     }
   }
 }
@@ -698,11 +701,6 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           int x = PLAYFIELD_LEFT + col*CELL_SIZE - cameraX;
           int y = PLAYFIELD_TOP + row*CELL_SIZE - cameraY;
 
-          if (x < PLAYFIELD_LEFT || (x+CELL_SIZE-1) > PLAYFIELD_RIGHT ||
-              y < PLAYFIELD_TOP || (y+CELL_SIZE-1) > PLAYFIELD_BOTTOM) {
-            continue;
-          }
-
           if (mapCover[row][col]) {
             drawSprite(spriteSteelWall, 0, x, y, 4, 0, turn);
           } else {
@@ -771,6 +769,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
       // Draw text
       {
+        // Black background
+        drawFilledRect(VIEWPORT_LEFT, VIEWPORT_TOP, VIEWPORT_RIGHT, VIEWPORT_TOP+TEXT_AREA_HEIGHT, 0);
+
         char text[64];
         if (rockfordTurnsTillBirth > 0) {
           sprintf_s(text, sizeof(text), "  PLAYER 1,  %d MEN,  ROOM %c/1", livesLeft, 'A' + (caveInfo->caveNumber-1));
