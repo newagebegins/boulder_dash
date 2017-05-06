@@ -58,57 +58,55 @@
 #define PAUSE_TURNS_BEFORE_FULL_UNCOVER 2
 #define CELLS_PER_LINE_TO_UNCOVER 3
 
-typedef enum {
-  OBJ_SPACE = 0x00,
-  OBJ_DIRT = 0x01,
-  OBJ_BRICK_WALL = 0x02,
-  OBJ_MAGIC_WALL = 0x03,
-  OBJ_PRE_OUTBOX = 0x04, // before it starts flashing
-  OBJ_FLASHING_OUTBOX = 0x05,
-  OBJ_STEEL_WALL = 0x07,
-  OBJ_FIREFLY_POSITION_1 = 0x08,
-  OBJ_FIREFLY_POSITION_2 = 0x09,
-  OBJ_FIREFLY_POSITION_3 = 0x0A,
-  OBJ_FIREFLY_POSITION_4 = 0x0B,
-  OBJ_FIREFLY_POSITION_1_SCANNED = 0x0C,
-  OBJ_FIREFLY_POSITION_2_SCANNED = 0x0D,
-  OBJ_FIREFLY_POSITION_3_SCANNED = 0x0E,
-  OBJ_FIREFLY_POSITION_4_SCANNED = 0x0F,
-  OBJ_BOULDER_STATIONARY = 0x10,
-  OBJ_BOULDER_STATIONARY_SCANNED = 0x11,
-  OBJ_BOULDER_FALLING = 0x12,
-  OBJ_BOULDER_FALLING_SCANNED = 0x13,
-  OBJ_DIAMOND_STATIONARY = 0x14,
-  OBJ_DIAMOND_STATIONARY_SCANNED = 0x15,
-  OBJ_DIAMOND_FALLING = 0x16,
-  OBJ_DIAMOND_FALLING_SCANNED = 0x17,
-  OBJ_EXPLODE_TO_SPACE_STAGE_0 = 0x1B,
-  OBJ_EXPLODE_TO_SPACE_STAGE_1 = 0x1C,
-  OBJ_EXPLODE_TO_SPACE_STAGE_2 = 0x1D,
-  OBJ_EXPLODE_TO_SPACE_STAGE_3 = 0x1E,
-  OBJ_EXPLODE_TO_SPACE_STAGE_4 = 0x1F,
-  OBJ_EXPLODE_TO_DIAMOND_STAGE_0 = 0x20,
-  OBJ_EXPLODE_TO_DIAMOND_STAGE_1 = 0x21,
-  OBJ_EXPLODE_TO_DIAMOND_STAGE_2 = 0x22,
-  OBJ_EXPLODE_TO_DIAMOND_STAGE_3 = 0x23,
-  OBJ_EXPLODE_TO_DIAMOND_STAGE_4 = 0x24,
-  OBJ_PRE_ROCKFORD_STAGE_1 = 0x25, // when inbox morphs into Rockford
-  OBJ_PRE_ROCKFORD_STAGE_2 = 0x26,
-  OBJ_PRE_ROCKFORD_STAGE_3 = 0x27,
-  OBJ_PRE_ROCKFORD_STAGE_4 = 0x28,
-  OBJ_BUTTERFLY_POSITION_1 = 0x30,
-  OBJ_BUTTERFLY_POSITION_2 = 0x31,
-  OBJ_BUTTERFLY_POSITION_3 = 0x32,
-  OBJ_BUTTERFLY_POSITION_4 = 0x33,
-  OBJ_BUTTERFLY_POSITION_1_SCANNED = 0x34,
-  OBJ_BUTTERFLY_POSITION_2_SCANNED = 0x35,
-  OBJ_BUTTERFLY_POSITION_3_SCANNED = 0x36,
-  OBJ_BUTTERFLY_POSITION_4_SCANNED = 0x37,
-  OBJ_ROCKFORD = 0x38,
-  OBJ_ROCKFORD_SCANNED = 0x39,
-  OBJ_AMOEBA = 0x3A,
-  OBJ_AMOEBA_SCANNED = 0x3B,
-} CaveObject;
+#define OBJ_SPACE 0x00
+#define OBJ_DIRT 0x01
+#define OBJ_BRICK_WALL 0x02
+#define OBJ_MAGIC_WALL 0x03
+#define OBJ_PRE_OUTBOX 0x04
+#define OBJ_FLASHING_OUTBOX 0x05
+#define OBJ_STEEL_WALL 0x07
+#define OBJ_FIREFLY_POSITION_1 0x08
+#define OBJ_FIREFLY_POSITION_2 0x09
+#define OBJ_FIREFLY_POSITION_3 0x0A
+#define OBJ_FIREFLY_POSITION_4 0x0B
+#define OBJ_FIREFLY_POSITION_1_SCANNED 0x0C
+#define OBJ_FIREFLY_POSITION_2_SCANNED 0x0D
+#define OBJ_FIREFLY_POSITION_3_SCANNED 0x0E
+#define OBJ_FIREFLY_POSITION_4_SCANNED 0x0F
+#define OBJ_BOULDER_STATIONARY 0x10
+#define OBJ_BOULDER_STATIONARY_SCANNED 0x11
+#define OBJ_BOULDER_FALLING 0x12
+#define OBJ_BOULDER_FALLING_SCANNED 0x13
+#define OBJ_DIAMOND_STATIONARY 0x14
+#define OBJ_DIAMOND_STATIONARY_SCANNED 0x15
+#define OBJ_DIAMOND_FALLING 0x16
+#define OBJ_DIAMOND_FALLING_SCANNED 0x17
+#define OBJ_EXPLODE_TO_SPACE_STAGE_0 0x1B
+#define OBJ_EXPLODE_TO_SPACE_STAGE_1 0x1C
+#define OBJ_EXPLODE_TO_SPACE_STAGE_2 0x1D
+#define OBJ_EXPLODE_TO_SPACE_STAGE_3 0x1E
+#define OBJ_EXPLODE_TO_SPACE_STAGE_4 0x1F
+#define OBJ_EXPLODE_TO_DIAMOND_STAGE_0 0x20
+#define OBJ_EXPLODE_TO_DIAMOND_STAGE_1 0x21
+#define OBJ_EXPLODE_TO_DIAMOND_STAGE_2 0x22
+#define OBJ_EXPLODE_TO_DIAMOND_STAGE_3 0x23
+#define OBJ_EXPLODE_TO_DIAMOND_STAGE_4 0x24
+#define OBJ_PRE_ROCKFORD_STAGE_1 0x25
+#define OBJ_PRE_ROCKFORD_STAGE_2 0x26
+#define OBJ_PRE_ROCKFORD_STAGE_3 0x27
+#define OBJ_PRE_ROCKFORD_STAGE_4 0x28
+#define OBJ_BUTTERFLY_POSITION_1 0x30
+#define OBJ_BUTTERFLY_POSITION_2 0x31
+#define OBJ_BUTTERFLY_POSITION_3 0x32
+#define OBJ_BUTTERFLY_POSITION_4 0x33
+#define OBJ_BUTTERFLY_POSITION_1_SCANNED 0x34
+#define OBJ_BUTTERFLY_POSITION_2_SCANNED 0x35
+#define OBJ_BUTTERFLY_POSITION_3_SCANNED 0x36
+#define OBJ_BUTTERFLY_POSITION_4_SCANNED 0x37
+#define OBJ_ROCKFORD 0x38
+#define OBJ_ROCKFORD_SCANNED 0x39
+#define OBJ_AMOEBA 0x3A
+#define OBJ_AMOEBA_SCANNED 0x3B
 
 typedef struct {
   uint8_t caveNumber;
@@ -126,7 +124,7 @@ typedef struct {
   uint8_t objectProbability[NUM_RANDOM_OBJECTS];
 } CaveInfo;
 
-typedef CaveObject CaveMap[CAVE_HEIGHT][CAVE_WIDTH];
+typedef uint8_t CaveMap[CAVE_HEIGHT][CAVE_WIDTH];
 
 typedef struct {
   CaveInfo info;
@@ -232,7 +230,7 @@ void nextRandom(int *randSeed1, int *randSeed2) {
   *randSeed1 = result & 0x00FF;
 }
 
-void placeObjectLine(CaveMap map, CaveObject object, int row, int col, int length, int direction) {
+void placeObjectLine(CaveMap map, uint8_t object, int row, int col, int length, int direction) {
   int ldx[8] = { 0,  1, 1, 1, 0, -1, -1, -1 };
   int ldy[8] = { -1, -1, 0, 1, 1,  1,  0, -1 };
 
@@ -241,7 +239,7 @@ void placeObjectLine(CaveMap map, CaveObject object, int row, int col, int lengt
   }
 }
 
-void placeObjectFilledRect(CaveMap map, CaveObject object, int row, int col, int width, int height, CaveObject fillObject) {
+void placeObjectFilledRect(CaveMap map, uint8_t object, int row, int col, int width, int height, uint8_t fillObject) {
   for (int i = 0; i < width; i++) {
     for (int j = 0; j < height; j++) {
       if ((j == 0) || (j == height - 1)) {
@@ -256,7 +254,7 @@ void placeObjectFilledRect(CaveMap map, CaveObject object, int row, int col, int
   }
 }
 
-void placeObjectRect(CaveMap map, CaveObject object, int row, int col, int width, int height) {
+void placeObjectRect(CaveMap map, uint8_t object, int row, int col, int width, int height) {
   for (int i = 0; i < width; i++) {
     map[row][col+i] = object;
     map[row+height-1][col+i] = object;
@@ -292,7 +290,7 @@ Cave decodeCave(uint8_t caveIndex) {
 
     for (int y = 1; y < CAVE_HEIGHT; y++) {
       for (int x = 0; x < CAVE_WIDTH; x++) {
-        CaveObject object = OBJ_DIRT;
+        uint8_t object = OBJ_DIRT;
         nextRandom(&randSeed1, &randSeed2);
         for (int i = 0; i < NUM_RANDOM_OBJECTS; i++) {
           if (randSeed1 < cave.info.objectProbability[i]) {
@@ -310,7 +308,7 @@ Cave decodeCave(uint8_t caveIndex) {
     int uselessTopBorderHeight = 2;
 
     for (int i = 0; explicitData[i] != 0xFF; i++) {
-      CaveObject object = (CaveObject)(explicitData[i] & 0x3F);
+      uint8_t object = (explicitData[i] & 0x3F);
 
       switch (3 & (explicitData[i] >> 6)) {
         case 0: {
@@ -332,7 +330,7 @@ Cave decodeCave(uint8_t caveIndex) {
           int y = explicitData[++i] - uselessTopBorderHeight;
           int width = explicitData[++i];
           int height = explicitData[++i];
-          CaveObject fill = (CaveObject)explicitData[++i];
+          uint8_t fill = explicitData[++i];
           placeObjectFilledRect(cave.map, object, y, x, width, height, fill);
           break;
         }
