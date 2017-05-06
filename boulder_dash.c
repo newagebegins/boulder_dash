@@ -644,7 +644,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                 break;
               case OBJ_DIAMOND_STATIONARY:
               case OBJ_DIAMOND_FALLING:
-                drawSprite(spriteDiamond, 0, x, y, 2, 0, 0);
+                drawSprite(spriteDiamond, turn, x, y, 2, 0, 0);
                 break;
               case OBJ_PRE_ROCKFORD_STAGE_1:
                 if (rockfordTurnsTillBirth > 0) {
