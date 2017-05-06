@@ -331,6 +331,10 @@ void decodeCave(uint8_t caveIndex) {
   placeObjectRect(OBJ_STEEL_WALL, 0, 0, CAVE_WIDTH, CAVE_HEIGHT);
 }
 
+bool isKeyDown(int virtKey) {
+  return GetKeyState(virtKey) >> 15;
+}
+
 LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
   switch (msg) {
     case WM_DESTROY:
@@ -436,6 +440,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int rockfordTurnsTillBirth = 12;
   int mapUncoverTurnsLeft = 40;
   int pauseTurnsLeft = 0;
+  bool rockfordIsMoving = false;
+  bool rockfordIsFacingRight = true;
 
   for (int row = 0; row < CAVE_HEIGHT; ++row) {
     for (int col = 0; col < CAVE_WIDTH; ++col) {
@@ -544,12 +550,50 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                     break;
 
                   case OBJ_ROCKFORD:
-                    if (tick % 8 == 0) {
-                      rockfordIsBlinking = rand() % 4 == 0;
-                      if (rand() % 16 == 0) {
-                        rockfordIsTapping = !rockfordIsTapping;
+                    if (isKeyDown(VK_DOWN)) {
+                      rockfordIsMoving = true;
+                      map[row][col] = OBJ_SPACE;
+                      map[row+1][col] = OBJ_ROCKFORD_SCANNED;
+                    } else if (isKeyDown(VK_UP)) {
+                      rockfordIsMoving = true;
+                      map[row][col] = OBJ_SPACE;
+                      map[row-1][col] = OBJ_ROCKFORD_SCANNED;
+                    } else if (isKeyDown(VK_RIGHT)) {
+                      rockfordIsMoving = true;
+                      rockfordIsFacingRight = true;
+                      map[row][col] = OBJ_SPACE;
+                      map[row][col+1] = OBJ_ROCKFORD_SCANNED;
+                    } else if (isKeyDown(VK_LEFT)) {
+                      rockfordIsMoving = true;
+                      rockfordIsFacingRight = false;
+                      map[row][col] = OBJ_SPACE;
+                      map[row][col-1] = OBJ_ROCKFORD_SCANNED;
+                    } else {
+                      rockfordIsMoving = false;
+                    }
+
+                    if (rockfordIsMoving) {
+                      rockfordIsBlinking = false;
+                      rockfordIsTapping = false;
+                    } else {
+                      if (tick % 8 == 0) {
+                        rockfordIsBlinking = rand() % 4 == 0;
+                        if (rand() % 16 == 0) {
+                          rockfordIsTapping = !rockfordIsTapping;
+                        }
                       }
                     }
+                    break;
+                }
+              }
+            }
+
+            // Remove scanned status for cells
+            for (int row = 0; row < CAVE_HEIGHT; ++row) {
+              for (int col = 0; col < CAVE_WIDTH; ++col) {
+                switch (map[row][col]) {
+                  case OBJ_ROCKFORD_SCANNED:
+                    map[row][col] = OBJ_ROCKFORD;
                     break;
                 }
               }
@@ -621,7 +665,13 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                 drawSprite(spriteRockfordRight, turn, x, y, 1, 0, 0);
                 break;
               case OBJ_ROCKFORD:
-                if (rockfordIsBlinking && rockfordIsTapping) {
+                if (rockfordIsMoving) {
+                  if (rockfordIsFacingRight) {
+                    drawSprite(spriteRockfordRight, tick, x, y, 1, 0, 0);
+                  } else {
+                    drawSprite(spriteRockfordLeft, tick, x, y, 1, 0, 0);
+                  }
+                } else if (rockfordIsBlinking && rockfordIsTapping) {
                   drawSprite(spriteRockfordBlinkTap, tick, x, y, 1, 0, 0);
                 } else if (rockfordIsBlinking) {
                   drawSprite(spriteRockfordBlink, tick, x, y, 1, 0, 0);
