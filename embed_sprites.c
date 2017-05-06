@@ -80,12 +80,13 @@ void main() {
   printSprite("spriteRockfordIdleBody", 3, 1, 2, 1, 0);
   printSprite("spriteRockfordMoveRight", 6, 2, 2, 0, 6);
   printSprite("spriteRockfordMoveLeft", 6, 2, 2, 2, 6);
+  printSprite("spriteSpace", 1, 2, 2, 2, 0);
   printSprite("spriteSteelWall", 1, 2, 2, 4, 0);
   printSprite("spriteOutbox", 1, 2, 2, 4, 2);
   printSprite("spriteBoulder", 1, 2, 2, 4, 4);
   printSprite("spriteDirt", 1, 2, 2, 4, 6);
   printSprite("spriteBrickWall", 1, 2, 2, 6, 0);
   printSprite("spriteExplosion", 3, 2, 2, 8, 0);
-  printSprite("spriteDiamon", 8, 2, 2, 10, 0);
+  printSprite("spriteDiamond", 8, 2, 2, 10, 0);
   printSprite("spriteAscii", 59, 1, 1, 20, 0);
 }

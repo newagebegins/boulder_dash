@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include "data_sprites.h"
+
 #define ARRAY_LENGTH(array) (sizeof(array)/sizeof(*array))
 
 #define SPRITE_SIZE 8
@@ -48,10 +50,6 @@
 #define PLAYFIELD_X_MIN (PLAYFIELD_X_MIN_IN_TILES*TILE_SIZE)
 #define PLAYFIELD_Y_MIN (PLAYFIELD_Y_MIN_IN_TILES*TILE_SIZE)
 
-typedef uint8_t Sprite[SPRITE_SIZE];
-
-#include "data_sprites.h"
-
 uint8_t *gBackbuffer;
 BITMAPINFO *gBitmapInfo;
 HDC gDeviceContext;
@@ -84,15 +82,14 @@ void drawFilledRect(int left, int top, int right, int bottom, uint8_t color) {
   }
 }
 
-void drawSprite(Sprite sprite, int spriteRow, int spriteCol, uint8_t fgColor, uint8_t bgColor,
-                bool flipHorz, bool flipVert, int animationStep) {
-  for (uint8_t bmpY = 0; bmpY < SPRITE_SIZE; ++bmpY) {
-    int y = flipVert ? (spriteRow*SPRITE_SIZE + SPRITE_SIZE - 1 - bmpY) : (spriteRow*SPRITE_SIZE + bmpY);
-    uint8_t byte = sprite[(bmpY + animationStep) % SPRITE_SIZE];
+void drawSprite8x8(uint8_t *sprite, int row, int col, uint8_t fgColor, uint8_t bgColor, int vOffset) {
+  for (uint8_t bmpY = 0; bmpY < 8; ++bmpY) {
+    int y = row*8 + bmpY;
+    uint8_t byte = sprite[(bmpY + vOffset) % 8];
 
-    for (uint8_t bmpX = 0; bmpX < SPRITE_SIZE; ++bmpX) {
-      int x = flipHorz ? (spriteCol*SPRITE_SIZE + SPRITE_SIZE - 1 - bmpX) : (spriteCol*SPRITE_SIZE + bmpX);
-      uint8_t mask = 1 << ((SPRITE_SIZE - 1) - bmpX);
+    for (uint8_t bmpX = 0; bmpX < 8; ++bmpX) {
+      int x = col*8 + bmpX;
+      uint8_t mask = 1 << (7 - bmpX);
       uint8_t bit = byte & mask;
       uint8_t color = bit ? fgColor : bgColor;
 
@@ -101,130 +98,23 @@ void drawSprite(Sprite sprite, int spriteRow, int spriteCol, uint8_t fgColor, ui
   }
 }
 
-void tileToSpritePos(int tileRow, int tileCol, int *spriteRow, int *spriteCol) {
-  *spriteRow = (PLAYFIELD_Y_MIN_IN_TILES + tileRow) * TILE_SIZE_IN_SPRITES;
-  *spriteCol = (PLAYFIELD_X_MIN_IN_TILES + tileCol) * TILE_SIZE_IN_SPRITES;
-}
-
-void drawTile(Sprite spriteA, Sprite spriteB, Sprite spriteC, Sprite spriteD,
-              int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor, int animationStep) {
-  int spriteRow, spriteCol;
-  tileToSpritePos(tileRow, tileCol, &spriteRow, &spriteCol);
-  drawSprite(spriteA, spriteRow, spriteCol, fgColor, bgColor, false, false, animationStep);
-  drawSprite(spriteB, spriteRow, spriteCol + 1, fgColor, bgColor, false, false, animationStep);
-  drawSprite(spriteC, spriteRow + 1, spriteCol, fgColor, bgColor, false, false, animationStep);
-  drawSprite(spriteD, spriteRow + 1, spriteCol + 1, fgColor, bgColor, false, false, animationStep);
-}
-
-void drawSpaceTile(int tileRow, int tileCol) {
-  int left = PLAYFIELD_X_MIN + tileCol*TILE_SIZE;
-  int top = PLAYFIELD_Y_MIN + tileRow*TILE_SIZE;
-  int bottom = top + TILE_SIZE - 1;
-  int right = left + TILE_SIZE - 1;
-  drawFilledRect(left, top, right, bottom, 0);
-}
-
-void drawSteelWallTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
-  drawTile(gSpriteSteelWall, gSpriteSteelWall, gSpriteSteelWall, gSpriteSteelWall, tileRow, tileCol, fgColor, bgColor, 0);
-}
-
-void drawAnimatedSteelWallTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor, int animationStep) {
-  drawTile(gSpriteSteelWall, gSpriteSteelWall, gSpriteSteelWall, gSpriteSteelWall, tileRow, tileCol, fgColor, bgColor, animationStep);
-}
-
-void drawDirtTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
-  drawTile(gSpriteDirtA, gSpriteDirtB, gSpriteDirtC, gSpriteDirtD, tileRow, tileCol, fgColor, bgColor, 0);
-}
-
-void drawBrickWallTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
-  drawTile(gSpriteBrick1, gSpriteBrick1, gSpriteBrick1, gSpriteBrick1, tileRow, tileCol, fgColor, bgColor, 0);
-}
-
-void drawBoulderTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
-  drawTile(gSpriteBoulderA, gSpriteBoulderB, gSpriteBoulderC, gSpriteBoulderD, tileRow, tileCol, fgColor, bgColor, 0);
-}
-
-void drawDiamond1Tile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
-  drawTile(gSpriteDiamond1A, gSpriteDiamond1B, gSpriteDiamond1C, gSpriteDiamond1D, tileRow, tileCol, fgColor, bgColor, 0);
-}
-
-void drawExplosion1Tile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
-  drawTile(gSpriteExplosion1A, gSpriteExplosion1B, gSpriteExplosion1C, gSpriteExplosion1D, tileRow, tileCol, fgColor, bgColor, 0);
-}
-
-void drawExplosion2Tile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
-  drawTile(gSpriteExplosion2A, gSpriteExplosion2B, gSpriteExplosion2C, gSpriteExplosion2D, tileRow, tileCol, fgColor, bgColor, 0);
-}
-
-void drawExplosion3Tile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
-  drawTile(gSpriteExplosion3A, gSpriteExplosion3B, gSpriteExplosion3C, gSpriteExplosion3D, tileRow, tileCol, fgColor, bgColor, 0);
-}
-
-void drawOutboxTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
-  int spriteRow, spriteCol;
-  tileToSpritePos(tileRow, tileCol, &spriteRow, &spriteCol);
-  drawSprite(gSpriteOutbox, spriteRow, spriteCol, fgColor, bgColor, false, false, 0);
-  drawSprite(gSpriteOutbox, spriteRow, spriteCol + 1, fgColor, bgColor, true, false, 0);
-  drawSprite(gSpriteOutbox, spriteRow + 1, spriteCol, fgColor, bgColor, false, true, 0);
-  drawSprite(gSpriteOutbox, spriteRow + 1, spriteCol + 1, fgColor, bgColor, true, true, 0);
-}
-
-void drawMovingRockfordTile(int tileRow, int tileCol, bool isFacingRight, int animationStep) {
-  UNREFERENCED_PARAMETER(isFacingRight);
-  int spriteRow, spriteCol;
-  tileToSpritePos(tileRow, tileCol, &spriteRow, &spriteCol);
-  switch (animationStep % 6) {
-    case 0:
-      drawSprite(gSpriteRockfordHead1A, spriteRow, spriteCol, 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordHead1B, spriteRow, spriteCol + 1, 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordBottomRun1A, spriteRow + 1, spriteCol, 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordBottomRun1B, spriteRow + 1, spriteCol + 1, 1, 0, false, false, 0);
-      break;
-    case 1:
-      drawSprite(gSpriteRockfordHead1A, spriteRow, spriteCol, 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordHead1B, spriteRow, spriteCol + 1, 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordBottomRun2A, spriteRow + 1, spriteCol, 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordBottomRun2B, spriteRow + 1, spriteCol + 1, 1, 0, false, false, 0);
-      break;
-    case 2:
-      drawSprite(gSpriteRockfordHead2A, spriteRow, spriteCol, 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordHead2B, spriteRow, spriteCol + 1, 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordBottomRun3A, spriteRow + 1, spriteCol, 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordBottomRun3B, spriteRow + 1, spriteCol + 1, 1, 0, false, false, 0);
-      break;
-    case 3:
-      drawSprite(gSpriteRockfordHead2A, spriteRow, spriteCol, 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordHead2B, spriteRow, spriteCol + 1, 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordBottomRun4A, spriteRow + 1, spriteCol, 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordBottomRun4B, spriteRow + 1, spriteCol + 1, 1, 0, false, false, 0);
-      break;
-    case 4:
-      drawSprite(gSpriteRockfordHead1A, spriteRow, spriteCol, 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordHead1B, spriteRow, spriteCol + 1, 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordBottomRun5A, spriteRow + 1, spriteCol, 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordBottomRun5B, spriteRow + 1, spriteCol + 1, 1, 0, false, false, 0);
-      break;
-    case 5:
-      drawSprite(gSpriteRockfordHead1A, spriteRow, spriteCol, 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordHead1B, spriteRow, spriteCol + 1, 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordBottomRun3A, spriteRow + 1, spriteCol, 1, 0, false, false, 0);
-      drawSprite(gSpriteRockfordBottomRun3B, spriteRow + 1, spriteCol + 1, 1, 0, false, false, 0);
-      break;
+void drawSprite(uint8_t *sprite, int outRow, int outCol, int frame, uint8_t fgColor, uint8_t bgColor, int vOffset) {
+  int frames = sprite[0];
+  int height = sprite[1];
+  int width = sprite[2];
+  int bytesPerFrame = width*height*8;
+  int bytesPerRow = width*8;
+  for (int row = 0; row < height; ++row) {
+    for (int col = 0; col < width; ++col) {
+      uint8_t *data = sprite + 3 + (frame%frames)*bytesPerFrame + row*bytesPerRow + col*8;
+      drawSprite8x8(data, outRow+row, outCol+col, fgColor, bgColor, vOffset);
+    }
   }
-}
-
-void drawIdleRockfordTile(int tileRow, int tileCol) {
-  int spriteRow, spriteCol;
-  tileToSpritePos(tileRow, tileCol, &spriteRow, &spriteCol);
-  drawSprite(gSpriteRockfordEye1, spriteRow, spriteCol, 1, 0, false, false, 0);
-  drawSprite(gSpriteRockfordEye1, spriteRow, spriteCol+1, 1, 0, true, false, 0);
-  drawSprite(gSpriteRockfordBottomIdle1, spriteRow+1, spriteCol, 1, 0, false, false, 0);
-  drawSprite(gSpriteRockfordBottomIdle1, spriteRow+1, spriteCol+1, 1, 0, true, false, 0);
 }
 
 void drawText(char *text) {
   for (int i = 0; text[i]; ++i) {
-    drawSprite(asciiSprites[text[i] - ' '], 3, 2 + i, 1, 0, false, false, 0);
+    drawSprite(spriteAscii, 3, 2 + i, text[i]-' ', 1, 0, 0);
   }
 }
 
@@ -712,51 +602,54 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         if (!isTileVisible(y, x)) {
           continue;
         }
+        int outRow = (PLAYFIELD_Y_MIN_IN_TILES + y)*2;
+        int outCol = (PLAYFIELD_X_MIN_IN_TILES + x)*2;
         switch (gameState.cave.map[y][x]) {
           case OBJ_SPACE:
-            drawSpaceTile(y, x);
+            drawSprite(spriteSpace, outRow, outCol, 0, 0, 0, 0);
             break;
           case OBJ_STEEL_WALL:
-            drawSteelWallTile(y, x, 4, 0);
+            drawSprite(spriteSteelWall, outRow, outCol, 0, 4, 0, 0);
             break;
           case OBJ_DIRT:
-            drawDirtTile(y, x, 3, 0);
+            drawSprite(spriteDirt, outRow, outCol, 0, 3, 0, 0);
             break;
           case OBJ_BRICK_WALL:
-            drawBrickWallTile(y, x, 1, 3);
+            drawSprite(spriteBrickWall, outRow, outCol, 0, 1, 3, 0);
             break;
           case OBJ_BOULDER_STATIONARY:
           case OBJ_BOULDER_FALLING:
-            drawBoulderTile(y, x, 4, 0);
+            drawSprite(spriteBoulder, outRow, outCol, 0, 4, 0, 0);
             break;
           case OBJ_DIAMOND_STATIONARY:
           case OBJ_DIAMOND_FALLING:
-            drawDiamond1Tile(y, x, 2, 0);
+            drawSprite(spriteDiamond, outRow, outCol, 0, 2, 0, 0);
             break;
           case OBJ_PRE_ROCKFORD_STAGE_1:
             if (gameState.rockfordTurnsTillBirth > 0) {
               if (gameState.rockfordTurnsTillBirth % 2) {
-                drawSteelWallTile(y, x, 4, 0);
+                drawSprite(spriteSteelWall, outRow, outCol, 0, 4, 0, 0);
               }
               else {
-                drawOutboxTile(y, x, 4, 0);
+                drawSprite(spriteOutbox, outRow, outCol, 0, 4, 0, 0);
               }
             }
             else {
-              drawExplosion1Tile(y, x, 2, 0);
+              drawSprite(spriteExplosion, outRow, outCol, 0, 2, 0, 0);
             }
             break;
           case OBJ_PRE_ROCKFORD_STAGE_2:
-            drawExplosion2Tile(y, x, 2, 0);
+            drawSprite(spriteExplosion, outRow, outCol, 1, 2, 0, 0);
             break;
           case OBJ_PRE_ROCKFORD_STAGE_3:
-            drawExplosion3Tile(y, x, 2, 0);
+            drawSprite(spriteExplosion, outRow, outCol, 2, 2, 0, 0);
             break;
           case OBJ_PRE_ROCKFORD_STAGE_4:
-            drawMovingRockfordTile(y, x, true, gameState.turn);
+            drawSprite(spriteRockfordMoveRight, outRow, outCol, gameState.turn, 1, 0, 0);
             break;
           case OBJ_ROCKFORD:
-            drawIdleRockfordTile(y, x);
+            drawSprite(spriteRockfordIdleHead, outRow, outCol, 0, 1, 0, 0);
+            drawSprite(spriteRockfordIdleBody, outRow+1, outCol, 0, 1, 0, 0);
             break;
         }
       }
@@ -768,7 +661,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         if (gameState.mapCover[y][x] == OBJ_SPACE || !isTileVisible(y, x)) {
           continue;
         }
-        drawAnimatedSteelWallTile(y, x, 4, 0, gameState.turn);
+        drawSprite(spriteSteelWall, (PLAYFIELD_Y_MIN_IN_TILES + y)*2, (PLAYFIELD_X_MIN_IN_TILES + x)*2, 0, 4, 0, gameState.turn);
       }
     }
 
