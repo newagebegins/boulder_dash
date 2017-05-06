@@ -10,25 +10,25 @@
 
 // Cave map consists of cells, each cell contains 4 tiles.
 
-#define TILE_SIZE 16
-#define BORDER_SIZE_IN_TILES 1
-#define BORDER_SIZE (TILE_SIZE*BORDER_SIZE_IN_TILES)
+#define CELL_SIZE 16
+#define BORDER_SIZE_IN_CELLS 1
+#define BORDER_SIZE (CELL_SIZE*BORDER_SIZE_IN_CELLS)
 
 // Viewport is the whole screen area except the border.
 #define VIEWPORT_WIDTH 256
 #define VIEWPORT_HEIGHT 192
-#define VIEWPORT_WIDTH_IN_TILES (VIEWPORT_WIDTH/TILE_SIZE)
-#define VIEWPORT_HEIGHT_IN_TILES (VIEWPORT_HEIGHT/TILE_SIZE)
+#define VIEWPORT_WIDTH_IN_CELLS (VIEWPORT_WIDTH/CELL_SIZE)
+#define VIEWPORT_HEIGHT_IN_CELLS (VIEWPORT_HEIGHT/CELL_SIZE)
 
 #define VIEWPORT_X_MIN BORDER_SIZE
 #define VIEWPORT_Y_MIN BORDER_SIZE
 #define VIEWPORT_X_MAX (VIEWPORT_X_MIN + VIEWPORT_WIDTH - 1)
 #define VIEWPORT_Y_MAX (VIEWPORT_Y_MIN + VIEWPORT_HEIGHT - 1)
 
-#define VIEWPORT_X_MIN_IN_TILES BORDER_SIZE_IN_TILES
-#define VIEWPORT_Y_MIN_IN_TILES BORDER_SIZE_IN_TILES
-#define VIEWPORT_X_MAX_IN_TILES (VIEWPORT_X_MIN_IN_TILES + VIEWPORT_WIDTH_IN_TILES - 1)
-#define VIEWPORT_Y_MAX_IN_TILES (VIEWPORT_Y_MIN_IN_TILES + VIEWPORT_HEIGHT_IN_TILES - 1)
+#define VIEWPORT_X_MIN_IN_CELLS BORDER_SIZE_IN_CELLS
+#define VIEWPORT_Y_MIN_IN_CELLS BORDER_SIZE_IN_CELLS
+#define VIEWPORT_X_MAX_IN_CELLS (VIEWPORT_X_MIN_IN_CELLS + VIEWPORT_WIDTH_IN_CELLS - 1)
+#define VIEWPORT_Y_MAX_IN_CELLS (VIEWPORT_Y_MIN_IN_CELLS + VIEWPORT_HEIGHT_IN_CELLS - 1)
 
 #define BACKBUFFER_WIDTH (VIEWPORT_WIDTH + BORDER_SIZE*2)
 #define BACKBUFFER_HEIGHT (VIEWPORT_HEIGHT + BORDER_SIZE*2)
@@ -42,13 +42,13 @@
 #define WINDOW_WIDTH (BACKBUFFER_WIDTH * WINDOW_SCALE)
 #define WINDOW_HEIGHT (BACKBUFFER_HEIGHT * WINDOW_SCALE)
 
-#define TEXT_AREA_HEIGHT_IN_TILES 1
-#define PLAYFIELD_WIDTH_IN_TILES VIEWPORT_WIDTH_IN_TILES
-#define PLAYFIELD_HEIGHT_IN_TILES (VIEWPORT_HEIGHT_IN_TILES - TEXT_AREA_HEIGHT_IN_TILES)
-#define PLAYFIELD_X_MIN_IN_TILES VIEWPORT_X_MIN_IN_TILES
-#define PLAYFIELD_Y_MIN_IN_TILES (VIEWPORT_Y_MIN_IN_TILES + TEXT_AREA_HEIGHT_IN_TILES)
-#define PLAYFIELD_X_MIN (PLAYFIELD_X_MIN_IN_TILES*TILE_SIZE)
-#define PLAYFIELD_Y_MIN (PLAYFIELD_Y_MIN_IN_TILES*TILE_SIZE)
+#define TEXT_AREA_HEIGHT_IN_CELLS 1
+#define PLAYFIELD_WIDTH_IN_CELLS VIEWPORT_WIDTH_IN_CELLS
+#define PLAYFIELD_HEIGHT_IN_CELLS (VIEWPORT_HEIGHT_IN_CELLS - TEXT_AREA_HEIGHT_IN_CELLS)
+#define PLAYFIELD_X_MIN_IN_CELLS VIEWPORT_X_MIN_IN_CELLS
+#define PLAYFIELD_Y_MIN_IN_CELLS (VIEWPORT_Y_MIN_IN_CELLS + TEXT_AREA_HEIGHT_IN_CELLS)
+#define PLAYFIELD_X_MIN (PLAYFIELD_X_MIN_IN_CELLS*CELL_SIZE)
+#define PLAYFIELD_Y_MIN (PLAYFIELD_Y_MIN_IN_CELLS*CELL_SIZE)
 
 uint8_t *gBackbuffer;
 BITMAPINFO *gBitmapInfo;
@@ -340,7 +340,7 @@ Cave decodeCave(uint8_t caveIndex) {
 #define ROCKFORD_TURNS_TILL_BIRTH 12
 #define MAP_UNCOVER_TURNS 40
 #define PAUSE_TURNS_BEFORE_FULL_UNCOVER 2
-#define TILES_PER_LINE_TO_UNCOVER 3
+#define CELLS_PER_LINE_TO_UNCOVER 3
 
 int mapUncoverTurnsLeft;
 
@@ -360,10 +360,10 @@ typedef struct {
   CaveMap mapCover;
 } GameState;
 
-bool isTileVisible(int tileRow, int tileCol) {
+bool isCellVisible(int cellRow, int cellCol) {
   return
-    tileRow >= 0 && tileRow < PLAYFIELD_HEIGHT_IN_TILES &&
-    tileCol >= 0 && tileCol < PLAYFIELD_WIDTH_IN_TILES;
+    cellRow >= 0 && cellRow < PLAYFIELD_HEIGHT_IN_CELLS &&
+    cellCol >= 0 && cellCol < PLAYFIELD_WIDTH_IN_CELLS;
 }
 
 void debugPrint(char *format, ...) {
@@ -564,7 +564,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           mapUncoverTurnsLeft--;
           if (mapUncoverTurnsLeft > 1) {
             for (int y = 0; y < CAVE_HEIGHT; ++y) {
-              for (int i = 0; i < TILES_PER_LINE_TO_UNCOVER; ++i) {
+              for (int i = 0; i < CELLS_PER_LINE_TO_UNCOVER; ++i) {
                 gameState.mapCover[y][rand()%CAVE_WIDTH] = OBJ_SPACE;
               }
             }
@@ -593,11 +593,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     // Draw cave
     for (int y = 0; y < CAVE_HEIGHT; ++y) {
       for (int x = 0; x < CAVE_WIDTH; ++x) {
-        if (!isTileVisible(y, x)) {
+        if (!isCellVisible(y, x)) {
           continue;
         }
-        int outRow = (PLAYFIELD_Y_MIN_IN_TILES + y)*2;
-        int outCol = (PLAYFIELD_X_MIN_IN_TILES + x)*2;
+        int outRow = (PLAYFIELD_Y_MIN_IN_CELLS + y)*2;
+        int outCol = (PLAYFIELD_X_MIN_IN_CELLS + x)*2;
         switch (gameState.cave.map[y][x]) {
           case OBJ_SPACE:
             drawSprite(spriteSpace, outRow, outCol, 0, 0, 0, 0);
@@ -652,10 +652,10 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     // Draw map cover
     for (int y = 0; y < CAVE_HEIGHT; ++y) {
       for (int x = 0; x < CAVE_WIDTH; ++x) {
-        if (gameState.mapCover[y][x] == OBJ_SPACE || !isTileVisible(y, x)) {
+        if (gameState.mapCover[y][x] == OBJ_SPACE || !isCellVisible(y, x)) {
           continue;
         }
-        drawSprite(spriteSteelWall, (PLAYFIELD_Y_MIN_IN_TILES + y)*2, (PLAYFIELD_X_MIN_IN_TILES + x)*2, 0, 4, 0, gameState.turn);
+        drawSprite(spriteSteelWall, (PLAYFIELD_Y_MIN_IN_CELLS + y)*2, (PLAYFIELD_X_MIN_IN_CELLS + x)*2, 0, 4, 0, gameState.turn);
       }
     }
 
