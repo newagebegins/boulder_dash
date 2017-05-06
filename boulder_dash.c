@@ -33,9 +33,8 @@
 
 #define BACKBUFFER_WIDTH (VIEWPORT_WIDTH + BORDER_SIZE*2)
 #define BACKBUFFER_HEIGHT (VIEWPORT_HEIGHT + BORDER_SIZE*2)
-#define BACKBUFFER_PIXELS (BACKBUFFER_WIDTH*BACKBUFFER_HEIGHT)
-// 4 bits per pixel.
-#define BACKBUFFER_BYTES (BACKBUFFER_PIXELS*sizeof(uint8_t)/2)
+// 4 bits per pixel
+#define BACKBUFFER_BYTES (BACKBUFFER_WIDTH*BACKBUFFER_HEIGHT/2)
 
 #define PALETTE_COLORS 5
 
@@ -397,7 +396,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     HDC deviceContext = GetDC(wnd);
 
     gDeviceContext = deviceContext;
-    gBackbuffer = malloc(BACKBUFFER_PIXELS);
+    gBackbuffer = malloc(BACKBUFFER_BYTES);
 
     gBitmapInfo = malloc(sizeof(BITMAPINFOHEADER) + (PALETTE_COLORS * sizeof(RGBQUAD)));
     gBitmapInfo->bmiHeader.biSize = sizeof(gBitmapInfo->bmiHeader);
