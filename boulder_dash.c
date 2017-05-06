@@ -425,8 +425,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   // Initialize game state
   //
 
-  uint8_t caveNumber = 0;
-  decodeCave(caveNumber);
+  decodeCave(0);
   CaveMap mapCover;
   int difficultyLevel = 0;
   int caveTimeLeft = caveInfo->caveTime[difficultyLevel];
@@ -632,7 +631,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     {
       char text[64];
       if (rockfordTurnsTillBirth > 0) {
-        sprintf_s(text, sizeof(text), "  PLAYER 1,  %d MEN,  ROOM %c/1", livesLeft, 'A' + caveNumber);
+        sprintf_s(text, sizeof(text), "  PLAYER 1,  %d MEN,  ROOM %c/1", livesLeft, 'A' + (caveInfo->caveNumber-1));
       }
       else {
         sprintf_s(text, sizeof(text), "   %d*%d   %02d   %03d   %06d",
