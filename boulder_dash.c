@@ -465,7 +465,6 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     }
 
     // Handle Windows messages
-
     MSG msg;
     while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE)) {
       switch (msg.message) {
@@ -473,20 +472,15 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           gameIsRunning = false;
           break;
 
-        case WM_KEYDOWN:
-        case WM_KEYUP:
-          switch (msg.wParam) {
-            case VK_ESCAPE:
-              gameIsRunning = false;
-              break;
-          }
-          break;
-
         default:
           TranslateMessage(&msg);
           DispatchMessage(&msg);
           break;
       }
+    }
+
+    if (isKeyDown(VK_ESCAPE)) {
+      gameIsRunning = false;
     }
 
     float tickDuration = 0.03375f;
