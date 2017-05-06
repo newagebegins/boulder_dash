@@ -1,7 +1,7 @@
-#include <windows.h>
 #include <stdint.h>
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 uint32_t *spritesheetPixels;
 int spritesheetWidth;
@@ -40,15 +40,17 @@ void outputAsciiSprite(int code, int row, int col) {
 void main() {
   // Load spritesheet
   {
-    HANDLE fileHandle = CreateFile("sprites.bmp", GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    assert(fileHandle != INVALID_HANDLE_VALUE);
-    LARGE_INTEGER fileSize;
-    GetFileSizeEx(fileHandle, &fileSize);
-    uint8_t *fileContents = malloc(fileSize.LowPart);
-    DWORD bytesRead;
-    ReadFile(fileHandle, fileContents, fileSize.LowPart, &bytesRead, NULL);
-    assert(bytesRead == fileSize.LowPart);
-    CloseHandle(fileHandle);
+    FILE *file;
+    fopen_s(&file, "sprites.bmp", "rb");
+
+    fseek(file, 0, SEEK_END);
+    int fileSize = ftell(file);
+    rewind(file);
+
+    uint8_t *fileContents = malloc(fileSize);
+    fread(fileContents, 1, fileSize, file);
+
+    fclose(file);
 
     int pixelsOffset = *(int*)(fileContents + 10);
     spritesheetWidth = *(int*)(fileContents + 18);
