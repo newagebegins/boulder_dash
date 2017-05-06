@@ -47,17 +47,6 @@
 #define PLAYFIELD_X_MIN (PLAYFIELD_X_MIN_IN_CELLS*CELL_SIZE)
 #define PLAYFIELD_Y_MIN (PLAYFIELD_Y_MIN_IN_CELLS*CELL_SIZE)
 
-#define CAVE_HEIGHT 22
-#define CAVE_WIDTH 40
-#define NUM_DIFFICULTY_LEVELS 5
-#define NUM_RANDOM_OBJECTS 4
-
-#define TURN_DURATION 0.15f
-#define ROCKFORD_TURNS_TILL_BIRTH 12
-#define MAP_UNCOVER_TURNS 40
-#define PAUSE_TURNS_BEFORE_FULL_UNCOVER 2
-#define CELLS_PER_LINE_TO_UNCOVER 3
-
 #define OBJ_SPACE 0x00
 #define OBJ_DIRT 0x01
 #define OBJ_BRICK_WALL 0x02
@@ -107,6 +96,11 @@
 #define OBJ_ROCKFORD_SCANNED 0x39
 #define OBJ_AMOEBA 0x3A
 #define OBJ_AMOEBA_SCANNED 0x3B
+
+#define CAVE_HEIGHT 22
+#define CAVE_WIDTH 40
+#define NUM_DIFFICULTY_LEVELS 5
+#define NUM_RANDOM_OBJECTS 4
 
 typedef struct {
   uint8_t caveNumber;
@@ -455,8 +449,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int diamondsCollected = 0;
   int turn = 0;
   float turnTimer = 0;
-  int rockfordTurnsTillBirth = ROCKFORD_TURNS_TILL_BIRTH;
-  int mapUncoverTurnsLeft = MAP_UNCOVER_TURNS;
+  int rockfordTurnsTillBirth = 12;
+  int mapUncoverTurnsLeft = 40;
   int pauseTurnsLeft = 0;
 
   for (int y = 0; y < CAVE_HEIGHT; ++y) {
@@ -507,9 +501,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     // Update
     //
 
+    float turnDuration = 0.15f;
     turnTimer += dt;
-    if (turnTimer >= TURN_DURATION) {
-      turnTimer -= TURN_DURATION;
+
+    if (turnTimer >= turnDuration) {
+      turnTimer -= turnDuration;
 
       // Do cave turn
 
@@ -552,13 +548,13 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           mapUncoverTurnsLeft--;
           if (mapUncoverTurnsLeft > 1) {
             for (int y = 0; y < CAVE_HEIGHT; ++y) {
-              for (int i = 0; i < CELLS_PER_LINE_TO_UNCOVER; ++i) {
+              for (int i = 0; i < 3; ++i) {
                 mapCover[y][rand()%CAVE_WIDTH] = OBJ_SPACE;
               }
             }
           }
           else if (mapUncoverTurnsLeft == 1) {
-            pauseTurnsLeft = PAUSE_TURNS_BEFORE_FULL_UNCOVER;
+            pauseTurnsLeft = 2;
           }
           else if (mapUncoverTurnsLeft == 0) {
             for (int y = 0; y < CAVE_HEIGHT; ++y) {
