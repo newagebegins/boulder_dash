@@ -112,11 +112,6 @@ typedef struct {
 
 typedef uint8_t CaveMap[CAVE_HEIGHT][CAVE_WIDTH];
 
-typedef struct {
-  CaveInfo info;
-  CaveMap map;
-} Cave;
-
 //
 // Global variables
 //
@@ -255,7 +250,7 @@ void placeObjectRect(CaveMap map, uint8_t object, int row, int col, int width, i
   }
 }
 
-Cave decodeCave(uint8_t caveIndex) {
+CaveInfo* decodeCave(uint8_t caveIndex, CaveMap map) {
   uint8_t *caves[] = {
     gCave1, gCave2, gCave3, gCave4, gCave5, gCave6, gCave7, gCave8, gCave9, gCave10,
     gCave11, gCave12, gCave13, gCave14, gCave15, gCave16, gCave17, gCave18, gCave19, gCave20
@@ -263,31 +258,30 @@ Cave decodeCave(uint8_t caveIndex) {
 
   assert(caveIndex < ARRAY_LENGTH(caves));
 
-  Cave cave;
-  CopyMemory(&cave.info, caves[caveIndex], sizeof(cave.info));
+  CaveInfo *caveInfo = (CaveInfo *)caves[caveIndex];
 
   // Clear out the map
-  for (int y = 0; y < CAVE_HEIGHT; y++) {
-    for (int x = 0; x < CAVE_WIDTH; x++) {
-      cave.map[y][x] = OBJ_STEEL_WALL;
+  for (int row = 0; row < CAVE_HEIGHT; row++) {
+    for (int col = 0; col < CAVE_WIDTH; col++) {
+      map[row][col] = OBJ_STEEL_WALL;
     }
   }
 
   // Decode random map objects
   {
     int randSeed1 = 0;
-    int randSeed2 = cave.info.randomiserSeed[0];
+    int randSeed2 = caveInfo->randomiserSeed[0];
 
-    for (int y = 1; y < CAVE_HEIGHT; y++) {
-      for (int x = 0; x < CAVE_WIDTH; x++) {
+    for (int row = 1; row < CAVE_HEIGHT; row++) {
+      for (int col = 0; col < CAVE_WIDTH; col++) {
         uint8_t object = OBJ_DIRT;
         nextRandom(&randSeed1, &randSeed2);
         for (int i = 0; i < NUM_RANDOM_OBJECTS; i++) {
-          if (randSeed1 < cave.info.objectProbability[i]) {
-            object = cave.info.randomObject[i];
+          if (randSeed1 < caveInfo->objectProbability[i]) {
+            object = caveInfo->randomObject[i];
           }
         }
-        cave.map[y][x] = object;
+        map[row][col] = object;
       }
     }
   }
@@ -302,34 +296,34 @@ Cave decodeCave(uint8_t caveIndex) {
 
       switch (3 & (explicitData[i] >> 6)) {
         case 0: {
-          int x = explicitData[++i];
-          int y = explicitData[++i] - uselessTopBorderHeight;
-          cave.map[y][x] = object;
+          int col = explicitData[++i];
+          int row = explicitData[++i] - uselessTopBorderHeight;
+          map[row][col] = object;
           break;
         }
         case 1: {
-          int x = explicitData[++i];
-          int y = explicitData[++i] - uselessTopBorderHeight;
+          int col = explicitData[++i];
+          int row = explicitData[++i] - uselessTopBorderHeight;
           int length = explicitData[++i];
           int direction = explicitData[++i];
-          placeObjectLine(cave.map, object, y, x, length, direction);
+          placeObjectLine(map, object, row, col, length, direction);
           break;
         }
         case 2: {
-          int x = explicitData[++i];
-          int y = explicitData[++i] - uselessTopBorderHeight;
+          int col = explicitData[++i];
+          int row = explicitData[++i] - uselessTopBorderHeight;
           int width = explicitData[++i];
           int height = explicitData[++i];
           uint8_t fill = explicitData[++i];
-          placeObjectFilledRect(cave.map, object, y, x, width, height, fill);
+          placeObjectFilledRect(map, object, row, col, width, height, fill);
           break;
         }
         case 3: {
-          int x = explicitData[++i];
-          int y = explicitData[++i] - uselessTopBorderHeight;
+          int col = explicitData[++i];
+          int row = explicitData[++i] - uselessTopBorderHeight;
           int width = explicitData[++i];
           int height = explicitData[++i];
-          placeObjectRect(cave.map, object, y, x, width, height);
+          placeObjectRect(map, object, row, col, width, height);
           break;
         }
       }
@@ -337,9 +331,9 @@ Cave decodeCave(uint8_t caveIndex) {
   }
 
   // Steel bounds
-  placeObjectRect(cave.map, OBJ_STEEL_WALL, 0, 0, CAVE_WIDTH, CAVE_HEIGHT);
+  placeObjectRect(map, OBJ_STEEL_WALL, 0, 0, CAVE_WIDTH, CAVE_HEIGHT);
 
-  return cave;
+  return caveInfo;
 }
 
 LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
@@ -432,10 +426,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   //
 
   uint8_t caveNumber = 0;
-  Cave cave = decodeCave(caveNumber);
+  CaveMap map;
+  CaveInfo *caveInfo = decodeCave(caveNumber, map);
   CaveMap mapCover;
   int difficultyLevel = 0;
-  int caveTimeLeft = cave.info.caveTime[difficultyLevel];
+  int caveTimeLeft = caveInfo->caveTime[difficultyLevel];
   int livesLeft = 3;
   int score = 0;
   int diamondsCollected = 0;
@@ -445,9 +440,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int mapUncoverTurnsLeft = 40;
   int pauseTurnsLeft = 0;
 
-  for (int y = 0; y < CAVE_HEIGHT; ++y) {
-    for (int x = 0; x < CAVE_WIDTH; ++x) {
-      mapCover[y][x] = OBJ_STEEL_WALL;
+  for (int row = 0; row < CAVE_HEIGHT; ++row) {
+    for (int col = 0; col < CAVE_WIDTH; ++col) {
+      mapCover[row][col] = OBJ_STEEL_WALL;
     }
   }
 
@@ -510,12 +505,12 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         turn++;
 
         // Scan cave
-        for (int y = 0; y < CAVE_HEIGHT; ++y) {
-          for (int x = 0; x < CAVE_WIDTH; ++x) {
-            switch (cave.map[y][x]) {
+        for (int row = 0; row < CAVE_HEIGHT; ++row) {
+          for (int col = 0; col < CAVE_WIDTH; ++col) {
+            switch (map[row][col]) {
               case OBJ_PRE_ROCKFORD_STAGE_1:
                 if (rockfordTurnsTillBirth == 0) {
-                  cave.map[y][x] = OBJ_PRE_ROCKFORD_STAGE_2;
+                  map[row][col] = OBJ_PRE_ROCKFORD_STAGE_2;
                 }
                 else if (mapUncoverTurnsLeft == 0) {
                   rockfordTurnsTillBirth--;
@@ -523,15 +518,15 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                 break;
 
               case OBJ_PRE_ROCKFORD_STAGE_2:
-                cave.map[y][x] = OBJ_PRE_ROCKFORD_STAGE_3;
+                map[row][col] = OBJ_PRE_ROCKFORD_STAGE_3;
                 break;
 
               case OBJ_PRE_ROCKFORD_STAGE_3:
-                cave.map[y][x] = OBJ_PRE_ROCKFORD_STAGE_4;
+                map[row][col] = OBJ_PRE_ROCKFORD_STAGE_4;
                 break;
 
               case OBJ_PRE_ROCKFORD_STAGE_4:
-                cave.map[y][x] = OBJ_ROCKFORD;
+                map[row][col] = OBJ_ROCKFORD;
                 break;
             }
           }
@@ -541,9 +536,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         if (mapUncoverTurnsLeft > 0) {
           mapUncoverTurnsLeft--;
           if (mapUncoverTurnsLeft > 1) {
-            for (int y = 0; y < CAVE_HEIGHT; ++y) {
+            for (int row = 0; row < CAVE_HEIGHT; ++row) {
               for (int i = 0; i < 3; ++i) {
-                mapCover[y][rand()%CAVE_WIDTH] = OBJ_SPACE;
+                mapCover[row][rand()%CAVE_WIDTH] = OBJ_SPACE;
               }
             }
           }
@@ -551,9 +546,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             pauseTurnsLeft = 2;
           }
           else if (mapUncoverTurnsLeft == 0) {
-            for (int y = 0; y < CAVE_HEIGHT; ++y) {
-              for (int x = 0; x < CAVE_WIDTH; ++x) {
-                mapCover[y][x] = OBJ_SPACE;
+            for (int row = 0; row < CAVE_HEIGHT; ++row) {
+              for (int col = 0; col < CAVE_WIDTH; ++col) {
+                mapCover[row][col] = OBJ_SPACE;
               }
             }
           }
@@ -582,7 +577,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         if (mapCover[row][col]) {
           drawSprite(spriteSteelWall, 0, x, y, 4, 0, turn);
         } else {
-          switch (cave.map[row][col]) {
+          switch (map[row][col]) {
             case OBJ_SPACE:
               drawSprite(spriteSpace, 0, x, y, 0, 0, 0);
               break;
@@ -642,8 +637,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       }
       else {
         sprintf_s(text, sizeof(text), "   %d*%d   %02d   %03d   %06d",
-                  cave.info.diamondsNeeded[difficultyLevel],
-                  cave.info.initialDiamondValue,
+                  caveInfo->diamondsNeeded[difficultyLevel],
+                  caveInfo->initialDiamondValue,
                   diamondsCollected,
                   caveTimeLeft,
                   score);
