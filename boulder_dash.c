@@ -119,6 +119,8 @@ typedef uint8_t CaveMap[CAVE_HEIGHT][CAVE_WIDTH];
 uint8_t *gBackbuffer;
 BITMAPINFO *gBitmapInfo;
 HDC gDeviceContext;
+CaveMap map;
+CaveInfo *caveInfo;
 
 //
 //
@@ -215,7 +217,7 @@ void nextRandom(int *randSeed1, int *randSeed2) {
   *randSeed1 = result & 0x00FF;
 }
 
-void placeObjectLine(CaveMap map, uint8_t object, int row, int col, int length, int direction) {
+void placeObjectLine(uint8_t object, int row, int col, int length, int direction) {
   int ldx[8] = { 0,  1, 1, 1, 0, -1, -1, -1 };
   int ldy[8] = { -1, -1, 0, 1, 1,  1,  0, -1 };
 
@@ -224,7 +226,7 @@ void placeObjectLine(CaveMap map, uint8_t object, int row, int col, int length, 
   }
 }
 
-void placeObjectFilledRect(CaveMap map, uint8_t object, int row, int col, int width, int height, uint8_t fillObject) {
+void placeObjectFilledRect(uint8_t object, int row, int col, int width, int height, uint8_t fillObject) {
   for (int i = 0; i < width; i++) {
     for (int j = 0; j < height; j++) {
       if ((j == 0) || (j == height - 1)) {
@@ -239,7 +241,7 @@ void placeObjectFilledRect(CaveMap map, uint8_t object, int row, int col, int wi
   }
 }
 
-void placeObjectRect(CaveMap map, uint8_t object, int row, int col, int width, int height) {
+void placeObjectRect(uint8_t object, int row, int col, int width, int height) {
   for (int i = 0; i < width; i++) {
     map[row][col+i] = object;
     map[row+height-1][col+i] = object;
@@ -250,7 +252,7 @@ void placeObjectRect(CaveMap map, uint8_t object, int row, int col, int width, i
   }
 }
 
-CaveInfo* decodeCave(uint8_t caveIndex, CaveMap map) {
+void decodeCave(uint8_t caveIndex) {
   uint8_t *caves[] = {
     gCave1, gCave2, gCave3, gCave4, gCave5, gCave6, gCave7, gCave8, gCave9, gCave10,
     gCave11, gCave12, gCave13, gCave14, gCave15, gCave16, gCave17, gCave18, gCave19, gCave20
@@ -258,7 +260,7 @@ CaveInfo* decodeCave(uint8_t caveIndex, CaveMap map) {
 
   assert(caveIndex < ARRAY_LENGTH(caves));
 
-  CaveInfo *caveInfo = (CaveInfo *)caves[caveIndex];
+  caveInfo = (CaveInfo *)caves[caveIndex];
 
   // Clear out the map
   for (int row = 0; row < CAVE_HEIGHT; row++) {
@@ -306,7 +308,7 @@ CaveInfo* decodeCave(uint8_t caveIndex, CaveMap map) {
           int row = explicitData[++i] - uselessTopBorderHeight;
           int length = explicitData[++i];
           int direction = explicitData[++i];
-          placeObjectLine(map, object, row, col, length, direction);
+          placeObjectLine(object, row, col, length, direction);
           break;
         }
         case 2: {
@@ -315,7 +317,7 @@ CaveInfo* decodeCave(uint8_t caveIndex, CaveMap map) {
           int width = explicitData[++i];
           int height = explicitData[++i];
           uint8_t fill = explicitData[++i];
-          placeObjectFilledRect(map, object, row, col, width, height, fill);
+          placeObjectFilledRect(object, row, col, width, height, fill);
           break;
         }
         case 3: {
@@ -323,7 +325,7 @@ CaveInfo* decodeCave(uint8_t caveIndex, CaveMap map) {
           int row = explicitData[++i] - uselessTopBorderHeight;
           int width = explicitData[++i];
           int height = explicitData[++i];
-          placeObjectRect(map, object, row, col, width, height);
+          placeObjectRect(object, row, col, width, height);
           break;
         }
       }
@@ -331,9 +333,7 @@ CaveInfo* decodeCave(uint8_t caveIndex, CaveMap map) {
   }
 
   // Steel bounds
-  placeObjectRect(map, OBJ_STEEL_WALL, 0, 0, CAVE_WIDTH, CAVE_HEIGHT);
-
-  return caveInfo;
+  placeObjectRect(OBJ_STEEL_WALL, 0, 0, CAVE_WIDTH, CAVE_HEIGHT);
 }
 
 LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
@@ -426,8 +426,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   //
 
   uint8_t caveNumber = 0;
-  CaveMap map;
-  CaveInfo *caveInfo = decodeCave(caveNumber, map);
+  decodeCave(caveNumber);
   CaveMap mapCover;
   int difficultyLevel = 0;
   int caveTimeLeft = caveInfo->caveTime[difficultyLevel];
