@@ -362,7 +362,7 @@ void decodeCave(uint8_t caveIndex) {
 }
 
 bool isKeyDown(int virtKey) {
-  return GetKeyState(virtKey) >> 15;
+  return GetFocus() && (GetKeyState(virtKey) >> 15);
 }
 
 LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
