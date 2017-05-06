@@ -600,12 +600,12 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                       rockfordIsMoving = true;
                       rockfordIsFacingRight = false;
                       --newCol;
-                    } else if (isKeyDown(VK_UP)) {
-                      rockfordIsMoving = true;
-                      --newRow;
                     } else if (isKeyDown(VK_DOWN)) {
                       rockfordIsMoving = true;
                       ++newRow;
+                    } else if (isKeyDown(VK_UP)) {
+                      rockfordIsMoving = true;
+                      --newRow;
                     } else {
                       rockfordIsMoving = false;
                     }
