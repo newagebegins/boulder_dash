@@ -9,7 +9,7 @@
 
 #define ARRAY_LENGTH(array) (sizeof(array)/sizeof(*array))
 
-// Cave map consists of cells, each cell contains 4 tiles
+// Cave map consists of cells, each cell contains 4 (2x2) tiles
 #define TILE_SIZE 8
 #define CELL_SIZE (TILE_SIZE*2)
 
@@ -31,6 +31,22 @@
 #define PLAYFIELD_TOP (VIEWPORT_TOP + TEXT_AREA_HEIGHT)
 #define PLAYFIELD_RIGHT (PLAYFIELD_LEFT + PLAYFIELD_WIDTH - 1)
 #define PLAYFIELD_BOTTOM (PLAYFIELD_TOP + PLAYFIELD_HEIGHT - 1)
+
+#define CAMERA_START_LEFT (PLAYFIELD_LEFT + 6*TILE_SIZE)
+#define CAMERA_STOP_LEFT (PLAYFIELD_LEFT + 14*TILE_SIZE)
+#define CAMERA_START_TOP (PLAYFIELD_TOP + 4*TILE_SIZE)
+#define CAMERA_STOP_TOP (PLAYFIELD_TOP + 9*TILE_SIZE)
+#define CAMERA_START_RIGHT (PLAYFIELD_RIGHT - 6*TILE_SIZE + 1)
+#define CAMERA_STOP_RIGHT (PLAYFIELD_RIGHT - 13*TILE_SIZE + 1)
+#define CAMERA_START_BOTTOM (PLAYFIELD_BOTTOM - 4*TILE_SIZE + 1)
+#define CAMERA_STOP_BOTTOM (PLAYFIELD_BOTTOM - 9*TILE_SIZE + 1)
+
+#define CAMERA_X_MIN 0
+#define CAMERA_Y_MIN 0
+#define CAMERA_X_MAX (CAVE_WIDTH*CELL_SIZE - PLAYFIELD_WIDTH)
+#define CAMERA_Y_MAX (CAVE_HEIGHT*CELL_SIZE - PLAYFIELD_HEIGHT)
+
+#define CAMERA_STEP TILE_SIZE
 
 // Backbuffer has 4 bits per pixel
 #define BACKBUFFER_WIDTH (VIEWPORT_WIDTH + BORDER_SIZE*2)
@@ -150,6 +166,17 @@ void setPixel(int x, int y, uint8_t color) {
     newColor = (oldColor & 0xF0) | color;
   }
   backbuffer[byteOffset] = newColor;
+}
+
+void drawRect(int left, int top, int right, int bottom, uint8_t color) {
+  for (int x = left; x <= right; ++x) {
+    setPixel(x, top, color);
+    setPixel(x, bottom, color);
+  }
+  for (int y = top; y <= bottom; ++y) {
+    setPixel(left, y, color);
+    setPixel(right, y, color);
+  }
 }
 
 void drawFilledRect(int left, int top, int right, int bottom, uint8_t color) {
@@ -437,11 +464,18 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   bool rockfordIsBlinking = false;
   bool rockfordIsTapping = false;
   float tickTimer = 0;
-  int rockfordTurnsTillBirth = 12;
-  int mapUncoverTurnsLeft = 40;
+  int rockfordTurnsTillBirth = 12 /*0*/;
+  int mapUncoverTurnsLeft = 40 /*1*/;
   int pauseTurnsLeft = 0;
   bool rockfordIsMoving = false;
   bool rockfordIsFacingRight = true;
+
+  int rockfordCol = 0;
+  int rockfordRow = 0;
+  int cameraX = 0;
+  int cameraY = 0;
+  int cameraVelX = 0;
+  int cameraVelY = 0;
 
   for (int row = 0; row < CAVE_HEIGHT; ++row) {
     for (int col = 0; col < CAVE_WIDTH; ++col) {
@@ -490,6 +524,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       tickTimer -= tickDuration;
       tick++;
 
+      int rockfordRectLeft = PLAYFIELD_LEFT + rockfordCol*CELL_SIZE - cameraX;
+      int rockfordRectTop = PLAYFIELD_TOP + rockfordRow*CELL_SIZE - cameraY;
+      int rockfordRectRight = rockfordRectLeft + CELL_SIZE;
+      int rockfordRectBottom = rockfordRectTop + CELL_SIZE;
+
       if (tick % 5 == 0) {
         if (pauseTurnsLeft > 0) {
           pauseTurnsLeft--;
@@ -524,6 +563,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               for (int col = 0; col < CAVE_WIDTH; ++col) {
                 switch (map[row][col]) {
                   case OBJ_PRE_ROCKFORD_STAGE_1:
+                    rockfordRow = row;
+                    rockfordCol = col;
+
                     if (rockfordTurnsTillBirth == 0) {
                       map[row][col] = OBJ_PRE_ROCKFORD_STAGE_2;
                     } else if (mapUncoverTurnsLeft == 0) {
@@ -570,6 +612,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                       case OBJ_DIRT:
                         map[row][col] = OBJ_SPACE;
                         map[newRow][newCol] = OBJ_ROCKFORD_SCANNED;
+                        rockfordRow = newRow;
+                        rockfordCol = newCol;
                         break;
                     }
 
@@ -601,6 +645,43 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               }
             }
           }
+
+          //
+          // Move camera
+          //
+
+          if (rockfordRectRight > CAMERA_START_RIGHT) {
+            cameraVelX = CAMERA_STEP;
+          } else if (rockfordRectLeft < CAMERA_START_LEFT) {
+            cameraVelX = -CAMERA_STEP;
+          }
+          if (rockfordRectBottom > CAMERA_START_BOTTOM) {
+            cameraVelY = CAMERA_STEP;
+          } else if (rockfordRectTop < CAMERA_START_TOP) {
+            cameraVelY = -CAMERA_STEP;
+          }
+
+          if (rockfordRectLeft >= CAMERA_STOP_LEFT && rockfordRectRight <= CAMERA_STOP_RIGHT) {
+            cameraVelX = 0;
+          }
+          if (rockfordRectTop >= CAMERA_STOP_TOP && rockfordRectBottom <= CAMERA_STOP_BOTTOM) {
+            cameraVelY = 0;
+          }
+
+          cameraX += cameraVelX;
+          cameraY += cameraVelY;
+
+          if (cameraX < CAMERA_X_MIN) {
+            cameraX = CAMERA_X_MIN;
+          } else if (cameraX > CAMERA_X_MAX) {
+            cameraX = CAMERA_X_MAX;
+          }
+
+          if (cameraY < CAMERA_Y_MIN) {
+            cameraY = CAMERA_Y_MIN;
+          } else if (cameraY > CAMERA_Y_MAX) {
+            cameraY = CAMERA_Y_MAX;
+          }
         }
       }
 
@@ -614,8 +695,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       // Draw cave
       for (int row = 0; row < CAVE_HEIGHT; ++row) {
         for (int col = 0; col < CAVE_WIDTH; ++col) {
-          int x = PLAYFIELD_LEFT + col*CELL_SIZE;
-          int y = PLAYFIELD_TOP + row*CELL_SIZE;
+          int x = PLAYFIELD_LEFT + col*CELL_SIZE - cameraX;
+          int y = PLAYFIELD_TOP + row*CELL_SIZE - cameraY;
 
           if (x < PLAYFIELD_LEFT || (x+CELL_SIZE-1) > PLAYFIELD_RIGHT ||
               y < PLAYFIELD_TOP || (y+CELL_SIZE-1) > PLAYFIELD_BOTTOM) {
@@ -705,6 +786,21 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           drawSprite(spriteAscii, text[i]-' ', (2+i)*TILE_SIZE, 3*TILE_SIZE, 1, 0, 0);
         }
       }
+
+      // Camera debugging
+#if 0
+      drawRect(CAMERA_START_LEFT, 0, CAMERA_START_LEFT, BACKBUFFER_HEIGHT-1, 2);
+      drawRect(CAMERA_STOP_LEFT, 0, CAMERA_STOP_LEFT, BACKBUFFER_HEIGHT-1, 2);
+      drawRect(CAMERA_START_RIGHT, 0, CAMERA_START_RIGHT, BACKBUFFER_HEIGHT-1, 2);
+      drawRect(CAMERA_STOP_RIGHT, 0, CAMERA_STOP_RIGHT, BACKBUFFER_HEIGHT-1, 2);
+
+      drawRect(0, CAMERA_START_TOP, BACKBUFFER_WIDTH-1, CAMERA_START_TOP, 2);
+      drawRect(0, CAMERA_STOP_TOP, BACKBUFFER_WIDTH-1, CAMERA_STOP_TOP, 2);
+      drawRect(0, CAMERA_START_BOTTOM, BACKBUFFER_WIDTH-1, CAMERA_START_BOTTOM, 2);
+      drawRect(0, CAMERA_STOP_BOTTOM, BACKBUFFER_WIDTH-1, CAMERA_STOP_BOTTOM, 2);
+
+      drawRect(rockfordRectLeft, rockfordRectTop, rockfordRectRight, rockfordRectBottom, 2);
+#endif
 
       // Display backbuffer
       StretchDIBits(deviceContext,
