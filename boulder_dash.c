@@ -513,6 +513,8 @@ Cave decodeCave(uint8_t caveIndex) {
 #define PAUSE_TURNS_BEFORE_FULL_UNCOVER 2
 #define TILES_PER_LINE_TO_UNCOVER 3
 
+int mapUncoverTurnsLeft;
+
 typedef struct {
   bool gameIsStarted;
   uint8_t caveNumber;
@@ -524,28 +526,15 @@ typedef struct {
   int difficultyLevel;
   int caveTimeLeft;
   int score;
-  int mapUncoverTurnsLeft;
   int pauseTurnsLeft;
   Cave cave;
   CaveMap mapCover;
 } GameState;
 
-int getRandomNumber(int min, int max) {
-  return min + rand() % (max - min + 1);
-}
-
-bool isMapCovered(const GameState *gameState) {
-  return gameState->mapUncoverTurnsLeft > 0;
-}
-
 bool isTileVisible(int tileRow, int tileCol) {
   return
     tileRow >= 0 && tileRow < PLAYFIELD_HEIGHT_IN_TILES &&
     tileCol >= 0 && tileCol < PLAYFIELD_WIDTH_IN_TILES;
-}
-
-bool isBeforeRockfordBirth(const GameState *gameState) {
-  return gameState->rockfordTurnsTillBirth > 0;
 }
 
 void debugPrint(char *format, ...) {
@@ -691,7 +680,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       gameState.turn = 0;
       gameState.turnTimer = 0;
       gameState.rockfordTurnsTillBirth = ROCKFORD_TURNS_TILL_BIRTH;
-      gameState.mapUncoverTurnsLeft = MAP_UNCOVER_TURNS;
+      mapUncoverTurnsLeft = MAP_UNCOVER_TURNS;
       gameState.pauseTurnsLeft = 0;
 
       for (int y = 0; y < CAVE_HEIGHT; ++y) {
@@ -721,7 +710,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                 if (gameState.rockfordTurnsTillBirth == 0) {
                   gameState.cave.map[y][x] = OBJ_PRE_ROCKFORD_STAGE_2;
                 }
-                else if (!isMapCovered(&gameState)) {
+                else if (mapUncoverTurnsLeft == 0) {
                   gameState.rockfordTurnsTillBirth--;
                 }
                 break;
@@ -741,22 +730,20 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           }
         }
 
-        if (isMapCovered(&gameState)) {
-          // Update map cover
-
-          gameState.mapUncoverTurnsLeft--;
-          if (gameState.mapUncoverTurnsLeft > 1) {
+        // Update map cover
+        if (mapUncoverTurnsLeft > 0) {
+          mapUncoverTurnsLeft--;
+          if (mapUncoverTurnsLeft > 1) {
             for (int y = 0; y < CAVE_HEIGHT; ++y) {
               for (int i = 0; i < TILES_PER_LINE_TO_UNCOVER; ++i) {
-                int x = getRandomNumber(0, CAVE_WIDTH - 1);
-                gameState.mapCover[y][x] = OBJ_SPACE;
+                gameState.mapCover[y][rand()%CAVE_WIDTH] = OBJ_SPACE;
               }
             }
           }
-          else if (gameState.mapUncoverTurnsLeft == 1) {
+          else if (mapUncoverTurnsLeft == 1) {
             gameState.pauseTurnsLeft = PAUSE_TURNS_BEFORE_FULL_UNCOVER;
           }
-          else if (gameState.mapUncoverTurnsLeft == 0) {
+          else if (mapUncoverTurnsLeft == 0) {
             for (int y = 0; y < CAVE_HEIGHT; ++y) {
               for (int x = 0; x < CAVE_WIDTH; ++x) {
                 gameState.mapCover[y][x] = OBJ_SPACE;
@@ -802,7 +789,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             drawDiamond1Tile(y, x, 2, 0);
             break;
           case OBJ_PRE_ROCKFORD_STAGE_1:
-            if (isBeforeRockfordBirth(&gameState)) {
+            if (gameState.rockfordTurnsTillBirth > 0) {
               if (gameState.rockfordTurnsTillBirth % 2) {
                 drawSteelWallTile(y, x, 4, 0);
               }
@@ -843,7 +830,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     // Draw text area
     {
       char text[64];
-      if (isBeforeRockfordBirth(&gameState)) {
+      if (gameState.rockfordTurnsTillBirth > 0) {
         sprintf_s(text, sizeof(text), "  PLAYER 1,  %d MEN,  ROOM %c/1", gameState.livesLeft, 'A' + gameState.caveNumber);
       }
       else {
