@@ -116,9 +116,7 @@ typedef uint8_t CaveMap[CAVE_HEIGHT][CAVE_WIDTH];
 // Global variables
 //
 
-uint8_t *gBackbuffer;
-BITMAPINFO *gBitmapInfo;
-HDC gDeviceContext;
+uint8_t *backbuffer;
 CaveMap map;
 CaveInfo *caveInfo;
 
@@ -144,14 +142,14 @@ void setPixel(int x, int y, uint8_t color) {
 
   assert(byteOffset >= 0 && byteOffset < BACKBUFFER_BYTES);
 
-  uint8_t oldColor = gBackbuffer[byteOffset];
+  uint8_t oldColor = backbuffer[byteOffset];
   uint8_t newColor;
   if (pixelOffset % 2 == 0) {
     newColor = (color << 4) | (oldColor & 0x0F);
   } else {
     newColor = (oldColor & 0xF0) | color;
   }
-  gBackbuffer[byteOffset] = newColor;
+  backbuffer[byteOffset] = newColor;
 }
 
 void drawFilledRect(int left, int top, int right, int bottom, uint8_t color) {
@@ -252,8 +250,8 @@ void placeObjectRect(uint8_t object, int row, int col, int width, int height) {
 
 void decodeCave(uint8_t caveIndex) {
   uint8_t *caves[] = {
-    gCave1, gCave2, gCave3, gCave4, gCave5, gCave6, gCave7, gCave8, gCave9, gCave10,
-    gCave11, gCave12, gCave13, gCave14, gCave15, gCave16, gCave17, gCave18, gCave19, gCave20
+    cave1, cave2, cave3, cave4, cave5, cave6, cave7, cave8, cave9, cave10,
+    cave11, cave12, cave13, cave14, cave15, cave16, cave17, cave18, cave19, cave20
   };
 
   assert(caveIndex < ARRAY_LENGTH(caves));
@@ -374,40 +372,41 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   ShowWindow(wnd, cmdShow);
   UpdateWindow(wnd);
 
+  //
   // Initialize graphics
-  {
-    HDC deviceContext = GetDC(wnd);
+  //
 
-    gDeviceContext = deviceContext;
-    gBackbuffer = malloc(BACKBUFFER_BYTES);
+  HDC deviceContext = GetDC(wnd);
+  backbuffer = malloc(BACKBUFFER_BYTES);
 
-    gBitmapInfo = malloc(sizeof(BITMAPINFOHEADER) + (PALETTE_COLORS * sizeof(RGBQUAD)));
-    gBitmapInfo->bmiHeader.biSize = sizeof(gBitmapInfo->bmiHeader);
-    gBitmapInfo->bmiHeader.biWidth = BACKBUFFER_WIDTH;
-    gBitmapInfo->bmiHeader.biHeight = -BACKBUFFER_HEIGHT;
-    gBitmapInfo->bmiHeader.biPlanes = 1;
-    gBitmapInfo->bmiHeader.biBitCount = 4;
-    gBitmapInfo->bmiHeader.biCompression = BI_RGB;
-    gBitmapInfo->bmiHeader.biClrUsed = PALETTE_COLORS;
+  BITMAPINFO *bitmapInfo = malloc(sizeof(BITMAPINFOHEADER) + (PALETTE_COLORS * sizeof(RGBQUAD)));
+  bitmapInfo->bmiHeader.biSize = sizeof(bitmapInfo->bmiHeader);
+  bitmapInfo->bmiHeader.biWidth = BACKBUFFER_WIDTH;
+  bitmapInfo->bmiHeader.biHeight = -BACKBUFFER_HEIGHT;
+  bitmapInfo->bmiHeader.biPlanes = 1;
+  bitmapInfo->bmiHeader.biBitCount = 4;
+  bitmapInfo->bmiHeader.biCompression = BI_RGB;
+  bitmapInfo->bmiHeader.biClrUsed = PALETTE_COLORS;
 
-    RGBQUAD black  = {0x00, 0x00, 0x00, 0x00};
-    RGBQUAD red    = {0x00, 0x00, 0xCC, 0x00};
-    //RGBQUAD green  = {0x00, 0xCC, 0x00, 0x00};
-    RGBQUAD yellow = {0x00, 0xCC, 0xCC, 0x00};
-    //RGBQUAD blue   = {0xCC, 0x00, 0x00, 0x00};
-    //RGBQUAD purple = {0xCC, 0x00, 0xCC, 0x00};
-    //RGBQUAD cyan   = {0xCC, 0xCC, 0x00, 0x00};
-    RGBQUAD gray   = {0xCC, 0xCC, 0xCC, 0x00};
-    RGBQUAD white  = {0xFF, 0xFF, 0xFF, 0x00};
+  RGBQUAD black  = {0x00, 0x00, 0x00, 0x00};
+  RGBQUAD red    = {0x00, 0x00, 0xCC, 0x00};
+  //RGBQUAD green  = {0x00, 0xCC, 0x00, 0x00};
+  RGBQUAD yellow = {0x00, 0xCC, 0xCC, 0x00};
+  //RGBQUAD blue   = {0xCC, 0x00, 0x00, 0x00};
+  //RGBQUAD purple = {0xCC, 0x00, 0xCC, 0x00};
+  //RGBQUAD cyan   = {0xCC, 0xCC, 0x00, 0x00};
+  RGBQUAD gray   = {0xCC, 0xCC, 0xCC, 0x00};
+  RGBQUAD white  = {0xFF, 0xFF, 0xFF, 0x00};
 
-    gBitmapInfo->bmiColors[0] = black;
-    gBitmapInfo->bmiColors[1] = gray;
-    gBitmapInfo->bmiColors[2] = white;
-    gBitmapInfo->bmiColors[3] = red;
-    gBitmapInfo->bmiColors[4] = yellow;
-  }
+  bitmapInfo->bmiColors[0] = black;
+  bitmapInfo->bmiColors[1] = gray;
+  bitmapInfo->bmiColors[2] = white;
+  bitmapInfo->bmiColors[3] = red;
+  bitmapInfo->bmiColors[4] = yellow;
 
+  //
   // Clock
+  //
 
   float dt = 0.0f;
   float targetFps = 60.0f;
@@ -638,10 +637,10 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     }
 
     // Display backbuffer
-    StretchDIBits(gDeviceContext,
+    StretchDIBits(deviceContext,
                   0, 0, windowWidth, windowHeight,
                   0, 0, BACKBUFFER_WIDTH, BACKBUFFER_HEIGHT,
-                  gBackbuffer, gBitmapInfo,
+                  backbuffer, bitmapInfo,
                   DIB_RGB_COLORS, SRCCOPY);
   }
 
