@@ -47,9 +47,7 @@ Spritesheet loadSpritesheet() {
   return result;
 }
 
-void outputSprite(FILE *out, char *name, Spritesheet spritesheet, int row, int col) {
-  fprintf(out, "static const Sprite %s = {", name);
-
+void outputSpriteBytes(FILE *out, Spritesheet spritesheet, int row, int col) {
   int startX = col*SPRITE_SIZE;
   int startY = row*SPRITE_SIZE;
 
@@ -64,8 +62,18 @@ void outputSprite(FILE *out, char *name, Spritesheet spritesheet, int row, int c
     }
     fprintf(out, "0x%02X,", outByte);
   }
+}
 
+void outputSprite(FILE *out, char *name, Spritesheet spritesheet, int row, int col) {
+  fprintf(out, "static const Sprite %s = {", name);
+  outputSpriteBytes(out, spritesheet, row, col);
   fprintf(out, "};\n");
+}
+
+void outputAsciiSprite(FILE *out, int code, Spritesheet spritesheet, int row, int col) {
+  fprintf(out, "/* %c */ {", code);
+  outputSpriteBytes(out, spritesheet, row, col);
+  fprintf(out, "},\n");
 }
 
 void main() {
@@ -215,55 +223,25 @@ void main() {
   outputSprite(out, "gSpriteAmoeba4C", spritesheet, 16, 6);
   outputSprite(out, "gSpriteAmoeba4D", spritesheet, 16, 7);
 
-  outputSprite(out, "gSpriteLetter0", spritesheet, 19, 0);
-  outputSprite(out, "gSpriteLetter1", spritesheet, 19, 1);
-  outputSprite(out, "gSpriteLetter2", spritesheet, 19, 2);
-  outputSprite(out, "gSpriteLetter3", spritesheet, 19, 3);
-  outputSprite(out, "gSpriteLetter4", spritesheet, 19, 4);
-  outputSprite(out, "gSpriteLetter5", spritesheet, 19, 5);
-  outputSprite(out, "gSpriteLetter6", spritesheet, 19, 6);
-  outputSprite(out, "gSpriteLetter7", spritesheet, 19, 7);
-  outputSprite(out, "gSpriteLetter8", spritesheet, 19, 8);
-  outputSprite(out, "gSpriteLetter9", spritesheet, 19, 9);
-  outputSprite(out, "gSpriteLetterColon", spritesheet, 19, 10);
-  outputSprite(out, "gSpriteLetterA", spritesheet, 20, 0);
-  outputSprite(out, "gSpriteLetterB", spritesheet, 20, 1);
-  outputSprite(out, "gSpriteLetterC", spritesheet, 20, 2);
-  outputSprite(out, "gSpriteLetterD", spritesheet, 20, 3);
-  outputSprite(out, "gSpriteLetterE", spritesheet, 20, 4);
-  outputSprite(out, "gSpriteLetterF", spritesheet, 20, 5);
-  outputSprite(out, "gSpriteLetterG", spritesheet, 20, 6);
-  outputSprite(out, "gSpriteLetterH", spritesheet, 20, 7);
-  outputSprite(out, "gSpriteLetterI", spritesheet, 20, 8);
-  outputSprite(out, "gSpriteLetterJ", spritesheet, 20, 9);
-  outputSprite(out, "gSpriteLetterK", spritesheet, 20, 10);
-  outputSprite(out, "gSpriteLetterL", spritesheet, 20, 11);
-  outputSprite(out, "gSpriteLetterM", spritesheet, 20, 12);
-  outputSprite(out, "gSpriteLetterN", spritesheet, 20, 13);
-  outputSprite(out, "gSpriteLetterO", spritesheet, 20, 14);
-  outputSprite(out, "gSpriteLetterP", spritesheet, 20, 15);
-  outputSprite(out, "gSpriteLetterQ", spritesheet, 20, 16);
-  outputSprite(out, "gSpriteLetterR", spritesheet, 20, 17);
-  outputSprite(out, "gSpriteLetterS", spritesheet, 20, 18);
-  outputSprite(out, "gSpriteLetterT", spritesheet, 20, 19);
-  outputSprite(out, "gSpriteLetterU", spritesheet, 20, 20);
-  outputSprite(out, "gSpriteLetterV", spritesheet, 20, 21);
-  outputSprite(out, "gSpriteLetterX", spritesheet, 20, 23);
-  outputSprite(out, "gSpriteLetterY", spritesheet, 20, 24);
-  outputSprite(out, "gSpriteLetterZ", spritesheet, 20, 25);
-  outputSprite(out, "gSpriteLetterLBracket", spritesheet, 21, 0);
-  outputSprite(out, "gSpriteLetterRBracket", spritesheet, 21, 1);
-  outputSprite(out, "gSpriteLetterDiamond", spritesheet, 21, 2);
-  outputSprite(out, "gSpriteLetterArrow", spritesheet, 21, 3);
-  outputSprite(out, "gSpriteLetterComma", spritesheet, 21, 4);
-  outputSprite(out, "gSpriteLetterDash", spritesheet, 21, 5);
-  outputSprite(out, "gSpriteLetterPeriod", spritesheet, 21, 6);
-  outputSprite(out, "gSpriteLetterSlash", spritesheet, 21, 7);
-
   outputSprite(out, "gSpriteSpaceFlash1", spritesheet, 23, 0);
   outputSprite(out, "gSpriteSpaceFlash2", spritesheet, 23, 1);
   outputSprite(out, "gSpriteSpaceFlash3", spritesheet, 24, 0);
   outputSprite(out, "gSpriteSpaceFlash4", spritesheet, 24, 1);
   outputSprite(out, "gSpriteSpaceFlash5", spritesheet, 25, 0);
   outputSprite(out, "gSpriteSpaceFlash6", spritesheet, 25, 1);
+
+  fprintf(out, "\nuint8_t asciiSprites[][8] = {\n");
+  for (int i = ' '; i < '('; ++i) {
+    outputAsciiSprite(out, i, spritesheet, 18, 0);
+  }
+  for (int i = '('; i < '0'; ++i) {
+    outputAsciiSprite(out, i, spritesheet, 21, i-'(');
+  }
+  for (int i = '0'; i < 'A'; ++i) {
+    outputAsciiSprite(out, i, spritesheet, 19, i-'0');
+  }
+  for (int i = 'A'; i <= 'Z'; ++i) {
+    outputAsciiSprite(out, i, spritesheet, 20, i-'A');
+  }
+  fprintf(out, "};\n");
 }

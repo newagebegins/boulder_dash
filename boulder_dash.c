@@ -223,63 +223,9 @@ void drawIdleRockfordTile(int tileRow, int tileCol) {
   drawSprite(gSpriteRockfordBottomIdle1, spriteRow+1, spriteCol+1, 1, 0, true, false, 0);
 }
 
-const uint8_t* getCharSprite(char ch) {
-  switch (ch) {
-    case '0': return gSpriteLetter0;
-    case '1': return gSpriteLetter1;
-    case '2': return gSpriteLetter2;
-    case '3': return gSpriteLetter3;
-    case '4': return gSpriteLetter4;
-    case '5': return gSpriteLetter5;
-    case '6': return gSpriteLetter6;
-    case '7': return gSpriteLetter7;
-    case '8': return gSpriteLetter8;
-    case '9': return gSpriteLetter9;
-    case ':': return gSpriteLetterColon;
-    case 'A': return gSpriteLetterA;
-    case 'B': return gSpriteLetterB;
-    case 'C': return gSpriteLetterC;
-    case 'D': return gSpriteLetterD;
-    case 'E': return gSpriteLetterE;
-    case 'F': return gSpriteLetterF;
-    case 'G': return gSpriteLetterG;
-    case 'H': return gSpriteLetterH;
-    case 'I': return gSpriteLetterI;
-    case 'J': return gSpriteLetterJ;
-    case 'K': return gSpriteLetterK;
-    case 'L': return gSpriteLetterL;
-    case 'M': return gSpriteLetterM;
-    case 'N': return gSpriteLetterN;
-    case 'O': return gSpriteLetterO;
-    case 'P': return gSpriteLetterP;
-    case 'Q': return gSpriteLetterQ;
-    case 'R': return gSpriteLetterR;
-    case 'S': return gSpriteLetterS;
-    case 'T': return gSpriteLetterT;
-    case 'U': return gSpriteLetterU;
-    case 'V': return gSpriteLetterV;
-    case 'X': return gSpriteLetterX;
-    case 'Y': return gSpriteLetterY;
-    case 'Z': return gSpriteLetterZ;
-    case '(': return gSpriteLetterLBracket;
-    case ')': return gSpriteLetterRBracket;
-    case '*': return gSpriteLetterDiamond;
-    case '>': return gSpriteLetterArrow;
-    case ',': return gSpriteLetterComma;
-    case '-': return gSpriteLetterDash;
-    case '.': return gSpriteLetterPeriod;
-    case '/': return gSpriteLetterSlash;
-  }
-  assert(!"Unsupported character");
-  return gSpriteLetterDiamond;
-}
-
 void drawText(const char *text) {
   for (int i = 0; text[i]; ++i) {
-    if (text[i] == ' ') {
-      continue;
-    }
-    drawSprite(getCharSprite(text[i]), 3, 2 + i, 1, 0, false, false, 0);
+    drawSprite(asciiSprites[text[i] - ' '], 3, 2 + i, 1, 0, false, false, 0);
   }
 }
 
