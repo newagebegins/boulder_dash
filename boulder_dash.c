@@ -173,10 +173,10 @@ void drawFilledRect(int left, int top, int right, int bottom, uint8_t color) {
   }
 }
 
-void drawSprite8x8(uint8_t *sprite, int row, int col, uint8_t fgColor, uint8_t bgColor, int vOffset) {
+void drawTile(uint8_t *tile, int row, int col, uint8_t fgColor, uint8_t bgColor, int vOffset) {
   for (uint8_t bmpY = 0; bmpY < 8; ++bmpY) {
     int y = row*8 + bmpY;
-    uint8_t byte = sprite[(bmpY + vOffset) % 8];
+    uint8_t byte = tile[(bmpY + vOffset) % 8];
 
     for (uint8_t bmpX = 0; bmpX < 8; ++bmpX) {
       int x = col*8 + bmpX;
@@ -198,7 +198,7 @@ void drawSprite(uint8_t *sprite, int outRow, int outCol, int frame, uint8_t fgCo
   for (int row = 0; row < height; ++row) {
     for (int col = 0; col < width; ++col) {
       uint8_t *data = sprite + 3 + (frame%frames)*bytesPerFrame + row*bytesPerRow + col*8;
-      drawSprite8x8(data, outRow+row, outCol+col, fgColor, bgColor, vOffset);
+      drawTile(data, outRow+row, outCol+col, fgColor, bgColor, vOffset);
     }
   }
 }
