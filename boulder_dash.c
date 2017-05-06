@@ -432,7 +432,6 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int tick = 0;
   bool rockfordIsBlinking = false;
   bool rockfordIsTapping = false;
-  float turnTimer = 0;
   float tickTimer = 0;
   int rockfordTurnsTillBirth = 12;
   int mapUncoverTurnsLeft = 40;
@@ -484,190 +483,184 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       }
     }
 
-    //
-    // Update
-    //
-
     float tickDuration = 0.03375f;
     tickTimer += dt;
+
     if (tickTimer >= tickDuration) {
       tickTimer -= tickDuration;
       tick++;
-    }
 
-    float turnDuration = 0.15f;
-    turnTimer += dt;
+      if (tick % 5 == 0) {
+        if (pauseTurnsLeft > 0) {
+          pauseTurnsLeft--;
+        } else {
+          turn++;
 
-    if (turnTimer >= turnDuration) {
-      turnTimer -= turnDuration;
+          //
+          // Do cave turn
+          //
 
-      // Do cave turn
-
-      if (pauseTurnsLeft > 0) {
-        pauseTurnsLeft--;
-      } else {
-        turn++;
-
-        // Scan cave
-        for (int row = 0; row < CAVE_HEIGHT; ++row) {
-          for (int col = 0; col < CAVE_WIDTH; ++col) {
-            switch (map[row][col]) {
-              case OBJ_PRE_ROCKFORD_STAGE_1:
-                if (rockfordTurnsTillBirth == 0) {
-                  map[row][col] = OBJ_PRE_ROCKFORD_STAGE_2;
-                } else if (mapUncoverTurnsLeft == 0) {
-                  rockfordTurnsTillBirth--;
+          if (mapUncoverTurnsLeft > 0) {
+            // Update map cover
+            mapUncoverTurnsLeft--;
+            if (mapUncoverTurnsLeft > 1) {
+              for (int row = 0; row < CAVE_HEIGHT; ++row) {
+                for (int i = 0; i < 3; ++i) {
+                  mapCover[row][rand()%CAVE_WIDTH] = OBJ_SPACE;
                 }
-                break;
-
-              case OBJ_PRE_ROCKFORD_STAGE_2:
-                map[row][col] = OBJ_PRE_ROCKFORD_STAGE_3;
-                break;
-
-              case OBJ_PRE_ROCKFORD_STAGE_3:
-                map[row][col] = OBJ_PRE_ROCKFORD_STAGE_4;
-                break;
-
-              case OBJ_PRE_ROCKFORD_STAGE_4:
-                map[row][col] = OBJ_ROCKFORD;
-                break;
-
-              case OBJ_ROCKFORD:
-                if (tick % 8 == 0) {
-                  rockfordIsBlinking = rand() % 4 == 0;
-                  if (rand() % 16 == 0) {
-                    rockfordIsTapping = !rockfordIsTapping;
-                  }
+              }
+            } else if (mapUncoverTurnsLeft == 1) {
+              pauseTurnsLeft = 2;
+            } else if (mapUncoverTurnsLeft == 0) {
+              for (int row = 0; row < CAVE_HEIGHT; ++row) {
+                for (int col = 0; col < CAVE_WIDTH; ++col) {
+                  mapCover[row][col] = OBJ_SPACE;
                 }
-                break;
-            }
-          }
-        }
-
-        // Update map cover
-        if (mapUncoverTurnsLeft > 0) {
-          mapUncoverTurnsLeft--;
-          if (mapUncoverTurnsLeft > 1) {
-            for (int row = 0; row < CAVE_HEIGHT; ++row) {
-              for (int i = 0; i < 3; ++i) {
-                mapCover[row][rand()%CAVE_WIDTH] = OBJ_SPACE;
               }
             }
-          } else if (mapUncoverTurnsLeft == 1) {
-            pauseTurnsLeft = 2;
-          } else if (mapUncoverTurnsLeft == 0) {
+          } else {
+            // Scan cave
             for (int row = 0; row < CAVE_HEIGHT; ++row) {
               for (int col = 0; col < CAVE_WIDTH; ++col) {
-                mapCover[row][col] = OBJ_SPACE;
+                switch (map[row][col]) {
+                  case OBJ_PRE_ROCKFORD_STAGE_1:
+                    if (rockfordTurnsTillBirth == 0) {
+                      map[row][col] = OBJ_PRE_ROCKFORD_STAGE_2;
+                    } else if (mapUncoverTurnsLeft == 0) {
+                      rockfordTurnsTillBirth--;
+                    }
+                    break;
+
+                  case OBJ_PRE_ROCKFORD_STAGE_2:
+                    map[row][col] = OBJ_PRE_ROCKFORD_STAGE_3;
+                    break;
+
+                  case OBJ_PRE_ROCKFORD_STAGE_3:
+                    map[row][col] = OBJ_PRE_ROCKFORD_STAGE_4;
+                    break;
+
+                  case OBJ_PRE_ROCKFORD_STAGE_4:
+                    map[row][col] = OBJ_ROCKFORD;
+                    break;
+
+                  case OBJ_ROCKFORD:
+                    if (tick % 8 == 0) {
+                      rockfordIsBlinking = rand() % 4 == 0;
+                      if (rand() % 16 == 0) {
+                        rockfordIsTapping = !rockfordIsTapping;
+                      }
+                    }
+                    break;
+                }
               }
             }
           }
         }
       }
-    }
 
-    //
-    // Render
-    //
+      //
+      // Render
+      //
 
-    // Draw border
-    drawFilledRect(0, 0, BACKBUFFER_WIDTH - 1, BACKBUFFER_HEIGHT - 1, 0);
+      // Draw border
+      drawFilledRect(0, 0, BACKBUFFER_WIDTH - 1, BACKBUFFER_HEIGHT - 1, 0);
 
-    // Draw cave
-    for (int row = 0; row < CAVE_HEIGHT; ++row) {
-      for (int col = 0; col < CAVE_WIDTH; ++col) {
-        int x = PLAYFIELD_LEFT + col*CELL_SIZE;
-        int y = PLAYFIELD_TOP + row*CELL_SIZE;
+      // Draw cave
+      for (int row = 0; row < CAVE_HEIGHT; ++row) {
+        for (int col = 0; col < CAVE_WIDTH; ++col) {
+          int x = PLAYFIELD_LEFT + col*CELL_SIZE;
+          int y = PLAYFIELD_TOP + row*CELL_SIZE;
 
-        if (x < PLAYFIELD_LEFT || (x+CELL_SIZE-1) > PLAYFIELD_RIGHT ||
-            y < PLAYFIELD_TOP || (y+CELL_SIZE-1) > PLAYFIELD_BOTTOM) {
-          continue;
-        }
+          if (x < PLAYFIELD_LEFT || (x+CELL_SIZE-1) > PLAYFIELD_RIGHT ||
+              y < PLAYFIELD_TOP || (y+CELL_SIZE-1) > PLAYFIELD_BOTTOM) {
+            continue;
+          }
 
-        if (mapCover[row][col]) {
-          drawSprite(spriteSteelWall, 0, x, y, 4, 0, turn);
-        } else {
-          switch (map[row][col]) {
-            case OBJ_SPACE:
-              drawSprite(spriteSpace, 0, x, y, 0, 0, 0);
-              break;
-            case OBJ_STEEL_WALL:
-              drawSprite(spriteSteelWall, 0, x, y, 4, 0, 0);
-              break;
-            case OBJ_DIRT:
-              drawSprite(spriteDirt, 0, x, y, 3, 0, 0);
-              break;
-            case OBJ_BRICK_WALL:
-              drawSprite(spriteBrickWall, 0, x, y, 1, 3, 0);
-              break;
-            case OBJ_BOULDER_STATIONARY:
-            case OBJ_BOULDER_FALLING:
-              drawSprite(spriteBoulder, 0, x, y, 4, 0, 0);
-              break;
-            case OBJ_DIAMOND_STATIONARY:
-            case OBJ_DIAMOND_FALLING:
-              drawSprite(spriteDiamond, 0, x, y, 2, 0, 0);
-              break;
-            case OBJ_PRE_ROCKFORD_STAGE_1:
-              if (rockfordTurnsTillBirth > 0) {
-                if (rockfordTurnsTillBirth % 2) {
-                  drawSprite(spriteSteelWall, 0, x, y, 4, 0, 0);
+          if (mapCover[row][col]) {
+            drawSprite(spriteSteelWall, 0, x, y, 4, 0, turn);
+          } else {
+            switch (map[row][col]) {
+              case OBJ_SPACE:
+                drawSprite(spriteSpace, 0, x, y, 0, 0, 0);
+                break;
+              case OBJ_STEEL_WALL:
+                drawSprite(spriteSteelWall, 0, x, y, 4, 0, 0);
+                break;
+              case OBJ_DIRT:
+                drawSprite(spriteDirt, 0, x, y, 3, 0, 0);
+                break;
+              case OBJ_BRICK_WALL:
+                drawSprite(spriteBrickWall, 0, x, y, 1, 3, 0);
+                break;
+              case OBJ_BOULDER_STATIONARY:
+              case OBJ_BOULDER_FALLING:
+                drawSprite(spriteBoulder, 0, x, y, 4, 0, 0);
+                break;
+              case OBJ_DIAMOND_STATIONARY:
+              case OBJ_DIAMOND_FALLING:
+                drawSprite(spriteDiamond, 0, x, y, 2, 0, 0);
+                break;
+              case OBJ_PRE_ROCKFORD_STAGE_1:
+                if (rockfordTurnsTillBirth > 0) {
+                  if (rockfordTurnsTillBirth % 2) {
+                    drawSprite(spriteSteelWall, 0, x, y, 4, 0, 0);
+                  } else {
+                    drawSprite(spriteOutbox, 0, x, y, 4, 0, 0);
+                  }
                 } else {
-                  drawSprite(spriteOutbox, 0, x, y, 4, 0, 0);
+                  drawSprite(spriteExplosion, 0, x, y, 2, 0, 0);
                 }
-              } else {
-                drawSprite(spriteExplosion, 0, x, y, 2, 0, 0);
-              }
-              break;
-            case OBJ_PRE_ROCKFORD_STAGE_2:
-              drawSprite(spriteExplosion, 1, x, y, 2, 0, 0);
-              break;
-            case OBJ_PRE_ROCKFORD_STAGE_3:
-              drawSprite(spriteExplosion, 2, x, y, 2, 0, 0);
-              break;
-            case OBJ_PRE_ROCKFORD_STAGE_4:
-              drawSprite(spriteRockfordRight, turn, x, y, 1, 0, 0);
-              break;
-            case OBJ_ROCKFORD:
-              if (rockfordIsBlinking && rockfordIsTapping) {
-                drawSprite(spriteRockfordBlinkTap, tick, x, y, 1, 0, 0);
-              } else if (rockfordIsBlinking) {
-                drawSprite(spriteRockfordBlink, tick, x, y, 1, 0, 0);
-              } else if (rockfordIsTapping) {
-                drawSprite(spriteRockfordTap, tick, x, y, 1, 0, 0);
-              } else {
-                drawSprite(spriteRockfordIdle, 0, x, y, 1, 0, 0);
-              }
-              break;
+                break;
+              case OBJ_PRE_ROCKFORD_STAGE_2:
+                drawSprite(spriteExplosion, 1, x, y, 2, 0, 0);
+                break;
+              case OBJ_PRE_ROCKFORD_STAGE_3:
+                drawSprite(spriteExplosion, 2, x, y, 2, 0, 0);
+                break;
+              case OBJ_PRE_ROCKFORD_STAGE_4:
+                drawSprite(spriteRockfordRight, turn, x, y, 1, 0, 0);
+                break;
+              case OBJ_ROCKFORD:
+                if (rockfordIsBlinking && rockfordIsTapping) {
+                  drawSprite(spriteRockfordBlinkTap, tick, x, y, 1, 0, 0);
+                } else if (rockfordIsBlinking) {
+                  drawSprite(spriteRockfordBlink, tick, x, y, 1, 0, 0);
+                } else if (rockfordIsTapping) {
+                  drawSprite(spriteRockfordTap, tick, x, y, 1, 0, 0);
+                } else {
+                  drawSprite(spriteRockfordIdle, 0, x, y, 1, 0, 0);
+                }
+                break;
+            }
           }
         }
       }
-    }
 
-    // Draw text
-    {
-      char text[64];
-      if (rockfordTurnsTillBirth > 0) {
-        sprintf_s(text, sizeof(text), "  PLAYER 1,  %d MEN,  ROOM %c/1", livesLeft, 'A' + (caveInfo->caveNumber-1));
-      } else {
-        sprintf_s(text, sizeof(text), "   %d*%d   %02d   %03d   %06d",
-                  caveInfo->diamondsNeeded[difficultyLevel],
-                  caveInfo->initialDiamondValue,
-                  diamondsCollected,
-                  caveTimeLeft,
-                  score);
+      // Draw text
+      {
+        char text[64];
+        if (rockfordTurnsTillBirth > 0) {
+          sprintf_s(text, sizeof(text), "  PLAYER 1,  %d MEN,  ROOM %c/1", livesLeft, 'A' + (caveInfo->caveNumber-1));
+        } else {
+          sprintf_s(text, sizeof(text), "   %d*%d   %02d   %03d   %06d",
+                    caveInfo->diamondsNeeded[difficultyLevel],
+                    caveInfo->initialDiamondValue,
+                    diamondsCollected,
+                    caveTimeLeft,
+                    score);
+        }
+        for (int i = 0; text[i]; ++i) {
+          drawSprite(spriteAscii, text[i]-' ', (2+i)*TILE_SIZE, 3*TILE_SIZE, 1, 0, 0);
+        }
       }
-      for (int i = 0; text[i]; ++i) {
-        drawSprite(spriteAscii, text[i]-' ', (2+i)*TILE_SIZE, 3*TILE_SIZE, 1, 0, 0);
-      }
-    }
 
-    // Display backbuffer
-    StretchDIBits(deviceContext,
-                  0, 0, windowWidth, windowHeight,
-                  0, 0, BACKBUFFER_WIDTH, BACKBUFFER_HEIGHT,
-                  backbuffer, bitmapInfo,
-                  DIB_RGB_COLORS, SRCCOPY);
+      // Display backbuffer
+      StretchDIBits(deviceContext,
+                    0, 0, windowWidth, windowHeight,
+                    0, 0, BACKBUFFER_WIDTH, BACKBUFFER_HEIGHT,
+                    backbuffer, bitmapInfo,
+                    DIB_RGB_COLORS, SRCCOPY);
+    }
   }
 
   return 0;
