@@ -76,7 +76,7 @@ void setPixel(int x, int y, uint8_t color) {
   gBackbuffer[byteOffset] = newColor;
 }
 
-void drawFilledRectPx(int left, int top, int right, int bottom, uint8_t color) {
+void drawFilledRect(int left, int top, int right, int bottom, uint8_t color) {
   for (int y = top; y <= bottom; ++y) {
     for (int x = left; x <= right; ++x) {
       setPixel(x, y, color);
@@ -121,7 +121,7 @@ void drawSpaceTile(int tileRow, int tileCol) {
   int top = PLAYFIELD_Y_MIN + tileRow*TILE_SIZE;
   int bottom = top + TILE_SIZE - 1;
   int right = left + TILE_SIZE - 1;
-  drawFilledRectPx(left, top, right, bottom, 0);
+  drawFilledRect(left, top, right, bottom, 0);
 }
 
 void drawSteelWallTile(int tileRow, int tileCol, uint8_t fgColor, uint8_t bgColor) {
@@ -331,7 +331,7 @@ void nextRandom(int *randSeed1, int *randSeed2) {
   *randSeed1 = result & 0x00FF;
 }
 
-void drawLine(CaveMap map, CaveObject object, int row, int col, int length, int direction) {
+void placeObjectLine(CaveMap map, CaveObject object, int row, int col, int length, int direction) {
   static int ldx[8] = { 0,  1, 1, 1, 0, -1, -1, -1 };
   static int ldy[8] = { -1, -1, 0, 1, 1,  1,  0, -1 };
 
@@ -340,7 +340,7 @@ void drawLine(CaveMap map, CaveObject object, int row, int col, int length, int 
   }
 }
 
-void drawFilledRect(CaveMap map, CaveObject object, int row, int col, int width, int height, CaveObject fillObject) {
+void placeObjectFilledRect(CaveMap map, CaveObject object, int row, int col, int width, int height, CaveObject fillObject) {
   for (int i = 0; i < width; i++) {
     for (int j = 0; j < height; j++) {
       if ((j == 0) || (j == height - 1)) {
@@ -355,7 +355,7 @@ void drawFilledRect(CaveMap map, CaveObject object, int row, int col, int width,
   }
 }
 
-void drawRect(CaveMap map, CaveObject object, int row, int col, int width, int height) {
+void placeObjectRect(CaveMap map, CaveObject object, int row, int col, int width, int height) {
   for (int i = 0; i < width; i++) {
     map[row][col+i] = object;
     map[row+height-1][col+i] = object;
@@ -423,7 +423,7 @@ Cave decodeCave(uint8_t caveIndex) {
           int y = explicitData[++i] - uselessTopBorderHeight;
           int length = explicitData[++i];
           int direction = explicitData[++i];
-          drawLine(cave.map, object, y, x, length, direction);
+          placeObjectLine(cave.map, object, y, x, length, direction);
           break;
         }
         case 2: {
@@ -432,7 +432,7 @@ Cave decodeCave(uint8_t caveIndex) {
           int width = explicitData[++i];
           int height = explicitData[++i];
           CaveObject fill = (CaveObject)explicitData[++i];
-          drawFilledRect(cave.map, object, y, x, width, height, fill);
+          placeObjectFilledRect(cave.map, object, y, x, width, height, fill);
           break;
         }
         case 3: {
@@ -440,7 +440,7 @@ Cave decodeCave(uint8_t caveIndex) {
           int y = explicitData[++i] - uselessTopBorderHeight;
           int width = explicitData[++i];
           int height = explicitData[++i];
-          drawRect(cave.map, object, y, x, width, height);
+          placeObjectRect(cave.map, object, y, x, width, height);
           break;
         }
       }
@@ -448,7 +448,7 @@ Cave decodeCave(uint8_t caveIndex) {
   }
 
   // Steel bounds
-  drawRect(cave.map, OBJ_STEEL_WALL, 0, 0, CAVE_WIDTH, CAVE_HEIGHT);
+  placeObjectRect(cave.map, OBJ_STEEL_WALL, 0, 0, CAVE_WIDTH, CAVE_HEIGHT);
 
   return cave;
 }
@@ -705,7 +705,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     //
 
     // Draw border
-    drawFilledRectPx(0, 0, BACKBUFFER_WIDTH - 1, BACKBUFFER_HEIGHT - 1, 0);
+    drawFilledRect(0, 0, BACKBUFFER_WIDTH - 1, BACKBUFFER_HEIGHT - 1, 0);
 
     // Draw cave
     for (int y = 0; y < CAVE_HEIGHT; ++y) {
