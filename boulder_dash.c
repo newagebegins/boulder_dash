@@ -148,8 +148,7 @@ void setPixel(int x, int y, uint8_t color) {
   uint8_t newColor;
   if (pixelOffset % 2 == 0) {
     newColor = (color << 4) | (oldColor & 0x0F);
-  }
-  else {
+  } else {
     newColor = (oldColor & 0xF0) | color;
   }
   gBackbuffer[byteOffset] = newColor;
@@ -231,8 +230,7 @@ void placeObjectFilledRect(uint8_t object, int row, int col, int width, int heig
     for (int j = 0; j < height; j++) {
       if ((j == 0) || (j == height - 1)) {
         map[row+j][col+i] = object;
-      }
-      else {
+      } else {
         map[row+j][col+i] = fillObject;
       }
     }
@@ -498,8 +496,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
       if (pauseTurnsLeft > 0) {
         pauseTurnsLeft--;
-      }
-      else {
+      } else {
         turn++;
 
         // Scan cave
@@ -509,8 +506,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               case OBJ_PRE_ROCKFORD_STAGE_1:
                 if (rockfordTurnsTillBirth == 0) {
                   map[row][col] = OBJ_PRE_ROCKFORD_STAGE_2;
-                }
-                else if (mapUncoverTurnsLeft == 0) {
+                } else if (mapUncoverTurnsLeft == 0) {
                   rockfordTurnsTillBirth--;
                 }
                 break;
@@ -539,11 +535,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                 mapCover[row][rand()%CAVE_WIDTH] = OBJ_SPACE;
               }
             }
-          }
-          else if (mapUncoverTurnsLeft == 1) {
+          } else if (mapUncoverTurnsLeft == 1) {
             pauseTurnsLeft = 2;
-          }
-          else if (mapUncoverTurnsLeft == 0) {
+          } else if (mapUncoverTurnsLeft == 0) {
             for (int row = 0; row < CAVE_HEIGHT; ++row) {
               for (int col = 0; col < CAVE_WIDTH; ++col) {
                 mapCover[row][col] = OBJ_SPACE;
@@ -600,12 +594,10 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               if (rockfordTurnsTillBirth > 0) {
                 if (rockfordTurnsTillBirth % 2) {
                   drawSprite(spriteSteelWall, 0, x, y, 4, 0, 0);
-                }
-                else {
+                } else {
                   drawSprite(spriteOutbox, 0, x, y, 4, 0, 0);
                 }
-              }
-              else {
+              } else {
                 drawSprite(spriteExplosion, 0, x, y, 2, 0, 0);
               }
               break;
@@ -632,8 +624,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       char text[64];
       if (rockfordTurnsTillBirth > 0) {
         sprintf_s(text, sizeof(text), "  PLAYER 1,  %d MEN,  ROOM %c/1", livesLeft, 'A' + (caveInfo->caveNumber-1));
-      }
-      else {
+      } else {
         sprintf_s(text, sizeof(text), "   %d*%d   %02d   %03d   %06d",
                   caveInfo->diamondsNeeded[difficultyLevel],
                   caveInfo->initialDiamondValue,
