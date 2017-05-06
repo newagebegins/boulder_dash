@@ -445,9 +445,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   // Game loop
   //
 
-  bool running = true;
+  bool gameIsRunning = true;
 
-  while (running) {
+  while (gameIsRunning) {
     perfcPrev = perfc;
     QueryPerformanceCounter(&perfc);
     dt = (float)(perfc.QuadPart - perfcPrev.QuadPart) / (float)perfcFreq.QuadPart;
@@ -462,14 +462,14 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
     while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE)) {
       switch (msg.message) {
         case WM_QUIT:
-          running = false;
+          gameIsRunning = false;
           break;
 
         case WM_KEYDOWN:
         case WM_KEYUP:
           switch (msg.wParam) {
             case VK_ESCAPE:
-              running = false;
+              gameIsRunning = false;
               break;
           }
           break;
