@@ -8,9 +8,9 @@
 
 #define ARRAY_LENGTH(array) (sizeof(array)/sizeof(*array))
 
-#define SPRITE_SIZE 8
-#define TILE_SIZE_IN_SPRITES 2
-#define TILE_SIZE (SPRITE_SIZE*TILE_SIZE_IN_SPRITES)
+// Cave map consists of cells, each cell contains 4 tiles.
+
+#define TILE_SIZE 16
 #define BORDER_SIZE_IN_TILES 1
 #define BORDER_SIZE (TILE_SIZE*BORDER_SIZE_IN_TILES)
 
@@ -109,12 +109,6 @@ void drawSprite(uint8_t *sprite, int outRow, int outCol, int frame, uint8_t fgCo
       uint8_t *data = sprite + 3 + (frame%frames)*bytesPerFrame + row*bytesPerRow + col*8;
       drawSprite8x8(data, outRow+row, outCol+col, fgColor, bgColor, vOffset);
     }
-  }
-}
-
-void drawText(char *text) {
-  for (int i = 0; text[i]; ++i) {
-    drawSprite(spriteAscii, 3, 2 + i, text[i]-' ', 1, 0, 0);
   }
 }
 
@@ -665,7 +659,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       }
     }
 
-    // Draw text area
+    // Draw text
     {
       char text[64];
       if (gameState.rockfordTurnsTillBirth > 0) {
@@ -679,7 +673,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                   gameState.caveTimeLeft,
                   gameState.score);
       }
-      drawText(text);
+      for (int i = 0; text[i]; ++i) {
+        drawSprite(spriteAscii, 3, 2 + i, text[i]-' ', 1, 0, 0);
+      }
     }
 
     // Display backbuffer
