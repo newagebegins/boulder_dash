@@ -16,10 +16,10 @@
 // Gameplay constants
 #define TICKS_PER_TURN 5
 #define ROCKFORD_TURNS_TILL_BIRTH 12
-#define MAP_UNCOVER_TURNS 40
-#define MAP_COVER_TICKS (32*TICKS_PER_TURN)
+#define BIRTH_COVER_TURNS 40
+#define DEATH_COVER_TICKS (32*TICKS_PER_TURN)
 #define BONUS_LIFE_COST 500
-#define SPACE_FLASHING_TURNS 10
+#define BONUS_LIFE_FLASHING_TURNS 10
 #define MAX_LIVES 9
 #define COVER_PAUSE 2
 
@@ -143,16 +143,14 @@ typedef struct {
   uint8_t objectProbability[NUM_RANDOM_OBJECTS];
 } CaveInfo;
 
-typedef uint8_t CaveMap[CAVE_HEIGHT][CAVE_WIDTH];
-
 //
 // Global variables
 //
 
 uint8_t *backbuffer;
-CaveMap map;
+uint8_t map[CAVE_HEIGHT][CAVE_WIDTH];
 CaveInfo *caveInfo;
-int numTurnsSinceRockfordSeenAlive;
+int turnsSinceRockfordSeenAlive;
 
 //
 //
@@ -461,7 +459,7 @@ void updateBoulderAndDiamond(int row, int col, uint8_t fallingScannedObj, uint8_
 }
 
 bool isRockfordDead() {
-  return numTurnsSinceRockfordSeenAlive >= 16;
+  return turnsSinceRockfordSeenAlive >= 16;
 }
 
 LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
@@ -555,14 +553,14 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   //
 
   uint8_t currentCaveNumber = 0;
-  CaveMap mapCover;
+  uint8_t birthCover[CAVE_HEIGHT][CAVE_WIDTH];
   bool deathCover[PLAYFIELD_HEIGHT_IN_TILES][PLAYFIELD_WIDTH_IN_TILES] = {0};
   char statusBarText[PLAYFIELD_WIDTH_IN_TILES];
   int difficultyLevel = 0;
   int livesLeft = 3;
   int score = 0;
   int scoreTillBonusLife = BONUS_LIFE_COST;
-  int turnsTillStopSpaceFlashing = 0;
+  int turnsTillStopBonusLifeFlashing = 0;
 
   int turn = 0;
   int tick = 0;
@@ -584,12 +582,12 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int diamondsCollected;
   int currentDiamondValue;
   int rockfordTurnsTillBirth;
-  int mapUncoverTurnsLeft;
+  int birthCoverTurnsLeft;
   int rockfordCol;
   int rockfordRow;
   bool rockfordIsBlinking;
   bool rockfordIsTapping;
-  int mapCoverTicksLeft;
+  int deathCoverTicksLeft;
   int pauseTurnsLeft;
   bool rockfordIsMoving;
   bool rockfordIsFacingRight;
@@ -632,16 +630,16 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       isCaveStart = false;
       decodeCave(currentCaveNumber);
 
-      numTurnsSinceRockfordSeenAlive = 0;
+      turnsSinceRockfordSeenAlive = 0;
       diamondsCollected = 0;
       currentDiamondValue = caveInfo->initialDiamondValue;
       caveTimeLeft = caveInfo->caveTime[difficultyLevel];
       rockfordTurnsTillBirth = DEV_IMMEDIATE_STARTUP ? 0 : ROCKFORD_TURNS_TILL_BIRTH;
-      mapUncoverTurnsLeft = DEV_IMMEDIATE_STARTUP ? 1 : MAP_UNCOVER_TURNS;
+      birthCoverTurnsLeft = DEV_IMMEDIATE_STARTUP ? 1 : BIRTH_COVER_TURNS;
 
       rockfordIsBlinking = false;
       rockfordIsTapping = false;
-      mapCoverTicksLeft = 0;
+      deathCoverTicksLeft = 0;
       pauseTurnsLeft = 0;
       rockfordIsMoving = false;
       rockfordIsFacingRight = true;
@@ -652,7 +650,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
       for (int row = 0; row < CAVE_HEIGHT; ++row) {
         for (int col = 0; col < CAVE_WIDTH; ++col) {
-          mapCover[row][col] = true;
+          birthCover[row][col] = true;
         }
       }
 
@@ -700,33 +698,33 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
           borderColor = normalBorderColor;
 
-          if (turnsTillStopSpaceFlashing > 0) {
-            --turnsTillStopSpaceFlashing;
+          if (turnsTillStopBonusLifeFlashing > 0) {
+            --turnsTillStopBonusLifeFlashing;
           }
 
-          if (mapUncoverTurnsLeft > 0) {
+          if (birthCoverTurnsLeft > 0) {
             //
-            // Update map cover
+            // Update birth cover
             //
 
-            mapUncoverTurnsLeft--;
-            if (mapUncoverTurnsLeft > 1) {
+            birthCoverTurnsLeft--;
+            if (birthCoverTurnsLeft > 1) {
               for (int row = 0; row < CAVE_HEIGHT; ++row) {
                 for (int i = 0; i < 3; ++i) {
-                  mapCover[row][rand()%CAVE_WIDTH] = false;
+                  birthCover[row][rand()%CAVE_WIDTH] = false;
                 }
               }
-            } else if (mapUncoverTurnsLeft == 1) {
+            } else if (birthCoverTurnsLeft == 1) {
               pauseTurnsLeft = COVER_PAUSE;
-            } else if (mapUncoverTurnsLeft == 0) {
+            } else if (birthCoverTurnsLeft == 0) {
               for (int row = 0; row < CAVE_HEIGHT; ++row) {
                 for (int col = 0; col < CAVE_WIDTH; ++col) {
-                  mapCover[row][col] = false;
+                  birthCover[row][col] = false;
                 }
               }
             }
           } else {
-            ++numTurnsSinceRockfordSeenAlive;
+            ++turnsSinceRockfordSeenAlive;
 
             //
             // Scan cave
@@ -736,22 +734,26 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               for (int col = 0; col < CAVE_WIDTH; ++col) {
                 switch (map[row][col]) {
                   case OBJ_PRE_ROCKFORD_1:
+                    turnsSinceRockfordSeenAlive = 0;
                     if (rockfordTurnsTillBirth == 0) {
                       map[row][col] = OBJ_PRE_ROCKFORD_2;
-                    } else if (mapUncoverTurnsLeft == 0) {
+                    } else if (birthCoverTurnsLeft == 0) {
                       rockfordTurnsTillBirth--;
                     }
                     break;
 
                   case OBJ_PRE_ROCKFORD_2:
+                    turnsSinceRockfordSeenAlive = 0;
                     map[row][col] = OBJ_PRE_ROCKFORD_3;
                     break;
 
                   case OBJ_PRE_ROCKFORD_3:
+                    turnsSinceRockfordSeenAlive = 0;
                     map[row][col] = OBJ_PRE_ROCKFORD_4;
                     break;
 
                   case OBJ_PRE_ROCKFORD_4:
+                    turnsSinceRockfordSeenAlive = 0;
                     map[row][col] = OBJ_ROCKFORD;
                     break;
 
@@ -760,7 +762,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                     //
 
                   case OBJ_ROCKFORD: {
-                    numTurnsSinceRockfordSeenAlive = 0;
+                    turnsSinceRockfordSeenAlive = 0;
 
                     int newRow = row;
                     int newCol = col;
@@ -804,7 +806,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                         scoreTillBonusLife -= currentDiamondValue;
                         if (scoreTillBonusLife <= 0) {
                           scoreTillBonusLife += BONUS_LIFE_COST;
-                          turnsTillStopSpaceFlashing = SPACE_FLASHING_TURNS;
+                          turnsTillStopBonusLifeFlashing = BONUS_LIFE_FLASHING_TURNS;
                           ++livesLeft;
                           if (livesLeft > MAX_LIVES) {
                             livesLeft = MAX_LIVES;
@@ -921,11 +923,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               }
             }
 
-            if (mapCoverTicksLeft == 0 && isRockfordDead()) {
+            if (deathCoverTicksLeft == 0 && isRockfordDead()) {
               // Rockford is dead
 
               if (isKeyDown(VK_SPACE)) {
-                mapCoverTicksLeft = MAP_COVER_TICKS;
+                deathCoverTicksLeft = DEATH_COVER_TICKS;
 
                 --livesLeft;
                 if (livesLeft < 0) {
@@ -976,7 +978,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           // Update status bar text
           //
 
-          if (rockfordTurnsTillBirth > 0 || mapCoverTicksLeft > 0) {
+          if (rockfordTurnsTillBirth > 0 || deathCoverTicksLeft > 0) {
             sprintf_s(statusBarText, sizeof(statusBarText), "  PLAYER 1,  %d MEN,  ROOM %c/1",
                       livesLeft, 'A' + (caveInfo->caveNumber-1));
           } else {
@@ -993,10 +995,10 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       }
 
       // Update death cover
-      if (mapCoverTicksLeft > 0) {
-        --mapCoverTicksLeft;
+      if (deathCoverTicksLeft > 0) {
+        --deathCoverTicksLeft;
 
-        if (mapCoverTicksLeft == 0) {
+        if (deathCoverTicksLeft == 0) {
           pauseTurnsLeft = COVER_PAUSE;
         } else {
           for (int i = 0; i < 7; ++i) {
@@ -1020,12 +1022,12 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           int x = PLAYFIELD_LEFT + col*CELL_SIZE - cameraX;
           int y = PLAYFIELD_TOP + row*CELL_SIZE - cameraY;
 
-          if (mapCover[row][col]) {
+          if (birthCover[row][col]) {
             drawSprite(spriteSteelWall, 0, x, y, 4, 0, turn);
           } else {
             switch (map[row][col]) {
               case OBJ_SPACE:
-                if (turnsTillStopSpaceFlashing > 0) {
+                if (turnsTillStopBonusLifeFlashing > 0) {
                   drawSprite(spriteSpaceFlash, turn, x, y, 2, 0, 0);
                 } else {
                   drawSprite(spriteSpace, 0, x, y, 0, 0, 0);
