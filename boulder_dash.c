@@ -537,6 +537,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int livesLeft = 3;
   int score = 0;
   int diamondsCollected = 0;
+  int currentDiamondValue = caveInfo->initialDiamondValue;
   int turn = 0;
   int tick = 0;
   bool rockfordIsBlinking = false;
@@ -698,6 +699,14 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                       case OBJ_SPACE:
                       case OBJ_DIRT:
                         actuallyMoved = true;
+                        break;
+
+                      case OBJ_DIAMOND_STATIONARY:
+                      case OBJ_DIAMOND_STATIONARY_SCANNED:
+                        // Pick up a diamond
+                        actuallyMoved = true;
+                        score += currentDiamondValue;
+                        ++diamondsCollected;
                         break;
 
                       case OBJ_BOULDER_STATIONARY:
