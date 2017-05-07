@@ -383,6 +383,22 @@ void explodeCell(int row, int col, bool toDiamonds, int explosionStage) {
   }
 }
 
+bool isObjectRound(uint8_t object) {
+  return object == OBJ_BOULDER_STATIONARY || object == OBJ_DIAMOND_STATIONARY || object == OBJ_BRICK_WALL;
+}
+
+bool isObjectExplosive(uint8_t object) {
+  return object == OBJ_ROCKFORD ||
+    object == OBJ_FIREFLY_POSITION_1 ||
+    object == OBJ_FIREFLY_POSITION_2 ||
+    object == OBJ_FIREFLY_POSITION_3 ||
+    object == OBJ_FIREFLY_POSITION_4 ||
+    object == OBJ_BUTTERFLY_POSITION_1 ||
+    object == OBJ_BUTTERFLY_POSITION_2 ||
+    object == OBJ_BUTTERFLY_POSITION_3 ||
+    object == OBJ_BUTTERFLY_POSITION_4;
+}
+
 LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
   switch (msg) {
     case WM_DESTROY:
@@ -668,81 +684,39 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                     //
 
                   case OBJ_BOULDER_STATIONARY:
-                    switch (map[row+1][col]) {
-                      case OBJ_SPACE:
-                        map[row+1][col] = OBJ_BOULDER_FALLING_SCANNED;
-                        map[row][col] = OBJ_SPACE;
-                        break;
-
-                      case OBJ_BOULDER_STATIONARY:
-                      case OBJ_DIAMOND_STATIONARY:
-                      case OBJ_BRICK_WALL:
-                        // Try to roll off
-                        if (map[row][col-1] == OBJ_SPACE && map[row+1][col-1] == OBJ_SPACE) {
-                          // Roll left
-                          map[row][col-1] = OBJ_BOULDER_FALLING_SCANNED;
-                          map[row][col] = OBJ_SPACE;
-                        } else if (map[row][col+1] == OBJ_SPACE && map[row+1][col+1] == OBJ_SPACE) {
-                          // Roll right
-                          map[row][col+1] = OBJ_BOULDER_FALLING_SCANNED;
-                          map[row][col] = OBJ_SPACE;
-                        }
-                        break;
-                    }
-                    break;
-
                   case OBJ_BOULDER_FALLING: {
-                    switch (map[row+1][col]) {
-                      case OBJ_SPACE:
-                        map[row+1][col] = OBJ_BOULDER_FALLING_SCANNED;
+                    if (map[row+1][col] == OBJ_SPACE) {
+                      map[row+1][col] = OBJ_BOULDER_FALLING_SCANNED;
+                      map[row][col] = OBJ_SPACE;
+                    } else if (isObjectRound(map[row+1][col])) {
+                      // Try to roll off
+                      if (map[row][col-1] == OBJ_SPACE && map[row+1][col-1] == OBJ_SPACE) {
+                        // Roll left
+                        map[row][col-1] = OBJ_BOULDER_FALLING_SCANNED;
                         map[row][col] = OBJ_SPACE;
-                        break;
-
-                      case OBJ_BOULDER_STATIONARY:
-                      case OBJ_DIAMOND_STATIONARY:
-                      case OBJ_BRICK_WALL:
-                        // Try to roll off
-                        if (map[row][col-1] == OBJ_SPACE && map[row+1][col-1] == OBJ_SPACE) {
-                          // Roll left
-                          map[row][col-1] = OBJ_BOULDER_FALLING_SCANNED;
-                          map[row][col] = OBJ_SPACE;
-                        } else if (map[row][col+1] == OBJ_SPACE && map[row+1][col+1] == OBJ_SPACE) {
-                          // Roll right
-                          map[row][col+1] = OBJ_BOULDER_FALLING_SCANNED;
-                          map[row][col] = OBJ_SPACE;
-                        } else {
-                          map[row][col] = OBJ_BOULDER_STATIONARY_SCANNED;
-                        }
-                        break;
-
-                      case OBJ_ROCKFORD:
-                      case OBJ_FIREFLY_POSITION_1:
-                      case OBJ_FIREFLY_POSITION_2:
-                      case OBJ_FIREFLY_POSITION_3:
-                      case OBJ_FIREFLY_POSITION_4:
-                      case OBJ_BUTTERFLY_POSITION_1:
-                      case OBJ_BUTTERFLY_POSITION_2:
-                      case OBJ_BUTTERFLY_POSITION_3:
-                      case OBJ_BUTTERFLY_POSITION_4: {
-                        bool toDiamonds = map[row+1][col] == OBJ_BUTTERFLY_POSITION_1 || map[row+1][col] == OBJ_BUTTERFLY_POSITION_2 || map[row+1][col] == OBJ_BUTTERFLY_POSITION_3 || map[row+1][col] == OBJ_BUTTERFLY_POSITION_4;
-
-                        explodeCell(row, col, toDiamonds, 1);
-                        explodeCell(row, col-1, toDiamonds, 1);
-                        explodeCell(row, col+1, toDiamonds, 0);
-
-                        explodeCell(row+1, col, toDiamonds, 0);
-                        explodeCell(row+1, col-1, toDiamonds, 0);
-                        explodeCell(row+1, col+1, toDiamonds, 0);
-
-                        explodeCell(row+2, col, toDiamonds, 0);
-                        explodeCell(row+2, col-1, toDiamonds, 0);
-                        explodeCell(row+2, col+1, toDiamonds, 0);
-                        break;
-                      }
-
-                      default:
+                      } else if (map[row][col+1] == OBJ_SPACE && map[row+1][col+1] == OBJ_SPACE) {
+                        // Roll right
+                        map[row][col+1] = OBJ_BOULDER_FALLING_SCANNED;
+                        map[row][col] = OBJ_SPACE;
+                      } else {
                         map[row][col] = OBJ_BOULDER_STATIONARY_SCANNED;
-                        break;
+                      }
+                    } else if (map[row][col] == OBJ_BOULDER_FALLING && isObjectExplosive(map[row+1][col])) {
+                      bool toDiamonds = map[row+1][col] == OBJ_BUTTERFLY_POSITION_1 || map[row+1][col] == OBJ_BUTTERFLY_POSITION_2 || map[row+1][col] == OBJ_BUTTERFLY_POSITION_3 || map[row+1][col] == OBJ_BUTTERFLY_POSITION_4;
+
+                      explodeCell(row, col, toDiamonds, 1);
+                      explodeCell(row, col-1, toDiamonds, 1);
+                      explodeCell(row, col+1, toDiamonds, 0);
+
+                      explodeCell(row+1, col, toDiamonds, 0);
+                      explodeCell(row+1, col-1, toDiamonds, 0);
+                      explodeCell(row+1, col+1, toDiamonds, 0);
+
+                      explodeCell(row+2, col, toDiamonds, 0);
+                      explodeCell(row+2, col-1, toDiamonds, 0);
+                      explodeCell(row+2, col+1, toDiamonds, 0);
+                    } else {
+                      map[row][col] = OBJ_BOULDER_STATIONARY_SCANNED;
                     }
                     break;
                   }
