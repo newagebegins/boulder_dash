@@ -12,7 +12,7 @@
 #define DEV_SINGLE_DIAMOND_NEEDED false
 #define DEV_CAMERA_DEBUGGING false
 #define DEV_SLOW_TICK_DURATION false
-#define DEV_QUICK_OUT_OF_TIME true
+#define DEV_QUICK_OUT_OF_TIME false
 
 // Gameplay constants
 #define TICKS_PER_TURN 5
@@ -33,6 +33,8 @@
 #define KEY_LEFT VK_LEFT
 #define KEY_DOWN VK_DOWN
 #define KEY_UP VK_UP
+#define KEY_FAIL 'Q'
+#define KEY_QUIT VK_ESCAPE
 
 // Cave map consists of cells, each cell contains 4 (2x2) tiles
 #define TILE_SIZE 8
@@ -163,6 +165,8 @@ uint8_t map[CAVE_HEIGHT][CAVE_WIDTH];
 CaveInfo *caveInfo;
 int turnsSinceRockfordSeenAlive;
 bool isOutOfTime;
+int tileCoverTicksLeft;
+int livesLeft;
 
 //
 //
@@ -391,8 +395,8 @@ void decodeCave(uint8_t caveIndex) {
   placeObjectRect(OBJ_STEEL_WALL, 0, 0, CAVE_WIDTH, CAVE_HEIGHT);
 }
 
-bool isKeyDown(int virtKey) {
-  return GetFocus() && (GetKeyState(virtKey) >> 15);
+bool isKeyDown(uint8_t virtKey) {
+  return GetFocus() && (GetKeyState(virtKey) & 0x8000);
 }
 
 void explodeCell(int row, int col, bool toDiamonds, int explosionStage) {
@@ -472,6 +476,15 @@ void updateBoulderAndDiamond(int row, int col, uint8_t fallingScannedObj, uint8_
 
 bool isFailed() {
   return turnsSinceRockfordSeenAlive >= 16 || isOutOfTime;
+}
+
+void loseLife() {
+  tileCoverTicksLeft = TILE_COVER_TICKS;
+
+  --livesLeft;
+  if (livesLeft < 0) {
+    livesLeft = 0;
+  }
 }
 
 LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
@@ -569,7 +582,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   bool tileCover[PLAYFIELD_HEIGHT_IN_TILES][PLAYFIELD_WIDTH_IN_TILES] = {0};
   char statusBarText[PLAYFIELD_WIDTH_IN_TILES];
   int difficultyLevel = 0;
-  int livesLeft = 3;
+  livesLeft = 3;
   int score = 0;
   int scoreTillBonusLife = BONUS_LIFE_COST;
   int turnsTillStopBonusLifeFlashing = 0;
@@ -588,6 +601,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int cameraVelY = 0;
 
   bool isCaveStart = true;
+  int pauseTurnsLeft = 0;
 
   // These variables are initialized when cave starts
   int caveTimeLeft;
@@ -602,8 +616,6 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int rockfordRow;
   bool rockfordIsBlinking;
   bool rockfordIsTapping;
-  int tileCoverTicksLeft;
-  int pauseTurnsLeft;
   bool rockfordIsMoving;
   bool rockfordIsFacingRight;
 
@@ -637,11 +649,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       }
     }
 
-    if (isKeyDown(VK_ESCAPE)) {
+    if (isKeyDown(KEY_QUIT)) {
       gameIsRunning = false;
     }
 
-    if (isCaveStart) {
+    if (isCaveStart && pauseTurnsLeft == 0) {
       isCaveStart = false;
       decodeCave(currentCaveNumber);
 
@@ -659,7 +671,6 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       rockfordIsBlinking = false;
       rockfordIsTapping = false;
       tileCoverTicksLeft = 0;
-      pauseTurnsLeft = 0;
       rockfordIsMoving = false;
       rockfordIsFacingRight = true;
 
@@ -706,7 +717,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       // Update cave timer
       //
 
-      if (rockfordTurnsTillBirth == 0 && !isOutOfTime) {
+      if (tileCoverTicksLeft == 0 && rockfordTurnsTillBirth == 0 && !isOutOfTime) {
         --ticksTillNextCaveSecond;
         if (ticksTillNextCaveSecond == 0) {
           ticksTillNextCaveSecond = TICKS_PER_CAVE_SECOND;
@@ -724,9 +735,6 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       if (tick % TICKS_PER_TURN == 0) {
         if (pauseTurnsLeft > 0) {
           pauseTurnsLeft--;
-          if (pauseTurnsLeft == 0) {
-            isCaveStart = isFailed();
-          }
         } else {
           turn++;
 
@@ -807,7 +815,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
                     rockfordIsMoving = false;
 
-                    if (!isOutOfTime) {
+                    if (!isOutOfTime && tileCoverTicksLeft == 0) {
                       if (isKeyDown(KEY_RIGHT)) {
                         rockfordIsMoving = true;
                         rockfordIsFacingRight = true;
@@ -963,16 +971,15 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               }
             }
 
-            if (tileCoverTicksLeft == 0 && isFailed()) {
-              // Cave is failed
+            //
+            // Handle failure
+            //
 
+            if (tileCoverTicksLeft == 0 && rockfordTurnsTillBirth == 0 && isKeyDown(KEY_FAIL)) {
+              loseLife();
+            } else if (tileCoverTicksLeft == 0 && isFailed()) {
               if (isKeyDown(KEY_FIRE)) {
-                tileCoverTicksLeft = TILE_COVER_TICKS;
-
-                --livesLeft;
-                if (livesLeft < 0) {
-                  livesLeft = 0;
-                }
+                loseLife();
               }
             }
           }
@@ -1059,6 +1066,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
         if (tileCoverTicksLeft == 0) {
           pauseTurnsLeft = COVER_PAUSE;
+          isCaveStart = true;
         } else {
           for (int i = 0; i < 7; ++i) {
             int row = rand() % PLAYFIELD_HEIGHT_IN_TILES;
