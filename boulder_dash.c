@@ -8,20 +8,21 @@
 #include "data_caves.h"
 
 // Developer options
-#define DEV_IMMEDIATE_STARTUP false
-#define DEV_SINGLE_DIAMOND_NEEDED false
-#define DEV_CAMERA_DEBUGGING false
-#define DEV_SLOW_TICK_DURATION false
-#define DEV_QUICK_OUT_OF_TIME false
-#define DEV_SINGLE_LIFE false
-#define DEV_NEAR_OUTBOX true
+#define DEV_IMMEDIATE_STARTUP 0
+#define DEV_SINGLE_DIAMOND_NEEDED 0
+#define DEV_CHEAP_BONUS_LIFE 0
+#define DEV_CAMERA_DEBUGGING 0
+#define DEV_SLOW_TICK_DURATION 0
+#define DEV_QUICK_OUT_OF_TIME 0
+#define DEV_SINGLE_LIFE 0
+#define DEV_NEAR_OUTBOX 0
 
 // Gameplay constants
 #define TICKS_PER_TURN 5
 #define ROCKFORD_TURNS_TILL_BIRTH 12
 #define CELL_COVER_TURNS 40
 #define TILE_COVER_TICKS (32*TICKS_PER_TURN)
-#define BONUS_LIFE_COST 500
+#define BONUS_LIFE_COST (DEV_CHEAP_BONUS_LIFE ? 5 : 500)
 #define BONUS_LIFE_FLASHING_TURNS 10
 #define MAX_LIVES 9
 #define COVER_PAUSE 2
@@ -769,6 +770,12 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           } else {
             turn++;
 
+            borderColor = normalBorderColor;
+
+            if (turnsTillStopBonusLifeFlashing > 0) {
+              --turnsTillStopBonusLifeFlashing;
+            }
+
             if (turnsTillGameRestart > 0) {
               --turnsTillGameRestart;
               if (turnsTillGameRestart == 0) {
@@ -782,12 +789,6 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             } else if (isExitingCave) {
               // Do nothing
             } else {
-              borderColor = normalBorderColor;
-
-              if (turnsTillStopBonusLifeFlashing > 0) {
-                --turnsTillStopBonusLifeFlashing;
-              }
-
               if (cellCoverTurnsLeft > 0) {
                 //
                 // Update cell cover
