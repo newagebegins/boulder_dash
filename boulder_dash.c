@@ -18,7 +18,7 @@
 #define CELL_SIZE (TILE_SIZE*2)
 
 #define BORDER_SIZE CELL_SIZE
-#define TEXT_AREA_HEIGHT CELL_SIZE
+#define STATUS_BAR_HEIGHT CELL_SIZE
 
 // Viewport is the whole screen area except the border
 #define VIEWPORT_WIDTH 256
@@ -28,11 +28,11 @@
 #define VIEWPORT_RIGHT (VIEWPORT_LEFT + VIEWPORT_WIDTH - 1)
 #define VIEWPORT_BOTTOM (VIEWPORT_TOP + VIEWPORT_HEIGHT - 1)
 
-// Playfield is the whole viewport except the text area
+// Playfield is the whole viewport except the status bar
 #define PLAYFIELD_WIDTH VIEWPORT_WIDTH
-#define PLAYFIELD_HEIGHT (VIEWPORT_HEIGHT - TEXT_AREA_HEIGHT)
+#define PLAYFIELD_HEIGHT (VIEWPORT_HEIGHT - STATUS_BAR_HEIGHT)
 #define PLAYFIELD_LEFT VIEWPORT_LEFT
-#define PLAYFIELD_TOP (VIEWPORT_TOP + TEXT_AREA_HEIGHT)
+#define PLAYFIELD_TOP (VIEWPORT_TOP + STATUS_BAR_HEIGHT)
 #define PLAYFIELD_RIGHT (PLAYFIELD_LEFT + PLAYFIELD_WIDTH - 1)
 #define PLAYFIELD_BOTTOM (PLAYFIELD_TOP + PLAYFIELD_HEIGHT - 1)
 
@@ -996,12 +996,12 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       }
 
       //
-      // Draw text
+      // Draw status bar
       //
 
       {
         // Black background
-        drawFilledRect(VIEWPORT_LEFT, VIEWPORT_TOP, VIEWPORT_RIGHT, VIEWPORT_TOP+TEXT_AREA_HEIGHT, 0);
+        drawFilledRect(VIEWPORT_LEFT, VIEWPORT_TOP, VIEWPORT_RIGHT, VIEWPORT_TOP+STATUS_BAR_HEIGHT, 0);
 
         int x = VIEWPORT_LEFT;
         int y = VIEWPORT_TOP + TILE_SIZE;
