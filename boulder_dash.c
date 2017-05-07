@@ -162,6 +162,7 @@ uint8_t *backbuffer;
 uint8_t map[CAVE_HEIGHT][CAVE_WIDTH];
 CaveInfo *caveInfo;
 int turnsSinceRockfordSeenAlive;
+bool isOutOfTime;
 
 //
 //
@@ -469,8 +470,8 @@ void updateBoulderAndDiamond(int row, int col, uint8_t fallingScannedObj, uint8_
   }
 }
 
-bool isRockfordDead() {
-  return turnsSinceRockfordSeenAlive >= 16;
+bool isFailed() {
+  return turnsSinceRockfordSeenAlive >= 16 || isOutOfTime;
 }
 
 LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
@@ -591,7 +592,6 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   // These variables are initialized when cave starts
   int caveTimeLeft;
   int ticksTillNextCaveSecond;
-  bool isOutOfTime;
   bool isOutOfTimeTextShown;
   int outOfTimeTurn = 0;
   int diamondsCollected;
@@ -702,6 +702,10 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       int rockfordRectRight = rockfordRectLeft + CELL_SIZE;
       int rockfordRectBottom = rockfordRectTop + CELL_SIZE;
 
+      //
+      // Update cave timer
+      //
+
       if (rockfordTurnsTillBirth == 0 && !isOutOfTime) {
         --ticksTillNextCaveSecond;
         if (ticksTillNextCaveSecond == 0) {
@@ -715,11 +719,13 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         }
       }
 
+      /////////
+
       if (tick % TICKS_PER_TURN == 0) {
         if (pauseTurnsLeft > 0) {
           pauseTurnsLeft--;
           if (pauseTurnsLeft == 0) {
-            isCaveStart = isRockfordDead();
+            isCaveStart = isFailed();
           }
         } else {
           turn++;
@@ -957,8 +963,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               }
             }
 
-            if (deathCoverTicksLeft == 0 && isRockfordDead()) {
-              // Rockford is dead
+            if (deathCoverTicksLeft == 0 && isFailed()) {
+              // Cave is failed
 
               if (isKeyDown(KEY_FIRE)) {
                 deathCoverTicksLeft = DEATH_COVER_TICKS;
