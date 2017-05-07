@@ -692,18 +692,38 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                       rockfordIsMoving = false;
                     }
 
+                    bool actuallyMoved = false;
+
                     switch (map[newRow][newCol]) {
                       case OBJ_SPACE:
                       case OBJ_DIRT:
-                        if (isKeyDown(VK_SPACE)) {
-                          map[newRow][newCol] = OBJ_SPACE;
-                        } else {
-                          map[row][col] = OBJ_SPACE;
-                          map[newRow][newCol] = OBJ_ROCKFORD_SCANNED;
-                          rockfordRow = newRow;
-                          rockfordCol = newCol;
+                        actuallyMoved = true;
+                        break;
+
+                      case OBJ_BOULDER_STATIONARY:
+                      case OBJ_BOULDER_STATIONARY_SCANNED:
+                        // Pushing boulders
+                        if (rand() % 4 == 0) {
+                          if (isKeyDown(VK_RIGHT) && map[newRow][newCol+1] == OBJ_SPACE) {
+                            map[newRow][newCol+1] = OBJ_BOULDER_STATIONARY_SCANNED;
+                            actuallyMoved = true;
+                          } else if (isKeyDown(VK_LEFT) && map[newRow][newCol-1] == OBJ_SPACE) {
+                            map[newRow][newCol-1] = OBJ_BOULDER_STATIONARY_SCANNED;
+                            actuallyMoved = true;
+                          }
                         }
                         break;
+                    }
+
+                    if (actuallyMoved) {
+                      if (isKeyDown(VK_SPACE)) {
+                        map[newRow][newCol] = OBJ_SPACE;
+                      } else {
+                        map[row][col] = OBJ_SPACE;
+                        map[newRow][newCol] = OBJ_ROCKFORD_SCANNED;
+                        rockfordRow = newRow;
+                        rockfordCol = newCol;
+                      }
                     }
 
                     if (rockfordIsMoving) {
