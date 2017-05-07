@@ -8,8 +8,8 @@
 #include "data_caves.h"
 
 // Developer options
-#define DEV_IMMEDIATE_STARTUP 1
-#define DEV_NEAR_OUTBOX 1
+#define DEV_IMMEDIATE_STARTUP 0
+#define DEV_NEAR_OUTBOX 0
 #define DEV_SINGLE_DIAMOND_NEEDED 0
 #define DEV_CHEAP_BONUS_LIFE 0
 #define DEV_CAMERA_DEBUGGING 0
@@ -18,6 +18,7 @@
 #define DEV_SINGLE_LIFE 0
 
 // Gameplay constants
+#define START_CAVE CAVE_A
 #define TICKS_PER_TURN 5
 #define ROCKFORD_TURNS_TILL_BIRTH 12
 #define CELL_COVER_TURNS 40
@@ -138,7 +139,6 @@
 #define OBJ_AMOEBA 0x3A
 #define OBJ_AMOEBA_SCANNED 0x3B
 
-#define NUM_CAVES 20
 #define CAVE_HEIGHT 22
 #define CAVE_WIDTH 40
 #define NUM_DIFFICULTY_LEVELS 5
@@ -161,6 +161,30 @@ typedef struct {
 } CaveInfo;
 
 typedef enum {
+  CAVE_A,
+  CAVE_B,
+  CAVE_C,
+  CAVE_D,
+  INTERMISSION_1,
+  CAVE_E,
+  CAVE_F,
+  CAVE_G,
+  CAVE_H,
+  INTERMISSION_2,
+  CAVE_I,
+  CAVE_J,
+  CAVE_K,
+  CAVE_L,
+  INTERMISSION_3,
+  CAVE_M,
+  CAVE_N,
+  CAVE_O,
+  CAVE_P,
+  INTERMISSION_4,
+  CAVE_COUNT,
+} CaveName;
+
+typedef enum {
   COLOR_BLACK,
   COLOR_GRAY,
   COLOR_WHITE,
@@ -175,11 +199,11 @@ typedef enum {
 
 typedef struct {
   Color boulderSteelWallOutboxFg;
-  Color brickWallBg;
   Color brickWallFg;
+  Color brickWallBg;
   Color dirtFg;
-  Color flyBg;
   Color flyFg;
+  Color flyBg;
 } CaveColors;
 
 //
@@ -336,12 +360,14 @@ void placeObjectRect(uint8_t object, int row, int col, int width, int height) {
 }
 
 void decodeCave(uint8_t caveIndex) {
-  uint8_t *caves[NUM_CAVES] = {
-    cave1, cave2, cave3, cave4, cave5, cave6, cave7, cave8, cave9, cave10,
-    cave11, cave12, cave13, cave14, cave15, cave16, cave17, cave18, cave19, cave20
+  uint8_t *caves[CAVE_COUNT] = {
+    caveA, caveB, caveC, caveD, intermission1,
+    caveE, caveF, caveG, caveH, intermission2,
+    caveI, caveJ, caveK, caveL, intermission3,
+    caveM, caveN, caveO, caveP, intermission4,
   };
 
-  assert(caveIndex < NUM_CAVES);
+  assert(caveIndex < CAVE_COUNT);
 
   caveInfo = (CaveInfo *)caves[caveIndex];
 
@@ -596,147 +622,126 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   // Initialize cave colors
   //
 
-  CaveColors caveColors[NUM_CAVES];
+  CaveColors caveColors[CAVE_COUNT] = {0};
 
-  caveColors[0].boulderSteelWallOutboxFg = COLOR_YELLOW;
-  caveColors[0].brickWallBg = COLOR_RED;
-  caveColors[0].brickWallFg = COLOR_GRAY;
-  caveColors[0].dirtFg = COLOR_RED;
-  caveColors[0].flyBg = COLOR_BLACK;
-  caveColors[0].flyFg = COLOR_BLACK;
+  caveColors[CAVE_A].boulderSteelWallOutboxFg = COLOR_YELLOW;
+  caveColors[CAVE_A].brickWallFg = COLOR_GRAY;
+  caveColors[CAVE_A].brickWallBg = COLOR_RED;
+  caveColors[CAVE_A].dirtFg = COLOR_RED;
 
-  caveColors[1].boulderSteelWallOutboxFg = COLOR_BLUE;
-  caveColors[1].brickWallBg = COLOR_YELLOW;
-  caveColors[1].brickWallFg = COLOR_BLUE;
-  caveColors[1].dirtFg = COLOR_PURPLE;
-  caveColors[1].flyBg = COLOR_YELLOW;
-  caveColors[1].flyFg = COLOR_BLUE;
+  caveColors[CAVE_B].boulderSteelWallOutboxFg = COLOR_BLUE;
+  caveColors[CAVE_B].brickWallFg = COLOR_BLUE;
+  caveColors[CAVE_B].brickWallBg = COLOR_YELLOW;
+  caveColors[CAVE_B].dirtFg = COLOR_PURPLE;
+  caveColors[CAVE_B].flyFg = COLOR_BLUE;
+  caveColors[CAVE_B].flyBg = COLOR_YELLOW;
 
-  caveColors[2].boulderSteelWallOutboxFg = COLOR_PURPLE;
-  caveColors[2].brickWallBg = COLOR_PURPLE;
-  caveColors[2].brickWallFg = COLOR_GRAY;
-  caveColors[2].dirtFg = COLOR_GREEN;
-  caveColors[2].flyBg = COLOR_BLACK;
-  caveColors[2].flyFg = COLOR_BLACK;
+  caveColors[CAVE_C].boulderSteelWallOutboxFg = COLOR_PURPLE;
+  caveColors[CAVE_C].brickWallFg = COLOR_GRAY;
+  caveColors[CAVE_C].brickWallBg = COLOR_PURPLE;
+  caveColors[CAVE_C].dirtFg = COLOR_GREEN;
 
-  caveColors[3].boulderSteelWallOutboxFg = COLOR_YELLOW;
-  caveColors[3].brickWallBg = COLOR_BLACK;
-  caveColors[3].brickWallFg = COLOR_BLACK;
-  caveColors[3].dirtFg = COLOR_BLUE;
-  caveColors[3].flyBg = COLOR_CYAN;
-  caveColors[3].flyFg = COLOR_BLACK;
+  caveColors[CAVE_D].boulderSteelWallOutboxFg = COLOR_YELLOW;
+  caveColors[CAVE_D].dirtFg = COLOR_BLUE;
+  caveColors[CAVE_D].flyFg = COLOR_CYAN;
+  caveColors[CAVE_D].flyBg = COLOR_BLACK;
 
-  caveColors[4].boulderSteelWallOutboxFg = COLOR_BLACK;
-  caveColors[4].brickWallBg = COLOR_BLACK;
-  caveColors[4].brickWallFg = COLOR_BLACK;
-  caveColors[4].dirtFg = COLOR_BLACK;
-  caveColors[4].flyBg = COLOR_BLACK;
-  caveColors[4].flyFg = COLOR_BLACK;
+  caveColors[INTERMISSION_1].boulderSteelWallOutboxFg = COLOR_PURPLE;
+  caveColors[INTERMISSION_1].dirtFg = COLOR_BLUE;
+  caveColors[INTERMISSION_1].flyFg = COLOR_BLUE;
+  caveColors[INTERMISSION_1].flyBg = COLOR_BLACK;
 
-  caveColors[5].boulderSteelWallOutboxFg = COLOR_BLACK;
-  caveColors[5].brickWallBg = COLOR_BLACK;
-  caveColors[5].brickWallFg = COLOR_BLACK;
-  caveColors[5].dirtFg = COLOR_BLACK;
-  caveColors[5].flyBg = COLOR_BLACK;
-  caveColors[5].flyFg = COLOR_BLACK;
+  caveColors[CAVE_E].boulderSteelWallOutboxFg = COLOR_PURPLE;
+  caveColors[CAVE_E].dirtFg = COLOR_RED;
+  caveColors[CAVE_E].flyFg = COLOR_RED;
+  caveColors[CAVE_E].flyBg = COLOR_YELLOW;
 
-  caveColors[6].boulderSteelWallOutboxFg = COLOR_BLACK;
-  caveColors[6].brickWallBg = COLOR_BLACK;
-  caveColors[6].brickWallFg = COLOR_BLACK;
-  caveColors[6].dirtFg = COLOR_BLACK;
-  caveColors[6].flyBg = COLOR_BLACK;
-  caveColors[6].flyFg = COLOR_BLACK;
+  caveColors[CAVE_F].boulderSteelWallOutboxFg = COLOR_PURPLE;
+  caveColors[CAVE_F].brickWallFg = COLOR_PURPLE;
+  caveColors[CAVE_F].brickWallBg = COLOR_GRAY;
+  caveColors[CAVE_F].dirtFg = COLOR_BLUE;
+  caveColors[CAVE_F].flyFg = COLOR_PURPLE;
+  caveColors[CAVE_F].flyBg = COLOR_GRAY;
 
-  caveColors[7].boulderSteelWallOutboxFg = COLOR_BLACK;
-  caveColors[7].brickWallBg = COLOR_BLACK;
-  caveColors[7].brickWallFg = COLOR_BLACK;
-  caveColors[7].dirtFg = COLOR_BLACK;
-  caveColors[7].flyBg = COLOR_BLACK;
-  caveColors[7].flyFg = COLOR_BLACK;
+  caveColors[CAVE_G].boulderSteelWallOutboxFg = COLOR_PURPLE;
+  caveColors[CAVE_G].brickWallFg = COLOR_RED;
+  caveColors[CAVE_G].brickWallBg = COLOR_GRAY;
+  caveColors[CAVE_G].dirtFg = COLOR_RED;
+  caveColors[CAVE_G].flyFg = COLOR_PURPLE;
+  caveColors[CAVE_G].flyBg = COLOR_YELLOW;
 
-  caveColors[8].boulderSteelWallOutboxFg = COLOR_BLACK;
-  caveColors[8].brickWallBg = COLOR_BLACK;
-  caveColors[8].brickWallFg = COLOR_BLACK;
-  caveColors[8].dirtFg = COLOR_BLACK;
-  caveColors[8].flyBg = COLOR_BLACK;
-  caveColors[8].flyFg = COLOR_BLACK;
+  caveColors[CAVE_H].boulderSteelWallOutboxFg = COLOR_CYAN;
+  caveColors[CAVE_H].brickWallFg = COLOR_CYAN;
+  caveColors[CAVE_H].brickWallBg = COLOR_GRAY;
+  caveColors[CAVE_H].dirtFg = COLOR_RED;
+  caveColors[CAVE_H].flyFg = COLOR_BLUE;
+  caveColors[CAVE_H].flyBg = COLOR_CYAN;
 
-  caveColors[9].boulderSteelWallOutboxFg = COLOR_BLACK;
-  caveColors[9].brickWallBg = COLOR_BLACK;
-  caveColors[9].brickWallFg = COLOR_BLACK;
-  caveColors[9].dirtFg = COLOR_BLACK;
-  caveColors[9].flyBg = COLOR_BLACK;
-  caveColors[9].flyFg = COLOR_BLACK;
+  caveColors[INTERMISSION_2].boulderSteelWallOutboxFg = COLOR_YELLOW;
+  caveColors[INTERMISSION_2].dirtFg = COLOR_BLUE;
+  caveColors[INTERMISSION_2].flyFg = COLOR_RED;
+  caveColors[INTERMISSION_2].flyBg = COLOR_GRAY;
 
-  caveColors[10].boulderSteelWallOutboxFg = COLOR_BLACK;
-  caveColors[10].brickWallBg = COLOR_BLACK;
-  caveColors[10].brickWallFg = COLOR_BLACK;
-  caveColors[10].dirtFg = COLOR_BLACK;
-  caveColors[10].flyBg = COLOR_BLACK;
-  caveColors[10].flyFg = COLOR_BLACK;
+  caveColors[CAVE_I].boulderSteelWallOutboxFg = COLOR_BLUE;
+  caveColors[CAVE_I].brickWallFg = COLOR_BLUE;
+  caveColors[CAVE_I].brickWallBg = COLOR_CYAN;
+  caveColors[CAVE_I].dirtFg = COLOR_PURPLE;
 
-  caveColors[11].boulderSteelWallOutboxFg = COLOR_BLACK;
-  caveColors[11].brickWallBg = COLOR_BLACK;
-  caveColors[11].brickWallFg = COLOR_BLACK;
-  caveColors[11].dirtFg = COLOR_BLACK;
-  caveColors[11].flyBg = COLOR_BLACK;
-  caveColors[11].flyFg = COLOR_BLACK;
+  caveColors[CAVE_J].boulderSteelWallOutboxFg = COLOR_RED;
+  caveColors[CAVE_J].brickWallFg = COLOR_BLUE;
+  caveColors[CAVE_J].brickWallBg = COLOR_GRAY;
+  caveColors[CAVE_J].dirtFg = COLOR_BLUE;
+  caveColors[CAVE_J].flyFg = COLOR_RED;
+  caveColors[CAVE_J].flyBg = COLOR_GRAY;
 
-  caveColors[12].boulderSteelWallOutboxFg = COLOR_BLACK;
-  caveColors[12].brickWallBg = COLOR_BLACK;
-  caveColors[12].brickWallFg = COLOR_BLACK;
-  caveColors[12].dirtFg = COLOR_BLACK;
-  caveColors[12].flyBg = COLOR_BLACK;
-  caveColors[12].flyFg = COLOR_BLACK;
+  caveColors[CAVE_K].boulderSteelWallOutboxFg = COLOR_YELLOW;
+  caveColors[CAVE_K].brickWallFg = COLOR_GRAY;
+  caveColors[CAVE_K].brickWallBg = COLOR_YELLOW;
+  caveColors[CAVE_K].dirtFg = COLOR_GREEN;
+  caveColors[CAVE_K].flyFg = COLOR_GREEN;
+  caveColors[CAVE_K].flyBg = COLOR_GRAY;
 
-  caveColors[13].boulderSteelWallOutboxFg = COLOR_BLACK;
-  caveColors[13].brickWallBg = COLOR_BLACK;
-  caveColors[13].brickWallFg = COLOR_BLACK;
-  caveColors[13].dirtFg = COLOR_BLACK;
-  caveColors[13].flyBg = COLOR_BLACK;
-  caveColors[13].flyFg = COLOR_BLACK;
+  caveColors[CAVE_L].boulderSteelWallOutboxFg = COLOR_YELLOW;
+  caveColors[CAVE_L].brickWallFg = COLOR_YELLOW;
+  caveColors[CAVE_L].brickWallBg = COLOR_GRAY;
+  caveColors[CAVE_L].dirtFg = COLOR_GREEN;
+  caveColors[CAVE_L].flyFg = COLOR_GREEN;
+  caveColors[CAVE_L].flyBg = COLOR_GRAY;
 
-  caveColors[14].boulderSteelWallOutboxFg = COLOR_BLACK;
-  caveColors[14].brickWallBg = COLOR_BLACK;
-  caveColors[14].brickWallFg = COLOR_BLACK;
-  caveColors[14].dirtFg = COLOR_BLACK;
-  caveColors[14].flyBg = COLOR_BLACK;
-  caveColors[14].flyFg = COLOR_BLACK;
+  caveColors[INTERMISSION_3].boulderSteelWallOutboxFg = COLOR_GREEN;
+  caveColors[INTERMISSION_3].flyFg = COLOR_GREEN;
+  caveColors[INTERMISSION_3].flyBg = COLOR_RED;
 
-  caveColors[15].boulderSteelWallOutboxFg = COLOR_BLACK;
-  caveColors[15].brickWallBg = COLOR_BLACK;
-  caveColors[15].brickWallFg = COLOR_BLACK;
-  caveColors[15].dirtFg = COLOR_BLACK;
-  caveColors[15].flyBg = COLOR_BLACK;
-  caveColors[15].flyFg = COLOR_BLACK;
+  caveColors[CAVE_M].boulderSteelWallOutboxFg = COLOR_RED;
+  caveColors[CAVE_M].brickWallFg = COLOR_BLACK;
+  caveColors[CAVE_M].brickWallBg = COLOR_GRAY;
+  caveColors[CAVE_M].dirtFg = COLOR_BLUE;
+  caveColors[CAVE_M].flyFg = COLOR_YELLOW;
+  caveColors[CAVE_M].flyBg = COLOR_BLACK;
 
-  caveColors[16].boulderSteelWallOutboxFg = COLOR_BLACK;
-  caveColors[16].brickWallBg = COLOR_BLACK;
-  caveColors[16].brickWallFg = COLOR_BLACK;
-  caveColors[16].dirtFg = COLOR_BLACK;
-  caveColors[16].flyBg = COLOR_BLACK;
-  caveColors[16].flyFg = COLOR_BLACK;
+  caveColors[CAVE_N].boulderSteelWallOutboxFg = COLOR_YELLOW;
+  caveColors[CAVE_N].dirtFg = COLOR_PURPLE;
+  caveColors[CAVE_N].flyFg = COLOR_YELLOW;
+  caveColors[CAVE_N].flyBg = COLOR_BLACK;
 
-  caveColors[17].boulderSteelWallOutboxFg = COLOR_BLACK;
-  caveColors[17].brickWallBg = COLOR_BLACK;
-  caveColors[17].brickWallFg = COLOR_BLACK;
-  caveColors[17].dirtFg = COLOR_BLACK;
-  caveColors[17].flyBg = COLOR_BLACK;
-  caveColors[17].flyFg = COLOR_BLACK;
+  caveColors[CAVE_O].boulderSteelWallOutboxFg = COLOR_BLUE;
+  caveColors[CAVE_O].brickWallFg = COLOR_BLACK;
+  caveColors[CAVE_O].brickWallBg = COLOR_GRAY;
+  caveColors[CAVE_O].dirtFg = COLOR_PURPLE;
+  caveColors[CAVE_O].flyFg = COLOR_BLUE;
+  caveColors[CAVE_O].flyBg = COLOR_GRAY;
 
-  caveColors[18].boulderSteelWallOutboxFg = COLOR_BLACK;
-  caveColors[18].brickWallBg = COLOR_BLACK;
-  caveColors[18].brickWallFg = COLOR_BLACK;
-  caveColors[18].dirtFg = COLOR_BLACK;
-  caveColors[18].flyBg = COLOR_BLACK;
-  caveColors[18].flyFg = COLOR_BLACK;
+  caveColors[CAVE_P].boulderSteelWallOutboxFg = COLOR_CYAN;
+  caveColors[CAVE_P].brickWallFg = COLOR_PURPLE;
+  caveColors[CAVE_P].brickWallBg = COLOR_GRAY;
+  caveColors[CAVE_P].dirtFg = COLOR_RED;
+  caveColors[CAVE_P].flyFg = COLOR_PURPLE;
+  caveColors[CAVE_P].flyBg = COLOR_GRAY;
 
-  caveColors[19].boulderSteelWallOutboxFg = COLOR_BLACK;
-  caveColors[19].brickWallBg = COLOR_BLACK;
-  caveColors[19].brickWallFg = COLOR_BLACK;
-  caveColors[19].dirtFg = COLOR_BLACK;
-  caveColors[19].flyBg = COLOR_BLACK;
-  caveColors[19].flyFg = COLOR_BLACK;
+  caveColors[INTERMISSION_4].boulderSteelWallOutboxFg = COLOR_GREEN;
+  caveColors[INTERMISSION_4].brickWallFg = COLOR_GRAY;
+  caveColors[INTERMISSION_4].brickWallBg = COLOR_GREEN;
+  caveColors[INTERMISSION_4].dirtFg = COLOR_YELLOW;
 
   //
   // Initialize game
@@ -833,7 +838,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
       isCaveStart = true;
       pauseTurnsLeft = 0;
-      currentCaveNumber = 0;
+      currentCaveNumber = START_CAVE;
       difficultyLevel = 0;
       livesLeft = DEV_SINGLE_LIFE ? 1 : 3;
       score = 0;
@@ -1311,8 +1316,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         sprintf_s(statusBarText, sizeof(statusBarText), "     O U T   O F   T I M E");
       } else {
         if (rockfordTurnsTillBirth > 0 || tileCoverTicksLeft > 0 || isCaveStart) {
-          sprintf_s(statusBarText, sizeof(statusBarText), "  PLAYER 1,  %d MEN,  ROOM %c/1",
-                    livesLeft, 'A' + currentCaveNumber);
+          sprintf_s(statusBarText, sizeof(statusBarText), "  PLAYER 1,  %d MEN,  ROOM %c/%d",
+                    livesLeft, 'A' + currentCaveNumber, difficultyLevel+1);
         } else {
           if (diamondsCollected < caveInfo->diamondsNeeded[difficultyLevel]) {
             sprintf_s(statusBarText, sizeof(statusBarText), "   %02d*%02d   %02d   %03d   %06d",
