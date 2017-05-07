@@ -23,6 +23,13 @@
 #define MAX_LIVES 9
 #define COVER_PAUSE 2
 
+// Keys
+#define KEY_FIRE VK_SPACE
+#define KEY_RIGHT VK_RIGHT
+#define KEY_LEFT VK_LEFT
+#define KEY_DOWN VK_DOWN
+#define KEY_UP VK_UP
+
 // Cave map consists of cells, each cell contains 4 (2x2) tiles
 #define TILE_SIZE 8
 #define CELL_SIZE (TILE_SIZE*2)
@@ -767,18 +774,18 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                     int newRow = row;
                     int newCol = col;
 
-                    if (isKeyDown(VK_RIGHT)) {
+                    if (isKeyDown(KEY_RIGHT)) {
                       rockfordIsMoving = true;
                       rockfordIsFacingRight = true;
                       ++newCol;
-                    } else if (isKeyDown(VK_LEFT)) {
+                    } else if (isKeyDown(KEY_LEFT)) {
                       rockfordIsMoving = true;
                       rockfordIsFacingRight = false;
                       --newCol;
-                    } else if (isKeyDown(VK_DOWN)) {
+                    } else if (isKeyDown(KEY_DOWN)) {
                       rockfordIsMoving = true;
                       ++newRow;
-                    } else if (isKeyDown(VK_UP)) {
+                    } else if (isKeyDown(KEY_UP)) {
                       rockfordIsMoving = true;
                       --newRow;
                     } else {
@@ -825,10 +832,10 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                       case OBJ_BOULDER_STATIONARY_SCANNED:
                         // Pushing boulders
                         if (rand() % 4 == 0) {
-                          if (isKeyDown(VK_RIGHT) && map[newRow][newCol+1] == OBJ_SPACE) {
+                          if (isKeyDown(KEY_RIGHT) && map[newRow][newCol+1] == OBJ_SPACE) {
                             map[newRow][newCol+1] = OBJ_BOULDER_STATIONARY_SCANNED;
                             actuallyMoved = true;
-                          } else if (isKeyDown(VK_LEFT) && map[newRow][newCol-1] == OBJ_SPACE) {
+                          } else if (isKeyDown(KEY_LEFT) && map[newRow][newCol-1] == OBJ_SPACE) {
                             map[newRow][newCol-1] = OBJ_BOULDER_STATIONARY_SCANNED;
                             actuallyMoved = true;
                           }
@@ -837,7 +844,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                     }
 
                     if (actuallyMoved) {
-                      if (isKeyDown(VK_SPACE)) {
+                      if (isKeyDown(KEY_FIRE)) {
                         map[newRow][newCol] = OBJ_SPACE;
                       } else {
                         map[row][col] = OBJ_SPACE;
@@ -926,7 +933,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             if (deathCoverTicksLeft == 0 && isRockfordDead()) {
               // Rockford is dead
 
-              if (isKeyDown(VK_SPACE)) {
+              if (isKeyDown(KEY_FIRE)) {
                 deathCoverTicksLeft = DEATH_COVER_TICKS;
 
                 --livesLeft;
