@@ -12,6 +12,7 @@
 #define DEV_SINGLE_DIAMOND_NEEDED false
 #define DEV_CAMERA_DEBUGGING false
 #define DEV_SLOW_TICK_DURATION false
+#define DEV_QUICK_OUT_OF_TIME true
 
 // Gameplay constants
 #define TICKS_PER_TURN 5
@@ -22,6 +23,7 @@
 #define BONUS_LIFE_FLASHING_TURNS 10
 #define MAX_LIVES 9
 #define COVER_PAUSE 2
+#define TICKS_PER_CAVE_SECOND (7*TICKS_PER_TURN)
 
 // Keys
 #define KEY_FIRE VK_SPACE
@@ -586,6 +588,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
   // These variables are initialized when cave starts
   int caveTimeLeft;
+  int ticksTillNextCaveSecond;
   int diamondsCollected;
   int currentDiamondValue;
   int rockfordTurnsTillBirth;
@@ -640,7 +643,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       turnsSinceRockfordSeenAlive = 0;
       diamondsCollected = 0;
       currentDiamondValue = caveInfo->initialDiamondValue;
-      caveTimeLeft = caveInfo->caveTime[difficultyLevel];
+      caveTimeLeft = DEV_QUICK_OUT_OF_TIME ? 5 : caveInfo->caveTime[difficultyLevel];
+      ticksTillNextCaveSecond = TICKS_PER_CAVE_SECOND;
       rockfordTurnsTillBirth = DEV_IMMEDIATE_STARTUP ? 0 : ROCKFORD_TURNS_TILL_BIRTH;
       birthCoverTurnsLeft = DEV_IMMEDIATE_STARTUP ? 1 : BIRTH_COVER_TURNS;
 
@@ -689,6 +693,17 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       int rockfordRectTop = PLAYFIELD_TOP + rockfordRow*CELL_SIZE - cameraY;
       int rockfordRectRight = rockfordRectLeft + CELL_SIZE;
       int rockfordRectBottom = rockfordRectTop + CELL_SIZE;
+
+      if (rockfordTurnsTillBirth == 0 && caveTimeLeft > 0) {
+        --ticksTillNextCaveSecond;
+        if (ticksTillNextCaveSecond == 0) {
+          ticksTillNextCaveSecond = TICKS_PER_CAVE_SECOND;
+          --caveTimeLeft;
+          if (caveTimeLeft == 0) {
+            // TODO
+          }
+        }
+      }
 
       if (tick % TICKS_PER_TURN == 0) {
         if (pauseTurnsLeft > 0) {
@@ -774,22 +789,24 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                     int newRow = row;
                     int newCol = col;
 
-                    if (isKeyDown(KEY_RIGHT)) {
-                      rockfordIsMoving = true;
-                      rockfordIsFacingRight = true;
-                      ++newCol;
-                    } else if (isKeyDown(KEY_LEFT)) {
-                      rockfordIsMoving = true;
-                      rockfordIsFacingRight = false;
-                      --newCol;
-                    } else if (isKeyDown(KEY_DOWN)) {
-                      rockfordIsMoving = true;
-                      ++newRow;
-                    } else if (isKeyDown(KEY_UP)) {
-                      rockfordIsMoving = true;
-                      --newRow;
-                    } else {
-                      rockfordIsMoving = false;
+                    rockfordIsMoving = false;
+
+                    if (caveTimeLeft > 0) {
+                      if (isKeyDown(KEY_RIGHT)) {
+                        rockfordIsMoving = true;
+                        rockfordIsFacingRight = true;
+                        ++newCol;
+                      } else if (isKeyDown(KEY_LEFT)) {
+                        rockfordIsMoving = true;
+                        rockfordIsFacingRight = false;
+                        --newCol;
+                      } else if (isKeyDown(KEY_DOWN)) {
+                        rockfordIsMoving = true;
+                        ++newRow;
+                      } else if (isKeyDown(KEY_UP)) {
+                        rockfordIsMoving = true;
+                        --newRow;
+                      }
                     }
 
                     bool actuallyMoved = false;
