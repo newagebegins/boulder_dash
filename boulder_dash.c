@@ -29,6 +29,7 @@
 #define OUT_OF_TIME_ON_TURNS 25
 #define OUT_OF_TIME_OFF_TURNS 42
 #define TURNS_TILL_GAME_RESTART 10
+#define TURNS_TILL_EXITING_CAVE 12
 
 // Keys
 #define KEY_FIRE VK_SPACE
@@ -579,6 +580,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
   bool isGameStart = true;
   int turnsTillGameRestart = 0;
+  int turnsTillExitingCave = 0;
   bool isAddingTimeToScore = false;
 
   uint8_t normalBorderColor = 0;
@@ -602,6 +604,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int turnsTillStopBonusLifeFlashing;
 
   // These variables are initialized when cave starts
+  bool isExitingCave;
   int caveTimeLeft;
   int ticksTillNextCaveSecond;
   bool isOutOfTimeTextShown;
@@ -670,6 +673,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
       decodeCave(currentCaveNumber);
 
+      isExitingCave = false;
       turnsSinceRockfordSeenAlive = 0;
       diamondsCollected = 0;
       currentDiamondValue = caveInfo->initialDiamondValue;
@@ -734,14 +738,17 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           --caveTimeLeft;
           ++score;
         } else {
-          //isAddingTimeToScore = false;
+          isAddingTimeToScore = false;
+          isExitingCave = true;
+          ++currentCaveNumber;
+          turnsTillExitingCave = TURNS_TILL_EXITING_CAVE;
         }
       } else {
         //
         // Update cave timer
         //
 
-        if (tileCoverTicksLeft == 0 && rockfordTurnsTillBirth == 0 && !isOutOfTime) {
+        if (turnsTillExitingCave == 0 && tileCoverTicksLeft == 0 && rockfordTurnsTillBirth == 0 && !isOutOfTime) {
           --ticksTillNextCaveSecond;
           if (ticksTillNextCaveSecond == 0) {
             ticksTillNextCaveSecond = TICKS_PER_CAVE_SECOND;
@@ -767,6 +774,13 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               if (turnsTillGameRestart == 0) {
                 isGameStart = true;
               }
+            } else if (turnsTillExitingCave > 0) {
+              --turnsTillExitingCave;
+              if (turnsTillExitingCave == 0) {
+                tileCoverTicksLeft = TILE_COVER_TICKS;
+              }
+            } else if (isExitingCave) {
+              // Do nothing
             } else {
               borderColor = normalBorderColor;
 
@@ -1117,9 +1131,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       } else if (isOutOfTimeTextShown && tileCoverTicksLeft == 0) {
         sprintf_s(statusBarText, sizeof(statusBarText), "     O U T   O F   T I M E");
       } else {
-        if (rockfordTurnsTillBirth > 0 || tileCoverTicksLeft > 0) {
+        if (rockfordTurnsTillBirth > 0 || tileCoverTicksLeft > 0 || isCaveStart) {
           sprintf_s(statusBarText, sizeof(statusBarText), "  PLAYER 1,  %d MEN,  ROOM %c/1",
-                    livesLeft, 'A' + (caveInfo->caveNumber-1));
+                    livesLeft, 'A' + currentCaveNumber);
         } else {
           if (diamondsCollected < caveInfo->diamondsNeeded[difficultyLevel]) {
             sprintf_s(statusBarText, sizeof(statusBarText), "   %02d*%02d   %02d   %03d   %06d",
