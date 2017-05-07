@@ -83,6 +83,7 @@ void main() {
   printSprite("spriteRockfordRight", 8, 2, 0, 80);
   printSprite("spriteSpace", 1, 2, 16, 0);
   printSprite("spriteSteelWall", 1, 2, 0, 96);
+  printSprite("spriteSteelWallTile", 1, 1, 0, 96);
   printSprite("spriteOutbox", 1, 2, 16, 96);
   printSprite("spriteBoulder", 1, 2, 32, 96);
   printSprite("spriteDirt", 1, 2, 48, 96);
