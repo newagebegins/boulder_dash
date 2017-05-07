@@ -561,7 +561,10 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               }
             }
           } else {
+            //
             // Scan cave
+            //
+
             for (int row = 0; row < CAVE_HEIGHT; ++row) {
               for (int col = 0; col < CAVE_WIDTH; ++col) {
                 switch (map[row][col]) {
@@ -587,6 +590,10 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                   case OBJ_PRE_ROCKFORD_STAGE_4:
                     map[row][col] = OBJ_ROCKFORD;
                     break;
+
+                    //
+                    // Update Rockford
+                    //
 
                   case OBJ_ROCKFORD: {
                     int newRow = row;
@@ -637,16 +644,60 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                     }
                     break;
                   }
+
+                    //
+                    // Update boulders
+                    //
+
+                  case OBJ_BOULDER_STATIONARY:
+                  case OBJ_BOULDER_FALLING:
+                    switch (map[row+1][col]) {
+                      case OBJ_SPACE:
+                        map[row+1][col] = OBJ_BOULDER_FALLING_SCANNED;
+                        map[row][col] = OBJ_SPACE;
+                        break;
+
+                      case OBJ_BOULDER_STATIONARY:
+                      case OBJ_DIAMOND_STATIONARY:
+                      case OBJ_BRICK_WALL:
+                        // Try to roll off
+                        if (map[row][col-1] == OBJ_SPACE && map[row+1][col-1] == OBJ_SPACE) {
+                          // Roll left
+                          map[row][col-1] = OBJ_BOULDER_FALLING_SCANNED;
+                          map[row][col] = OBJ_SPACE;
+                        } else if (map[row][col+1] == OBJ_SPACE && map[row+1][col+1] == OBJ_SPACE) {
+                          // Roll right
+                          map[row][col+1] = OBJ_BOULDER_FALLING_SCANNED;
+                          map[row][col] = OBJ_SPACE;
+                        } else {
+                          map[row][col] = OBJ_BOULDER_STATIONARY_SCANNED;
+                        }
+                        break;
+
+                      default:
+                        map[row][col] = OBJ_BOULDER_STATIONARY_SCANNED;
+                        break;
+                    }
+                    break;
                 }
               }
             }
 
+            //
             // Remove scanned status for cells
+            //
+
             for (int row = 0; row < CAVE_HEIGHT; ++row) {
               for (int col = 0; col < CAVE_WIDTH; ++col) {
                 switch (map[row][col]) {
                   case OBJ_ROCKFORD_SCANNED:
                     map[row][col] = OBJ_ROCKFORD;
+                    break;
+                  case OBJ_BOULDER_STATIONARY_SCANNED:
+                    map[row][col] = OBJ_BOULDER_STATIONARY;
+                    break;
+                  case OBJ_BOULDER_FALLING_SCANNED:
+                    map[row][col] = OBJ_BOULDER_FALLING;
                     break;
                 }
               }
