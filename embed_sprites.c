@@ -90,4 +90,5 @@ void main() {
   printSprite("spriteExplosion", 3, 2, 0, 128);
   printSprite("spriteDiamond", 8, 2, 0, 144);
   printSprite("spriteAscii", 59, 1, 0, 224);
+  printSprite("spriteSpaceFlash", 10, 2, 0, 240);
 }

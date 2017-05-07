@@ -13,6 +13,11 @@
 #define DEV_CAMERA_DEBUGGING false
 #define DEV_SLOW_TICK_DURATION false
 
+// Gameplay constants
+#define BONUS_LIFE_COST 500
+#define SPACE_FLASHING_TURNS 10
+#define MAX_LIVES 9
+
 // Cave map consists of cells, each cell contains 4 (2x2) tiles
 #define TILE_SIZE 8
 #define CELL_SIZE (TILE_SIZE*2)
@@ -557,6 +562,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int score = 0;
   int diamondsCollected = 0;
   int currentDiamondValue = caveInfo->initialDiamondValue;
+  int scoreTillBonusLife = BONUS_LIFE_COST;
+  int turnsTillStopSpaceFlashing = 0;
+
   if (DEV_SINGLE_DIAMOND_NEEDED) {
     caveInfo->diamondsNeeded[difficultyLevel] = 1;
   }
@@ -647,6 +655,10 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
           borderColor = normalBorderColor;
 
+          if (turnsTillStopSpaceFlashing > 0) {
+            --turnsTillStopSpaceFlashing;
+          }
+
           if (mapUncoverTurnsLeft > 0) {
             // Update map cover
             mapUncoverTurnsLeft--;
@@ -732,9 +744,25 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
                       case OBJ_DIAMOND_STATIONARY:
                       case OBJ_DIAMOND_STATIONARY_SCANNED:
+                        //
                         // Pick up a diamond
+                        //
+
                         actuallyMoved = true;
                         score += currentDiamondValue;
+
+                        // Check for bonus life
+                        scoreTillBonusLife -= currentDiamondValue;
+                        if (scoreTillBonusLife <= 0) {
+                          scoreTillBonusLife += BONUS_LIFE_COST;
+                          turnsTillStopSpaceFlashing = SPACE_FLASHING_TURNS;
+                          ++livesLeft;
+                          if (livesLeft > MAX_LIVES) {
+                            livesLeft = MAX_LIVES;
+                          }
+                        }
+
+                        // Check if all the needed diamonds for this cave were collected
                         ++diamondsCollected;
                         if (diamondsCollected == caveInfo->diamondsNeeded[difficultyLevel]) {
                           currentDiamondValue = caveInfo->extraDiamondValue;
@@ -767,6 +795,10 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                         rockfordCol = newCol;
                       }
                     }
+
+                    //
+                    // Update Rockford idle animation
+                    //
 
                     if (rockfordIsMoving) {
                       rockfordIsBlinking = false;
@@ -898,7 +930,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           } else {
             switch (map[row][col]) {
               case OBJ_SPACE:
-                drawSprite(spriteSpace, 0, x, y, 0, 0, 0);
+                if (turnsTillStopSpaceFlashing > 0) {
+                  drawSprite(spriteSpaceFlash, turn, x, y, 2, 0, 0);
+                } else {
+                  drawSprite(spriteSpace, 0, x, y, 0, 0, 0);
+                }
                 break;
 
               case OBJ_STEEL_WALL:
