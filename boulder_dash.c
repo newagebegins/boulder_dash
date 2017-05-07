@@ -366,35 +366,21 @@ bool isKeyDown(int virtKey) {
 }
 
 void explodeCell(int row, int col, bool toDiamonds, int explosionStage) {
-  assert(explosionStage == 0 || explosionStage == 1);
   if (map[row][col] != OBJ_STEEL_WALL) {
     if (toDiamonds) {
-      switch (explosionStage) {
-        case 0: map[row][col] = OBJ_EXPLODE_TO_DIAMOND_0; break;
-        case 1: map[row][col] = OBJ_EXPLODE_TO_DIAMOND_1; break;
+      if (explosionStage == 0) {
+        map[row][col] = OBJ_EXPLODE_TO_DIAMOND_0;
+      } else {
+        map[row][col] = OBJ_EXPLODE_TO_DIAMOND_1;
       }
     } else {
-      switch (explosionStage) {
-        case 0: map[row][col] = OBJ_EXPLODE_TO_SPACE_0; break;
-        case 1: map[row][col] = OBJ_EXPLODE_TO_SPACE_1; break;
+      if (explosionStage == 0) {
+        map[row][col] = OBJ_EXPLODE_TO_SPACE_0;
+      } else {
+        map[row][col] = OBJ_EXPLODE_TO_SPACE_1;
       }
     }
   }
-}
-
-void explode(int row, int col) {
-  uint8_t toDiamonds = map[row][col] == OBJ_BUTTERFLY_POSITION_1 || map[row][col] == OBJ_BUTTERFLY_POSITION_2 || map[row][col] == OBJ_BUTTERFLY_POSITION_3 || map[row][col] == OBJ_BUTTERFLY_POSITION_4;
-
-  explodeCell(row-1, col-1, toDiamonds, 1);
-  explodeCell(row-1, col, toDiamonds, 1);
-  explodeCell(row-1, col+1, toDiamonds, 1);
-  explodeCell(row, col-1, toDiamonds, 1);
-  explodeCell(row, col, toDiamonds, 1);
-
-  explodeCell(row, col+1, toDiamonds, 0);
-  explodeCell(row+1, col-1, toDiamonds, 0);
-  explodeCell(row+1, col, toDiamonds, 0);
-  explodeCell(row+1, col+1, toDiamonds, 0);
 }
 
 LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
@@ -499,8 +485,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   bool rockfordIsBlinking = false;
   bool rockfordIsTapping = false;
   float tickTimer = 0;
-  int rockfordTurnsTillBirth = 12 /*0*/;
-  int mapUncoverTurnsLeft = 40 /*1*/;
+  int rockfordTurnsTillBirth = /*12*/ 0;
+  int mapUncoverTurnsLeft = /*40*/ 1;
   int pauseTurnsLeft = 0;
   bool rockfordIsMoving = false;
   bool rockfordIsFacingRight = true;
@@ -552,7 +538,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       gameIsRunning = false;
     }
 
-    float tickDuration = 0.03375f;
+    float tickDuration = 0.03375f /*0.15f*/;
     tickTimer += dt;
 
     if (tickTimer >= tickDuration) {
@@ -737,9 +723,22 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                       case OBJ_BUTTERFLY_POSITION_1:
                       case OBJ_BUTTERFLY_POSITION_2:
                       case OBJ_BUTTERFLY_POSITION_3:
-                      case OBJ_BUTTERFLY_POSITION_4:
-                        explode(row+1, col);
+                      case OBJ_BUTTERFLY_POSITION_4: {
+                        bool toDiamonds = map[row+1][col] == OBJ_BUTTERFLY_POSITION_1 || map[row+1][col] == OBJ_BUTTERFLY_POSITION_2 || map[row+1][col] == OBJ_BUTTERFLY_POSITION_3 || map[row+1][col] == OBJ_BUTTERFLY_POSITION_4;
+
+                        explodeCell(row, col, toDiamonds, 1);
+                        explodeCell(row, col-1, toDiamonds, 1);
+                        explodeCell(row, col+1, toDiamonds, 0);
+
+                        explodeCell(row+1, col, toDiamonds, 0);
+                        explodeCell(row+1, col-1, toDiamonds, 0);
+                        explodeCell(row+1, col+1, toDiamonds, 0);
+
+                        explodeCell(row+2, col, toDiamonds, 0);
+                        explodeCell(row+2, col-1, toDiamonds, 0);
+                        explodeCell(row+2, col+1, toDiamonds, 0);
                         break;
+                      }
 
                       default:
                         map[row][col] = OBJ_BOULDER_STATIONARY_SCANNED;
