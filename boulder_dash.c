@@ -165,8 +165,6 @@ uint8_t map[CAVE_HEIGHT][CAVE_WIDTH];
 CaveInfo *caveInfo;
 int turnsSinceRockfordSeenAlive;
 bool isOutOfTime;
-int tileCoverTicksLeft;
-int livesLeft;
 
 //
 //
@@ -478,15 +476,6 @@ bool isFailed() {
   return turnsSinceRockfordSeenAlive >= 16 || isOutOfTime;
 }
 
-void loseLife() {
-  tileCoverTicksLeft = TILE_COVER_TICKS;
-
-  --livesLeft;
-  if (livesLeft < 0) {
-    livesLeft = 0;
-  }
-}
-
 LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
   switch (msg) {
     case WM_DESTROY:
@@ -582,7 +571,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   bool tileCover[PLAYFIELD_HEIGHT_IN_TILES][PLAYFIELD_WIDTH_IN_TILES] = {0};
   char statusBarText[PLAYFIELD_WIDTH_IN_TILES];
   int difficultyLevel = 0;
-  livesLeft = 3;
+  int livesLeft = 3;
   int score = 0;
   int scoreTillBonusLife = BONUS_LIFE_COST;
   int turnsTillStopBonusLifeFlashing = 0;
@@ -612,6 +601,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int currentDiamondValue;
   int rockfordTurnsTillBirth;
   int cellCoverTurnsLeft;
+  int tileCoverTicksLeft;
   int rockfordCol;
   int rockfordRow;
   bool rockfordIsBlinking;
@@ -975,11 +965,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             // Handle failure
             //
 
-            if (tileCoverTicksLeft == 0 && rockfordTurnsTillBirth == 0 && isKeyDown(KEY_FAIL)) {
-              loseLife();
-            } else if (tileCoverTicksLeft == 0 && isFailed()) {
-              if (isKeyDown(KEY_FIRE)) {
-                loseLife();
+            if (tileCoverTicksLeft == 0 && rockfordTurnsTillBirth == 0 &&
+                ((isFailed() && isKeyDown(KEY_FIRE)) || isKeyDown(KEY_FAIL))) {
+              tileCoverTicksLeft = TILE_COVER_TICKS;
+              --livesLeft;
+              if (livesLeft == 0) {
               }
             }
           }
