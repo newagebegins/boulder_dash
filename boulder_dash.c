@@ -13,6 +13,7 @@
 #define DEV_CAMERA_DEBUGGING false
 #define DEV_SLOW_TICK_DURATION false
 #define DEV_QUICK_OUT_OF_TIME false
+#define DEV_SINGLE_LIFE true
 
 // Gameplay constants
 #define TICKS_PER_TURN 5
@@ -26,6 +27,7 @@
 #define TICKS_PER_CAVE_SECOND (7*TICKS_PER_TURN)
 #define OUT_OF_TIME_ON_TURNS 25
 #define OUT_OF_TIME_OFF_TURNS 42
+#define TURNS_TILL_GAME_RESTART 10
 
 // Keys
 #define KEY_FIRE VK_SPACE
@@ -566,19 +568,16 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   // Initialize game state
   //
 
-  uint8_t currentCaveNumber = 0;
   uint8_t cellCover[CAVE_HEIGHT][CAVE_WIDTH];
-  bool tileCover[PLAYFIELD_HEIGHT_IN_TILES][PLAYFIELD_WIDTH_IN_TILES] = {0};
+  bool tileCover[PLAYFIELD_HEIGHT_IN_TILES][PLAYFIELD_WIDTH_IN_TILES];
   char statusBarText[PLAYFIELD_WIDTH_IN_TILES];
-  int difficultyLevel = 0;
-  int livesLeft = 3;
-  int score = 0;
-  int scoreTillBonusLife = BONUS_LIFE_COST;
-  int turnsTillStopBonusLifeFlashing = 0;
 
   int turn = 0;
   int tick = 0;
   float tickTimer = 0;
+
+  bool isGameStart = true;
+  int turnsTillGameRestart = 0;
 
   uint8_t normalBorderColor = 0;
   uint8_t flashBorderColor = 1;
@@ -589,8 +588,16 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int cameraVelX = 0;
   int cameraVelY = 0;
 
-  bool isCaveStart = true;
-  int pauseTurnsLeft = 0;
+  // These variables are initialized when game starts
+
+  bool isCaveStart;
+  int pauseTurnsLeft;
+  uint8_t currentCaveNumber;
+  int difficultyLevel;
+  int livesLeft;
+  int score;
+  int scoreTillBonusLife;
+  int turnsTillStopBonusLifeFlashing;
 
   // These variables are initialized when cave starts
   int caveTimeLeft;
@@ -643,8 +650,22 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       gameIsRunning = false;
     }
 
+    if (isGameStart) {
+      isGameStart = false;
+
+      isCaveStart = true;
+      pauseTurnsLeft = 0;
+      currentCaveNumber = 0;
+      difficultyLevel = 0;
+      livesLeft = DEV_SINGLE_LIFE ? 1 : 3;
+      score = 0;
+      scoreTillBonusLife = BONUS_LIFE_COST;
+      turnsTillStopBonusLifeFlashing = 0;
+    }
+
     if (isCaveStart && pauseTurnsLeft == 0) {
       isCaveStart = false;
+
       decodeCave(currentCaveNumber);
 
       turnsSinceRockfordSeenAlive = 0;
@@ -736,6 +757,13 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
           if (turnsTillStopBonusLifeFlashing > 0) {
             --turnsTillStopBonusLifeFlashing;
+          }
+
+          if (turnsTillGameRestart > 0) {
+            --turnsTillGameRestart;
+            if (turnsTillGameRestart == 0) {
+              isGameStart = true;
+            }
           }
 
           if (cellCoverTurnsLeft > 0) {
@@ -969,8 +997,6 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                 ((isFailed() && isKeyDown(KEY_FIRE)) || isKeyDown(KEY_FAIL))) {
               tileCoverTicksLeft = TILE_COVER_TICKS;
               --livesLeft;
-              if (livesLeft == 0) {
-              }
             }
           }
 
@@ -1030,7 +1056,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             }
           }
 
-          if (isOutOfTimeTextShown && tileCoverTicksLeft == 0) {
+          if (livesLeft == 0) {
+            sprintf_s(statusBarText, sizeof(statusBarText), "        G A M E  O V E R");
+          } else if (isOutOfTimeTextShown && tileCoverTicksLeft == 0) {
             sprintf_s(statusBarText, sizeof(statusBarText), "     O U T   O F   T I M E");
           } else {
             if (rockfordTurnsTillBirth > 0 || tileCoverTicksLeft > 0) {
@@ -1055,8 +1083,17 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         --tileCoverTicksLeft;
 
         if (tileCoverTicksLeft == 0) {
-          pauseTurnsLeft = COVER_PAUSE;
-          isCaveStart = true;
+          if (livesLeft == 0) {
+            for (int row = 0; row < PLAYFIELD_HEIGHT_IN_TILES; ++row) {
+              for (int col = 0; col < PLAYFIELD_WIDTH_IN_TILES; ++col) {
+                tileCover[row][col] = true;
+              }
+            }
+            turnsTillGameRestart = TURNS_TILL_GAME_RESTART;
+          } else {
+            pauseTurnsLeft = COVER_PAUSE;
+            isCaveStart = true;
+          }
         } else {
           for (int i = 0; i < 7; ++i) {
             int row = rand() % PLAYFIELD_HEIGHT_IN_TILES;
