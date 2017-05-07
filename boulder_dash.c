@@ -13,7 +13,7 @@
 #define DEV_CAMERA_DEBUGGING false
 #define DEV_SLOW_TICK_DURATION false
 #define DEV_QUICK_OUT_OF_TIME false
-#define DEV_SINGLE_LIFE true
+#define DEV_SINGLE_LIFE false
 
 // Gameplay constants
 #define TICKS_PER_TURN 5
@@ -959,6 +959,16 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                     case OBJ_EXPLODE_TO_DIAMOND_2: map[row][col] = OBJ_EXPLODE_TO_DIAMOND_3; break;
                     case OBJ_EXPLODE_TO_DIAMOND_3: map[row][col] = OBJ_EXPLODE_TO_DIAMOND_4; break;
                     case OBJ_EXPLODE_TO_DIAMOND_4: map[row][col] = OBJ_DIAMOND_STATIONARY; break;
+
+                      //
+                      // Update out box
+                      //
+
+                    case OBJ_PRE_OUTBOX:
+                      if (diamondsCollected >= caveInfo->diamondsNeeded[difficultyLevel]) {
+                        map[row][col] = OBJ_FLASHING_OUTBOX;
+                      }
+                      break;
                   }
                 }
               }
@@ -1129,7 +1139,16 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                 break;
 
               case OBJ_STEEL_WALL:
+              case OBJ_PRE_OUTBOX:
                 drawSprite(spriteSteelWall, 0, x, y, 4, 0, 0);
+                break;
+
+              case OBJ_FLASHING_OUTBOX:
+                if (turn % 2 == 0) {
+                  drawSprite(spriteOutbox, 0, x, y, 4, 0, 0);
+                } else {
+                  drawSprite(spriteSteelWall, 0, x, y, 4, 0, 0);
+                }
                 break;
 
               case OBJ_DIRT:
