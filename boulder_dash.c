@@ -773,15 +773,20 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             for (int row = 0; row < CAVE_HEIGHT; ++row) {
               for (int col = 0; col < CAVE_WIDTH; ++col) {
                 switch (map[row][col]) {
-                  case OBJ_ROCKFORD_SCANNED:
-                    map[row][col] = OBJ_ROCKFORD;
-                    break;
-                  case OBJ_BOULDER_STATIONARY_SCANNED:
-                    map[row][col] = OBJ_BOULDER_STATIONARY;
-                    break;
-                  case OBJ_BOULDER_FALLING_SCANNED:
-                    map[row][col] = OBJ_BOULDER_FALLING;
-                    break;
+                  case OBJ_FIREFLY_POSITION_1_SCANNED:   map[row][col] = OBJ_FIREFLY_POSITION_1;   break;
+                  case OBJ_FIREFLY_POSITION_2_SCANNED:   map[row][col] = OBJ_FIREFLY_POSITION_2;   break;
+                  case OBJ_FIREFLY_POSITION_3_SCANNED:   map[row][col] = OBJ_FIREFLY_POSITION_3;   break;
+                  case OBJ_FIREFLY_POSITION_4_SCANNED:   map[row][col] = OBJ_FIREFLY_POSITION_4;   break;
+                  case OBJ_BOULDER_STATIONARY_SCANNED:   map[row][col] = OBJ_BOULDER_STATIONARY;   break;
+                  case OBJ_BOULDER_FALLING_SCANNED:      map[row][col] = OBJ_BOULDER_FALLING;      break;
+                  case OBJ_DIAMOND_STATIONARY_SCANNED:   map[row][col] = OBJ_DIAMOND_STATIONARY;   break;
+                  case OBJ_DIAMOND_FALLING_SCANNED:      map[row][col] = OBJ_DIAMOND_FALLING;      break;
+                  case OBJ_BUTTERFLY_POSITION_1_SCANNED: map[row][col] = OBJ_BUTTERFLY_POSITION_1; break;
+                  case OBJ_BUTTERFLY_POSITION_2_SCANNED: map[row][col] = OBJ_BUTTERFLY_POSITION_2; break;
+                  case OBJ_BUTTERFLY_POSITION_3_SCANNED: map[row][col] = OBJ_BUTTERFLY_POSITION_3; break;
+                  case OBJ_BUTTERFLY_POSITION_4_SCANNED: map[row][col] = OBJ_BUTTERFLY_POSITION_4; break;
+                  case OBJ_ROCKFORD_SCANNED:             map[row][col] = OBJ_ROCKFORD;             break;
+                  case OBJ_AMOEBA_SCANNED:               map[row][col] = OBJ_AMOEBA;               break;
                 }
               }
             }
