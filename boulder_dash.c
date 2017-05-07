@@ -78,20 +78,20 @@
 #define OBJ_DIAMOND_STATIONARY_SCANNED 0x15
 #define OBJ_DIAMOND_FALLING 0x16
 #define OBJ_DIAMOND_FALLING_SCANNED 0x17
-#define OBJ_EXPLODE_TO_SPACE_STAGE_0 0x1B
-#define OBJ_EXPLODE_TO_SPACE_STAGE_1 0x1C
-#define OBJ_EXPLODE_TO_SPACE_STAGE_2 0x1D
-#define OBJ_EXPLODE_TO_SPACE_STAGE_3 0x1E
-#define OBJ_EXPLODE_TO_SPACE_STAGE_4 0x1F
-#define OBJ_EXPLODE_TO_DIAMOND_STAGE_0 0x20
-#define OBJ_EXPLODE_TO_DIAMOND_STAGE_1 0x21
-#define OBJ_EXPLODE_TO_DIAMOND_STAGE_2 0x22
-#define OBJ_EXPLODE_TO_DIAMOND_STAGE_3 0x23
-#define OBJ_EXPLODE_TO_DIAMOND_STAGE_4 0x24
-#define OBJ_PRE_ROCKFORD_STAGE_1 0x25
-#define OBJ_PRE_ROCKFORD_STAGE_2 0x26
-#define OBJ_PRE_ROCKFORD_STAGE_3 0x27
-#define OBJ_PRE_ROCKFORD_STAGE_4 0x28
+#define OBJ_EXPLODE_TO_SPACE_0 0x1B
+#define OBJ_EXPLODE_TO_SPACE_1 0x1C
+#define OBJ_EXPLODE_TO_SPACE_2 0x1D
+#define OBJ_EXPLODE_TO_SPACE_3 0x1E
+#define OBJ_EXPLODE_TO_SPACE_4 0x1F
+#define OBJ_EXPLODE_TO_DIAMOND_0 0x20
+#define OBJ_EXPLODE_TO_DIAMOND_1 0x21
+#define OBJ_EXPLODE_TO_DIAMOND_2 0x22
+#define OBJ_EXPLODE_TO_DIAMOND_3 0x23
+#define OBJ_EXPLODE_TO_DIAMOND_4 0x24
+#define OBJ_PRE_ROCKFORD_1 0x25
+#define OBJ_PRE_ROCKFORD_2 0x26
+#define OBJ_PRE_ROCKFORD_3 0x27
+#define OBJ_PRE_ROCKFORD_4 0x28
 #define OBJ_BUTTERFLY_POSITION_1 0x30
 #define OBJ_BUTTERFLY_POSITION_2 0x31
 #define OBJ_BUTTERFLY_POSITION_3 0x32
@@ -365,6 +365,38 @@ bool isKeyDown(int virtKey) {
   return GetFocus() && (GetKeyState(virtKey) >> 15);
 }
 
+void explodeCell(int row, int col, bool toDiamonds, int explosionStage) {
+  assert(explosionStage == 0 || explosionStage == 1);
+  if (map[row][col] != OBJ_STEEL_WALL) {
+    if (toDiamonds) {
+      switch (explosionStage) {
+        case 0: map[row][col] = OBJ_EXPLODE_TO_DIAMOND_0; break;
+        case 1: map[row][col] = OBJ_EXPLODE_TO_DIAMOND_1; break;
+      }
+    } else {
+      switch (explosionStage) {
+        case 0: map[row][col] = OBJ_EXPLODE_TO_SPACE_0; break;
+        case 1: map[row][col] = OBJ_EXPLODE_TO_SPACE_1; break;
+      }
+    }
+  }
+}
+
+void explode(int row, int col) {
+  uint8_t toDiamonds = map[row][col] == OBJ_BUTTERFLY_POSITION_1 || map[row][col] == OBJ_BUTTERFLY_POSITION_2 || map[row][col] == OBJ_BUTTERFLY_POSITION_3 || map[row][col] == OBJ_BUTTERFLY_POSITION_4;
+
+  explodeCell(row-1, col-1, toDiamonds, 1);
+  explodeCell(row-1, col, toDiamonds, 1);
+  explodeCell(row-1, col+1, toDiamonds, 1);
+  explodeCell(row, col-1, toDiamonds, 1);
+  explodeCell(row, col, toDiamonds, 1);
+
+  explodeCell(row, col+1, toDiamonds, 0);
+  explodeCell(row+1, col-1, toDiamonds, 0);
+  explodeCell(row+1, col, toDiamonds, 0);
+  explodeCell(row+1, col+1, toDiamonds, 0);
+}
+
 LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
   switch (msg) {
     case WM_DESTROY:
@@ -568,26 +600,26 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             for (int row = 0; row < CAVE_HEIGHT; ++row) {
               for (int col = 0; col < CAVE_WIDTH; ++col) {
                 switch (map[row][col]) {
-                  case OBJ_PRE_ROCKFORD_STAGE_1:
+                  case OBJ_PRE_ROCKFORD_1:
                     rockfordRow = row;
                     rockfordCol = col;
 
                     if (rockfordTurnsTillBirth == 0) {
-                      map[row][col] = OBJ_PRE_ROCKFORD_STAGE_2;
+                      map[row][col] = OBJ_PRE_ROCKFORD_2;
                     } else if (mapUncoverTurnsLeft == 0) {
                       rockfordTurnsTillBirth--;
                     }
                     break;
 
-                  case OBJ_PRE_ROCKFORD_STAGE_2:
-                    map[row][col] = OBJ_PRE_ROCKFORD_STAGE_3;
+                  case OBJ_PRE_ROCKFORD_2:
+                    map[row][col] = OBJ_PRE_ROCKFORD_3;
                     break;
 
-                  case OBJ_PRE_ROCKFORD_STAGE_3:
-                    map[row][col] = OBJ_PRE_ROCKFORD_STAGE_4;
+                  case OBJ_PRE_ROCKFORD_3:
+                    map[row][col] = OBJ_PRE_ROCKFORD_4;
                     break;
 
-                  case OBJ_PRE_ROCKFORD_STAGE_4:
+                  case OBJ_PRE_ROCKFORD_4:
                     map[row][col] = OBJ_ROCKFORD;
                     break;
 
@@ -650,7 +682,30 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                     //
 
                   case OBJ_BOULDER_STATIONARY:
-                  case OBJ_BOULDER_FALLING:
+                    switch (map[row+1][col]) {
+                      case OBJ_SPACE:
+                        map[row+1][col] = OBJ_BOULDER_FALLING_SCANNED;
+                        map[row][col] = OBJ_SPACE;
+                        break;
+
+                      case OBJ_BOULDER_STATIONARY:
+                      case OBJ_DIAMOND_STATIONARY:
+                      case OBJ_BRICK_WALL:
+                        // Try to roll off
+                        if (map[row][col-1] == OBJ_SPACE && map[row+1][col-1] == OBJ_SPACE) {
+                          // Roll left
+                          map[row][col-1] = OBJ_BOULDER_FALLING_SCANNED;
+                          map[row][col] = OBJ_SPACE;
+                        } else if (map[row][col+1] == OBJ_SPACE && map[row+1][col+1] == OBJ_SPACE) {
+                          // Roll right
+                          map[row][col+1] = OBJ_BOULDER_FALLING_SCANNED;
+                          map[row][col] = OBJ_SPACE;
+                        }
+                        break;
+                    }
+                    break;
+
+                  case OBJ_BOULDER_FALLING: {
                     switch (map[row+1][col]) {
                       case OBJ_SPACE:
                         map[row+1][col] = OBJ_BOULDER_FALLING_SCANNED;
@@ -674,11 +729,40 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                         }
                         break;
 
+                      case OBJ_ROCKFORD:
+                      case OBJ_FIREFLY_POSITION_1:
+                      case OBJ_FIREFLY_POSITION_2:
+                      case OBJ_FIREFLY_POSITION_3:
+                      case OBJ_FIREFLY_POSITION_4:
+                      case OBJ_BUTTERFLY_POSITION_1:
+                      case OBJ_BUTTERFLY_POSITION_2:
+                      case OBJ_BUTTERFLY_POSITION_3:
+                      case OBJ_BUTTERFLY_POSITION_4:
+                        explode(row+1, col);
+                        break;
+
                       default:
                         map[row][col] = OBJ_BOULDER_STATIONARY_SCANNED;
                         break;
                     }
                     break;
+                  }
+
+                    //
+                    // Update explosion
+                    //
+
+                  case OBJ_EXPLODE_TO_SPACE_0: map[row][col] = OBJ_EXPLODE_TO_SPACE_1; break;
+                  case OBJ_EXPLODE_TO_SPACE_1: map[row][col] = OBJ_EXPLODE_TO_SPACE_2; break;
+                  case OBJ_EXPLODE_TO_SPACE_2: map[row][col] = OBJ_EXPLODE_TO_SPACE_3; break;
+                  case OBJ_EXPLODE_TO_SPACE_3: map[row][col] = OBJ_EXPLODE_TO_SPACE_4; break;
+                  case OBJ_EXPLODE_TO_SPACE_4: map[row][col] = OBJ_SPACE; break;
+
+                  case OBJ_EXPLODE_TO_DIAMOND_0: map[row][col] = OBJ_EXPLODE_TO_DIAMOND_1; break;
+                  case OBJ_EXPLODE_TO_DIAMOND_1: map[row][col] = OBJ_EXPLODE_TO_DIAMOND_2; break;
+                  case OBJ_EXPLODE_TO_DIAMOND_2: map[row][col] = OBJ_EXPLODE_TO_DIAMOND_3; break;
+                  case OBJ_EXPLODE_TO_DIAMOND_3: map[row][col] = OBJ_EXPLODE_TO_DIAMOND_4; break;
+                  case OBJ_EXPLODE_TO_DIAMOND_4: map[row][col] = OBJ_DIAMOND_STATIONARY; break;
                 }
               }
             }
@@ -763,24 +847,34 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               case OBJ_SPACE:
                 drawSprite(spriteSpace, 0, x, y, 0, 0, 0);
                 break;
+
               case OBJ_STEEL_WALL:
                 drawSprite(spriteSteelWall, 0, x, y, 4, 0, 0);
                 break;
+
               case OBJ_DIRT:
                 drawSprite(spriteDirt, 0, x, y, 3, 0, 0);
                 break;
+
               case OBJ_BRICK_WALL:
                 drawSprite(spriteBrickWall, 0, x, y, 1, 3, 0);
                 break;
+
               case OBJ_BOULDER_STATIONARY:
               case OBJ_BOULDER_FALLING:
                 drawSprite(spriteBoulder, 0, x, y, 4, 0, 0);
                 break;
+
               case OBJ_DIAMOND_STATIONARY:
               case OBJ_DIAMOND_FALLING:
                 drawSprite(spriteDiamond, turn, x, y, 2, 0, 0);
                 break;
-              case OBJ_PRE_ROCKFORD_STAGE_1:
+
+                //
+                // Draw Rockford birth
+                //
+
+              case OBJ_PRE_ROCKFORD_1:
                 if (rockfordTurnsTillBirth > 0) {
                   if (rockfordTurnsTillBirth % 2) {
                     drawSprite(spriteSteelWall, 0, x, y, 4, 0, 0);
@@ -791,15 +885,20 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                   drawSprite(spriteExplosion, 0, x, y, 2, 0, 0);
                 }
                 break;
-              case OBJ_PRE_ROCKFORD_STAGE_2:
+              case OBJ_PRE_ROCKFORD_2:
                 drawSprite(spriteExplosion, 1, x, y, 2, 0, 0);
                 break;
-              case OBJ_PRE_ROCKFORD_STAGE_3:
+              case OBJ_PRE_ROCKFORD_3:
                 drawSprite(spriteExplosion, 2, x, y, 2, 0, 0);
                 break;
-              case OBJ_PRE_ROCKFORD_STAGE_4:
+              case OBJ_PRE_ROCKFORD_4:
                 drawSprite(spriteRockfordRight, turn, x, y, 1, 0, 0);
                 break;
+
+                //
+                // Draw rockford
+                //
+
               case OBJ_ROCKFORD:
                 if (rockfordIsMoving) {
                   if (rockfordIsFacingRight) {
@@ -816,6 +915,27 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                 } else {
                   drawSprite(spriteRockfordIdle, 0, x, y, 1, 0, 0);
                 }
+                break;
+
+                //
+                // Draw explosion
+                //
+
+              case OBJ_EXPLODE_TO_SPACE_1:
+              case OBJ_EXPLODE_TO_DIAMOND_1:
+                drawSprite(spriteExplosion, 1, x, y, 2, 0, 0);
+                break;
+              case OBJ_EXPLODE_TO_SPACE_2:
+              case OBJ_EXPLODE_TO_DIAMOND_2:
+                drawSprite(spriteExplosion, 2, x, y, 2, 0, 0);
+                break;
+              case OBJ_EXPLODE_TO_SPACE_3:
+              case OBJ_EXPLODE_TO_DIAMOND_3:
+                drawSprite(spriteExplosion, 1, x, y, 2, 0, 0);
+                break;
+              case OBJ_EXPLODE_TO_SPACE_4:
+              case OBJ_EXPLODE_TO_DIAMOND_4:
+                drawSprite(spriteExplosion, 0, x, y, 2, 0, 0);
                 break;
             }
           }
