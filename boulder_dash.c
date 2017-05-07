@@ -1033,7 +1033,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             }
           }
 
-          if (isOutOfTimeTextShown) {
+          if (isOutOfTimeTextShown && tileCoverTicksLeft == 0) {
             sprintf_s(statusBarText, sizeof(statusBarText), "     O U T   O F   T I M E");
           } else {
             if (rockfordTurnsTillBirth > 0 || tileCoverTicksLeft > 0) {
