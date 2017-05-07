@@ -7,7 +7,11 @@
 #include "data_sprites.h"
 #include "data_caves.h"
 
-#define ARRAY_LENGTH(array) (sizeof(array)/sizeof(*array))
+// Developer options
+#define DEV_IMMEDIATE_STARTUP false
+#define DEV_SINGLE_DIAMOND_NEEDED false
+#define DEV_CAMERA_DEBUGGING false
+#define DEV_SLOW_TICK_DURATION false
 
 // Cave map consists of cells, each cell contains 4 (2x2) tiles
 #define TILE_SIZE 8
@@ -140,6 +144,8 @@ CaveInfo *caveInfo;
 //
 //
 
+#define ARRAY_LENGTH(array) (sizeof(array)/sizeof(*array))
+
 void debugPrint(char *format, ...) {
   va_list argptr;
   va_start(argptr, format);
@@ -220,6 +226,18 @@ void drawSprite(uint8_t *sprite, int frame, int dstX, int dstY, uint8_t fgColor,
         drawTile(data, x, y, fgColor, bgColor, vOffset);
       }
     }
+  }
+}
+
+void drawText(int x, int y, char *format, ...) {
+  va_list argptr;
+  va_start(argptr, format);
+  char str[64];
+  vsprintf_s(str, sizeof(str), format, argptr);
+  va_end(argptr);
+
+  for (int i = 0; str[i]; ++i) {
+    drawSprite(spriteAscii, str[i]-' ', x + i*TILE_SIZE, y, 1, 0, 0);
   }
 }
 
@@ -535,19 +553,28 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int difficultyLevel = 0;
   int caveTimeLeft = caveInfo->caveTime[difficultyLevel];
   int livesLeft = 3;
+
   int score = 0;
   int diamondsCollected = 0;
   int currentDiamondValue = caveInfo->initialDiamondValue;
+  if (DEV_SINGLE_DIAMOND_NEEDED) {
+    caveInfo->diamondsNeeded[difficultyLevel] = 1;
+  }
+
   int turn = 0;
   int tick = 0;
   bool rockfordIsBlinking = false;
   bool rockfordIsTapping = false;
   float tickTimer = 0;
-  int rockfordTurnsTillBirth = /*12*/ 0;
-  int mapUncoverTurnsLeft = /*40*/ 1;
+  int rockfordTurnsTillBirth = DEV_IMMEDIATE_STARTUP ? 0 : 12;
+  int mapUncoverTurnsLeft = DEV_IMMEDIATE_STARTUP ? 1 : 40;
   int pauseTurnsLeft = 0;
   bool rockfordIsMoving = false;
   bool rockfordIsFacingRight = true;
+
+  uint8_t normalBorderColor = 0;
+  uint8_t flashBorderColor = 1;
+  uint8_t borderColor = normalBorderColor;
 
   int rockfordCol = 0;
   int rockfordRow = 0;
@@ -596,7 +623,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       gameIsRunning = false;
     }
 
-    float tickDuration = 0.03375f /*0.15f*/;
+    float tickDuration = DEV_SLOW_TICK_DURATION ? 0.15f : 0.03375f;
     tickTimer += dt;
 
     if (tickTimer >= tickDuration) {
@@ -617,6 +644,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           //
           // Do cave turn
           //
+
+          borderColor = normalBorderColor;
 
           if (mapUncoverTurnsLeft > 0) {
             // Update map cover
@@ -707,6 +736,10 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                         actuallyMoved = true;
                         score += currentDiamondValue;
                         ++diamondsCollected;
+                        if (diamondsCollected == caveInfo->diamondsNeeded[difficultyLevel]) {
+                          currentDiamondValue = caveInfo->extraDiamondValue;
+                          borderColor = flashBorderColor;
+                        }
                         break;
 
                       case OBJ_BOULDER_STATIONARY:
@@ -852,7 +885,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       //
 
       // Draw border
-      drawFilledRect(0, 0, BACKBUFFER_WIDTH - 1, BACKBUFFER_HEIGHT - 1, 0);
+      drawFilledRect(0, 0, BACKBUFFER_WIDTH - 1, BACKBUFFER_HEIGHT - 1, borderColor);
 
       // Draw cave
       for (int row = 0; row < CAVE_HEIGHT; ++row) {
@@ -962,41 +995,46 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         }
       }
 
+      //
       // Draw text
+      //
+
       {
         // Black background
         drawFilledRect(VIEWPORT_LEFT, VIEWPORT_TOP, VIEWPORT_RIGHT, VIEWPORT_TOP+TEXT_AREA_HEIGHT, 0);
 
-        char text[64];
+        int x = VIEWPORT_LEFT;
+        int y = VIEWPORT_TOP + TILE_SIZE;
+
         if (rockfordTurnsTillBirth > 0) {
-          sprintf_s(text, sizeof(text), "  PLAYER 1,  %d MEN,  ROOM %c/1", livesLeft, 'A' + (caveInfo->caveNumber-1));
+          drawText(x, y, "  PLAYER 1,  %d MEN,  ROOM %c/1", livesLeft, 'A' + (caveInfo->caveNumber-1));
         } else {
-          sprintf_s(text, sizeof(text), "   %d*%d   %02d   %03d   %06d",
-                    caveInfo->diamondsNeeded[difficultyLevel],
-                    caveInfo->initialDiamondValue,
-                    diamondsCollected,
-                    caveTimeLeft,
-                    score);
-        }
-        for (int i = 0; text[i]; ++i) {
-          drawSprite(spriteAscii, text[i]-' ', (2+i)*TILE_SIZE, 3*TILE_SIZE, 1, 0, 0);
+          drawText(x, y, "     *%02d   %02d   %03d   %06d", currentDiamondValue, diamondsCollected, caveTimeLeft, score);
+          if (diamondsCollected < caveInfo->diamondsNeeded[difficultyLevel]) {
+            drawText(x, y, "   %02d", caveInfo->diamondsNeeded[difficultyLevel]);
+          } else {
+            drawText(x, y, "   **");
+          }
         }
       }
 
+      //
       // Camera debugging
-#if 0
-      drawRect(CAMERA_START_LEFT, 0, CAMERA_START_LEFT, BACKBUFFER_HEIGHT-1, 2);
-      drawRect(CAMERA_STOP_LEFT, 0, CAMERA_STOP_LEFT, BACKBUFFER_HEIGHT-1, 2);
-      drawRect(CAMERA_START_RIGHT, 0, CAMERA_START_RIGHT, BACKBUFFER_HEIGHT-1, 2);
-      drawRect(CAMERA_STOP_RIGHT, 0, CAMERA_STOP_RIGHT, BACKBUFFER_HEIGHT-1, 2);
+      //
 
-      drawRect(0, CAMERA_START_TOP, BACKBUFFER_WIDTH-1, CAMERA_START_TOP, 2);
-      drawRect(0, CAMERA_STOP_TOP, BACKBUFFER_WIDTH-1, CAMERA_STOP_TOP, 2);
-      drawRect(0, CAMERA_START_BOTTOM, BACKBUFFER_WIDTH-1, CAMERA_START_BOTTOM, 2);
-      drawRect(0, CAMERA_STOP_BOTTOM, BACKBUFFER_WIDTH-1, CAMERA_STOP_BOTTOM, 2);
+      if (DEV_CAMERA_DEBUGGING) {
+        drawRect(CAMERA_START_LEFT, 0, CAMERA_START_LEFT, BACKBUFFER_HEIGHT-1, 2);
+        drawRect(CAMERA_STOP_LEFT, 0, CAMERA_STOP_LEFT, BACKBUFFER_HEIGHT-1, 2);
+        drawRect(CAMERA_START_RIGHT, 0, CAMERA_START_RIGHT, BACKBUFFER_HEIGHT-1, 2);
+        drawRect(CAMERA_STOP_RIGHT, 0, CAMERA_STOP_RIGHT, BACKBUFFER_HEIGHT-1, 2);
 
-      drawRect(rockfordRectLeft, rockfordRectTop, rockfordRectRight, rockfordRectBottom, 2);
-#endif
+        drawRect(0, CAMERA_START_TOP, BACKBUFFER_WIDTH-1, CAMERA_START_TOP, 2);
+        drawRect(0, CAMERA_STOP_TOP, BACKBUFFER_WIDTH-1, CAMERA_STOP_TOP, 2);
+        drawRect(0, CAMERA_START_BOTTOM, BACKBUFFER_WIDTH-1, CAMERA_START_BOTTOM, 2);
+        drawRect(0, CAMERA_STOP_BOTTOM, BACKBUFFER_WIDTH-1, CAMERA_STOP_BOTTOM, 2);
+
+        drawRect(rockfordRectLeft, rockfordRectTop, rockfordRectRight, rockfordRectBottom, 2);
+      }
 
       // Display backbuffer
       StretchDIBits(deviceContext,
