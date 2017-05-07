@@ -762,7 +762,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           }
         }
 
-        /////////
+        //
+        // Turn-based update logic
+        //
 
         if (tick % TICKS_PER_TURN == 0) {
           if (pauseTurnsLeft > 0) {
@@ -776,6 +778,64 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               --turnsTillStopBonusLifeFlashing;
             }
 
+            //
+            // Move camera
+            //
+
+            if (rockfordRectRight > CAMERA_START_RIGHT) {
+              cameraVelX = CAMERA_STEP;
+            } else if (rockfordRectLeft < CAMERA_START_LEFT) {
+              cameraVelX = -CAMERA_STEP;
+            }
+            if (rockfordRectBottom > CAMERA_START_BOTTOM) {
+              cameraVelY = CAMERA_STEP;
+            } else if (rockfordRectTop < CAMERA_START_TOP) {
+              cameraVelY = -CAMERA_STEP;
+            }
+
+            if (rockfordRectLeft >= CAMERA_STOP_LEFT && rockfordRectRight <= CAMERA_STOP_RIGHT) {
+              cameraVelX = 0;
+            }
+            if (rockfordRectTop >= CAMERA_STOP_TOP && rockfordRectBottom <= CAMERA_STOP_BOTTOM) {
+              cameraVelY = 0;
+            }
+
+            cameraX += cameraVelX;
+            cameraY += cameraVelY;
+
+            if (cameraX < CAMERA_X_MIN) {
+              cameraX = CAMERA_X_MIN;
+            } else if (cameraX > CAMERA_X_MAX) {
+              cameraX = CAMERA_X_MAX;
+            }
+
+            if (cameraY < CAMERA_Y_MIN) {
+              cameraY = CAMERA_Y_MIN;
+            } else if (cameraY > CAMERA_Y_MAX) {
+              cameraY = CAMERA_Y_MAX;
+            }
+
+            //
+            // Out of time
+            //
+
+            if (isOutOfTime) {
+              ++outOfTimeTurn;
+              if (isOutOfTimeTextShown) {
+                if (outOfTimeTurn == OUT_OF_TIME_ON_TURNS) {
+                  outOfTimeTurn = 0;
+                  isOutOfTimeTextShown = false;
+                }
+              } else {
+                if (outOfTimeTurn == OUT_OF_TIME_OFF_TURNS) {
+                  outOfTimeTurn = 0;
+                  isOutOfTimeTextShown = true;
+                }
+              }
+            }
+
+            //////////////////////
+
             if (turnsTillGameRestart > 0) {
               --turnsTillGameRestart;
               if (turnsTillGameRestart == 0) {
@@ -788,316 +848,261 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               }
             } else if (isExitingCave) {
               // Do nothing
-            } else {
-              if (cellCoverTurnsLeft > 0) {
-                //
-                // Update cell cover
-                //
+            } else if (cellCoverTurnsLeft > 0) {
+              //
+              // Update cell cover
+              //
 
-                cellCoverTurnsLeft--;
-                if (cellCoverTurnsLeft > 1) {
-                  for (int row = 0; row < CAVE_HEIGHT; ++row) {
-                    for (int i = 0; i < 3; ++i) {
-                      cellCover[row][rand()%CAVE_WIDTH] = false;
-                    }
-                  }
-                } else if (cellCoverTurnsLeft == 1) {
-                  pauseTurnsLeft = COVER_PAUSE;
-                } else if (cellCoverTurnsLeft == 0) {
-                  for (int row = 0; row < CAVE_HEIGHT; ++row) {
-                    for (int col = 0; col < CAVE_WIDTH; ++col) {
-                      cellCover[row][col] = false;
-                    }
+              cellCoverTurnsLeft--;
+              if (cellCoverTurnsLeft > 1) {
+                for (int row = 0; row < CAVE_HEIGHT; ++row) {
+                  for (int i = 0; i < 3; ++i) {
+                    cellCover[row][rand()%CAVE_WIDTH] = false;
                   }
                 }
-              } else {
-                ++turnsSinceRockfordSeenAlive;
-
-                //
-                // Scan cave
-                //
-
+              } else if (cellCoverTurnsLeft == 1) {
+                pauseTurnsLeft = COVER_PAUSE;
+              } else if (cellCoverTurnsLeft == 0) {
                 for (int row = 0; row < CAVE_HEIGHT; ++row) {
                   for (int col = 0; col < CAVE_WIDTH; ++col) {
-                    switch (map[row][col]) {
-                      case OBJ_PRE_ROCKFORD_1:
-                        turnsSinceRockfordSeenAlive = 0;
-                        if (rockfordTurnsTillBirth == 0) {
-                          map[row][col] = OBJ_PRE_ROCKFORD_2;
-                        } else if (cellCoverTurnsLeft == 0) {
-                          rockfordTurnsTillBirth--;
+                    cellCover[row][col] = false;
+                  }
+                }
+              }
+            } else {
+              //
+              // Scan cave
+              //
+
+              ++turnsSinceRockfordSeenAlive;
+
+              for (int row = 0; row < CAVE_HEIGHT; ++row) {
+                for (int col = 0; col < CAVE_WIDTH; ++col) {
+                  switch (map[row][col]) {
+                    case OBJ_PRE_ROCKFORD_1:
+                      turnsSinceRockfordSeenAlive = 0;
+                      if (rockfordTurnsTillBirth == 0) {
+                        map[row][col] = OBJ_PRE_ROCKFORD_2;
+                      } else if (cellCoverTurnsLeft == 0) {
+                        rockfordTurnsTillBirth--;
+                      }
+                      break;
+
+                    case OBJ_PRE_ROCKFORD_2:
+                      turnsSinceRockfordSeenAlive = 0;
+                      map[row][col] = OBJ_PRE_ROCKFORD_3;
+                      break;
+
+                    case OBJ_PRE_ROCKFORD_3:
+                      turnsSinceRockfordSeenAlive = 0;
+                      map[row][col] = OBJ_PRE_ROCKFORD_4;
+                      break;
+
+                    case OBJ_PRE_ROCKFORD_4:
+                      turnsSinceRockfordSeenAlive = 0;
+                      map[row][col] = OBJ_ROCKFORD;
+                      break;
+
+                      //
+                      // Update Rockford
+                      //
+
+                    case OBJ_ROCKFORD: {
+                      turnsSinceRockfordSeenAlive = 0;
+
+                      int newRow = row;
+                      int newCol = col;
+
+                      rockfordIsMoving = false;
+
+                      if (!isOutOfTime && tileCoverTicksLeft == 0) {
+                        if (isKeyDown(KEY_RIGHT)) {
+                          rockfordIsMoving = true;
+                          rockfordIsFacingRight = true;
+                          ++newCol;
+                        } else if (isKeyDown(KEY_LEFT)) {
+                          rockfordIsMoving = true;
+                          rockfordIsFacingRight = false;
+                          --newCol;
+                        } else if (isKeyDown(KEY_DOWN)) {
+                          rockfordIsMoving = true;
+                          ++newRow;
+                        } else if (isKeyDown(KEY_UP)) {
+                          rockfordIsMoving = true;
+                          --newRow;
                         }
-                        break;
-
-                      case OBJ_PRE_ROCKFORD_2:
-                        turnsSinceRockfordSeenAlive = 0;
-                        map[row][col] = OBJ_PRE_ROCKFORD_3;
-                        break;
-
-                      case OBJ_PRE_ROCKFORD_3:
-                        turnsSinceRockfordSeenAlive = 0;
-                        map[row][col] = OBJ_PRE_ROCKFORD_4;
-                        break;
-
-                      case OBJ_PRE_ROCKFORD_4:
-                        turnsSinceRockfordSeenAlive = 0;
-                        map[row][col] = OBJ_ROCKFORD;
-                        break;
-
-                        //
-                        // Update Rockford
-                        //
-
-                      case OBJ_ROCKFORD: {
-                        turnsSinceRockfordSeenAlive = 0;
-
-                        int newRow = row;
-                        int newCol = col;
-
-                        rockfordIsMoving = false;
-
-                        if (!isOutOfTime && tileCoverTicksLeft == 0) {
-                          if (isKeyDown(KEY_RIGHT)) {
-                            rockfordIsMoving = true;
-                            rockfordIsFacingRight = true;
-                            ++newCol;
-                          } else if (isKeyDown(KEY_LEFT)) {
-                            rockfordIsMoving = true;
-                            rockfordIsFacingRight = false;
-                            --newCol;
-                          } else if (isKeyDown(KEY_DOWN)) {
-                            rockfordIsMoving = true;
-                            ++newRow;
-                          } else if (isKeyDown(KEY_UP)) {
-                            rockfordIsMoving = true;
-                            --newRow;
-                          }
-                        }
-
-                        bool actuallyMoved = false;
-
-                        switch (map[newRow][newCol]) {
-                          case OBJ_SPACE:
-                          case OBJ_DIRT:
-                            actuallyMoved = true;
-                            break;
-
-                          case OBJ_DIAMOND_STATIONARY:
-                          case OBJ_DIAMOND_STATIONARY_SCANNED:
-                            //
-                            // Pick up a diamond
-                            //
-
-                            actuallyMoved = true;
-                            score += currentDiamondValue;
-
-                            // Check for bonus life
-                            scoreTillBonusLife -= currentDiamondValue;
-                            if (scoreTillBonusLife <= 0) {
-                              scoreTillBonusLife += BONUS_LIFE_COST;
-                              turnsTillStopBonusLifeFlashing = BONUS_LIFE_FLASHING_TURNS;
-                              ++livesLeft;
-                              if (livesLeft > MAX_LIVES) {
-                                livesLeft = MAX_LIVES;
-                              }
-                            }
-
-                            // Check if all the needed diamonds for this cave were collected
-                            ++diamondsCollected;
-                            if (diamondsCollected == caveInfo->diamondsNeeded[difficultyLevel]) {
-                              currentDiamondValue = caveInfo->extraDiamondValue;
-                              borderColor = flashBorderColor;
-                            }
-                            break;
-
-                          case OBJ_BOULDER_STATIONARY:
-                          case OBJ_BOULDER_STATIONARY_SCANNED:
-                            // Pushing boulders
-                            if (rand() % 4 == 0) {
-                              if (isKeyDown(KEY_RIGHT) && map[newRow][newCol+1] == OBJ_SPACE) {
-                                map[newRow][newCol+1] = OBJ_BOULDER_STATIONARY_SCANNED;
-                                actuallyMoved = true;
-                              } else if (isKeyDown(KEY_LEFT) && map[newRow][newCol-1] == OBJ_SPACE) {
-                                map[newRow][newCol-1] = OBJ_BOULDER_STATIONARY_SCANNED;
-                                actuallyMoved = true;
-                              }
-                            }
-                            break;
-
-                          case OBJ_FLASHING_OUTBOX:
-                            actuallyMoved = true;
-                            isAddingTimeToScore = true;
-                            break;
-                        }
-
-                        if (actuallyMoved) {
-                          if (isKeyDown(KEY_FIRE)) {
-                            map[newRow][newCol] = OBJ_SPACE;
-                          } else {
-                            map[row][col] = OBJ_SPACE;
-                            map[newRow][newCol] = OBJ_ROCKFORD_SCANNED;
-                            rockfordRow = newRow;
-                            rockfordCol = newCol;
-                          }
-                        }
-
-                        //
-                        // Update Rockford idle animation
-                        //
-
-                        if (rockfordIsMoving) {
-                          rockfordIsBlinking = false;
-                          rockfordIsTapping = false;
-                        } else {
-                          if (tick % 8 == 0) {
-                            rockfordIsBlinking = rand() % 4 == 0;
-                            if (rand() % 16 == 0) {
-                              rockfordIsTapping = !rockfordIsTapping;
-                            }
-                          }
-                        }
-                        break;
                       }
 
-                        //
-                        // Update boulders and diamonds
-                        //
+                      bool actuallyMoved = false;
 
-                      case OBJ_BOULDER_STATIONARY:
-                      case OBJ_BOULDER_FALLING:
-                        updateBoulderAndDiamond(row, col, OBJ_BOULDER_FALLING_SCANNED, OBJ_BOULDER_STATIONARY_SCANNED, map[row][col] == OBJ_BOULDER_FALLING);
-                        break;
+                      switch (map[newRow][newCol]) {
+                        case OBJ_SPACE:
+                        case OBJ_DIRT:
+                          actuallyMoved = true;
+                          break;
 
-                      case OBJ_DIAMOND_STATIONARY:
-                      case OBJ_DIAMOND_FALLING:
-                        updateBoulderAndDiamond(row, col, OBJ_DIAMOND_FALLING_SCANNED, OBJ_DIAMOND_STATIONARY_SCANNED, map[row][col] == OBJ_DIAMOND_FALLING);
-                        break;
+                        case OBJ_DIAMOND_STATIONARY:
+                        case OBJ_DIAMOND_STATIONARY_SCANNED:
+                          //
+                          // Pick up a diamond
+                          //
 
-                        //
-                        // Update explosion
-                        //
+                          actuallyMoved = true;
+                          score += currentDiamondValue;
 
-                      case OBJ_EXPLODE_TO_SPACE_0: map[row][col] = OBJ_EXPLODE_TO_SPACE_1; break;
-                      case OBJ_EXPLODE_TO_SPACE_1: map[row][col] = OBJ_EXPLODE_TO_SPACE_2; break;
-                      case OBJ_EXPLODE_TO_SPACE_2: map[row][col] = OBJ_EXPLODE_TO_SPACE_3; break;
-                      case OBJ_EXPLODE_TO_SPACE_3: map[row][col] = OBJ_EXPLODE_TO_SPACE_4; break;
-                      case OBJ_EXPLODE_TO_SPACE_4: map[row][col] = OBJ_SPACE; break;
+                          // Check for bonus life
+                          scoreTillBonusLife -= currentDiamondValue;
+                          if (scoreTillBonusLife <= 0) {
+                            scoreTillBonusLife += BONUS_LIFE_COST;
+                            turnsTillStopBonusLifeFlashing = BONUS_LIFE_FLASHING_TURNS;
+                            ++livesLeft;
+                            if (livesLeft > MAX_LIVES) {
+                              livesLeft = MAX_LIVES;
+                            }
+                          }
 
-                      case OBJ_EXPLODE_TO_DIAMOND_0: map[row][col] = OBJ_EXPLODE_TO_DIAMOND_1; break;
-                      case OBJ_EXPLODE_TO_DIAMOND_1: map[row][col] = OBJ_EXPLODE_TO_DIAMOND_2; break;
-                      case OBJ_EXPLODE_TO_DIAMOND_2: map[row][col] = OBJ_EXPLODE_TO_DIAMOND_3; break;
-                      case OBJ_EXPLODE_TO_DIAMOND_3: map[row][col] = OBJ_EXPLODE_TO_DIAMOND_4; break;
-                      case OBJ_EXPLODE_TO_DIAMOND_4: map[row][col] = OBJ_DIAMOND_STATIONARY; break;
+                          // Check if all the needed diamonds for this cave were collected
+                          ++diamondsCollected;
+                          if (diamondsCollected == caveInfo->diamondsNeeded[difficultyLevel]) {
+                            currentDiamondValue = caveInfo->extraDiamondValue;
+                            borderColor = flashBorderColor;
+                          }
+                          break;
 
-                        //
-                        // Update out box
-                        //
+                        case OBJ_BOULDER_STATIONARY:
+                        case OBJ_BOULDER_STATIONARY_SCANNED:
+                          // Pushing boulders
+                          if (rand() % 4 == 0) {
+                            if (isKeyDown(KEY_RIGHT) && map[newRow][newCol+1] == OBJ_SPACE) {
+                              map[newRow][newCol+1] = OBJ_BOULDER_STATIONARY_SCANNED;
+                              actuallyMoved = true;
+                            } else if (isKeyDown(KEY_LEFT) && map[newRow][newCol-1] == OBJ_SPACE) {
+                              map[newRow][newCol-1] = OBJ_BOULDER_STATIONARY_SCANNED;
+                              actuallyMoved = true;
+                            }
+                          }
+                          break;
 
-                      case OBJ_PRE_OUTBOX:
-                        if (diamondsCollected >= caveInfo->diamondsNeeded[difficultyLevel]) {
-                          map[row][col] = OBJ_FLASHING_OUTBOX;
+                        case OBJ_FLASHING_OUTBOX:
+                          actuallyMoved = true;
+                          isAddingTimeToScore = true;
+                          break;
+                      }
+
+                      if (actuallyMoved) {
+                        if (isKeyDown(KEY_FIRE)) {
+                          map[newRow][newCol] = OBJ_SPACE;
+                        } else {
+                          map[row][col] = OBJ_SPACE;
+                          map[newRow][newCol] = OBJ_ROCKFORD_SCANNED;
+                          rockfordRow = newRow;
+                          rockfordCol = newCol;
                         }
-                        break;
+                      }
+
+                      //
+                      // Update Rockford idle animation
+                      //
+
+                      if (rockfordIsMoving) {
+                        rockfordIsBlinking = false;
+                        rockfordIsTapping = false;
+                      } else {
+                        if (tick % 8 == 0) {
+                          rockfordIsBlinking = rand() % 4 == 0;
+                          if (rand() % 16 == 0) {
+                            rockfordIsTapping = !rockfordIsTapping;
+                          }
+                        }
+                      }
+                      break;
                     }
+
+                      //
+                      // Update boulders and diamonds
+                      //
+
+                    case OBJ_BOULDER_STATIONARY:
+                    case OBJ_BOULDER_FALLING:
+                      updateBoulderAndDiamond(row, col, OBJ_BOULDER_FALLING_SCANNED, OBJ_BOULDER_STATIONARY_SCANNED, map[row][col] == OBJ_BOULDER_FALLING);
+                      break;
+
+                    case OBJ_DIAMOND_STATIONARY:
+                    case OBJ_DIAMOND_FALLING:
+                      updateBoulderAndDiamond(row, col, OBJ_DIAMOND_FALLING_SCANNED, OBJ_DIAMOND_STATIONARY_SCANNED, map[row][col] == OBJ_DIAMOND_FALLING);
+                      break;
+
+                      //
+                      // Update explosion
+                      //
+
+                    case OBJ_EXPLODE_TO_SPACE_0: map[row][col] = OBJ_EXPLODE_TO_SPACE_1; break;
+                    case OBJ_EXPLODE_TO_SPACE_1: map[row][col] = OBJ_EXPLODE_TO_SPACE_2; break;
+                    case OBJ_EXPLODE_TO_SPACE_2: map[row][col] = OBJ_EXPLODE_TO_SPACE_3; break;
+                    case OBJ_EXPLODE_TO_SPACE_3: map[row][col] = OBJ_EXPLODE_TO_SPACE_4; break;
+                    case OBJ_EXPLODE_TO_SPACE_4: map[row][col] = OBJ_SPACE; break;
+
+                    case OBJ_EXPLODE_TO_DIAMOND_0: map[row][col] = OBJ_EXPLODE_TO_DIAMOND_1; break;
+                    case OBJ_EXPLODE_TO_DIAMOND_1: map[row][col] = OBJ_EXPLODE_TO_DIAMOND_2; break;
+                    case OBJ_EXPLODE_TO_DIAMOND_2: map[row][col] = OBJ_EXPLODE_TO_DIAMOND_3; break;
+                    case OBJ_EXPLODE_TO_DIAMOND_3: map[row][col] = OBJ_EXPLODE_TO_DIAMOND_4; break;
+                    case OBJ_EXPLODE_TO_DIAMOND_4: map[row][col] = OBJ_DIAMOND_STATIONARY; break;
+
+                      //
+                      // Update out box
+                      //
+
+                    case OBJ_PRE_OUTBOX:
+                      if (diamondsCollected >= caveInfo->diamondsNeeded[difficultyLevel]) {
+                        map[row][col] = OBJ_FLASHING_OUTBOX;
+                      }
+                      break;
                   }
-                }
-
-                //
-                // Remove scanned status for cells
-                //
-
-                for (int row = 0; row < CAVE_HEIGHT; ++row) {
-                  for (int col = 0; col < CAVE_WIDTH; ++col) {
-                    switch (map[row][col]) {
-                      case OBJ_FIREFLY_POSITION_1_SCANNED:   map[row][col] = OBJ_FIREFLY_POSITION_1;   break;
-                      case OBJ_FIREFLY_POSITION_2_SCANNED:   map[row][col] = OBJ_FIREFLY_POSITION_2;   break;
-                      case OBJ_FIREFLY_POSITION_3_SCANNED:   map[row][col] = OBJ_FIREFLY_POSITION_3;   break;
-                      case OBJ_FIREFLY_POSITION_4_SCANNED:   map[row][col] = OBJ_FIREFLY_POSITION_4;   break;
-                      case OBJ_BOULDER_STATIONARY_SCANNED:   map[row][col] = OBJ_BOULDER_STATIONARY;   break;
-                      case OBJ_BOULDER_FALLING_SCANNED:      map[row][col] = OBJ_BOULDER_FALLING;      break;
-                      case OBJ_DIAMOND_STATIONARY_SCANNED:   map[row][col] = OBJ_DIAMOND_STATIONARY;   break;
-                      case OBJ_DIAMOND_FALLING_SCANNED:      map[row][col] = OBJ_DIAMOND_FALLING;      break;
-                      case OBJ_BUTTERFLY_POSITION_1_SCANNED: map[row][col] = OBJ_BUTTERFLY_POSITION_1; break;
-                      case OBJ_BUTTERFLY_POSITION_2_SCANNED: map[row][col] = OBJ_BUTTERFLY_POSITION_2; break;
-                      case OBJ_BUTTERFLY_POSITION_3_SCANNED: map[row][col] = OBJ_BUTTERFLY_POSITION_3; break;
-                      case OBJ_BUTTERFLY_POSITION_4_SCANNED: map[row][col] = OBJ_BUTTERFLY_POSITION_4; break;
-                      case OBJ_ROCKFORD_SCANNED:             map[row][col] = OBJ_ROCKFORD;             break;
-                      case OBJ_AMOEBA_SCANNED:               map[row][col] = OBJ_AMOEBA;               break;
-                    }
-                  }
-                }
-
-                //
-                // Handle failure
-                //
-
-                if (tileCoverTicksLeft == 0 && rockfordTurnsTillBirth == 0 &&
-                    ((isFailed() && isKeyDown(KEY_FIRE)) || isKeyDown(KEY_FAIL))) {
-                  tileCoverTicksLeft = TILE_COVER_TICKS;
-                  --livesLeft;
                 }
               }
 
               //
-              // Move camera
+              // Remove scanned status for cells
               //
 
-              if (rockfordRectRight > CAMERA_START_RIGHT) {
-                cameraVelX = CAMERA_STEP;
-              } else if (rockfordRectLeft < CAMERA_START_LEFT) {
-                cameraVelX = -CAMERA_STEP;
-              }
-              if (rockfordRectBottom > CAMERA_START_BOTTOM) {
-                cameraVelY = CAMERA_STEP;
-              } else if (rockfordRectTop < CAMERA_START_TOP) {
-                cameraVelY = -CAMERA_STEP;
-              }
-
-              if (rockfordRectLeft >= CAMERA_STOP_LEFT && rockfordRectRight <= CAMERA_STOP_RIGHT) {
-                cameraVelX = 0;
-              }
-              if (rockfordRectTop >= CAMERA_STOP_TOP && rockfordRectBottom <= CAMERA_STOP_BOTTOM) {
-                cameraVelY = 0;
-              }
-
-              cameraX += cameraVelX;
-              cameraY += cameraVelY;
-
-              if (cameraX < CAMERA_X_MIN) {
-                cameraX = CAMERA_X_MIN;
-              } else if (cameraX > CAMERA_X_MAX) {
-                cameraX = CAMERA_X_MAX;
-              }
-
-              if (cameraY < CAMERA_Y_MIN) {
-                cameraY = CAMERA_Y_MIN;
-              } else if (cameraY > CAMERA_Y_MAX) {
-                cameraY = CAMERA_Y_MAX;
-              }
-
-              //
-              // Out of time
-              //
-
-              if (isOutOfTime) {
-                ++outOfTimeTurn;
-                if (isOutOfTimeTextShown) {
-                  if (outOfTimeTurn == OUT_OF_TIME_ON_TURNS) {
-                    outOfTimeTurn = 0;
-                    isOutOfTimeTextShown = false;
-                  }
-                } else {
-                  if (outOfTimeTurn == OUT_OF_TIME_OFF_TURNS) {
-                    outOfTimeTurn = 0;
-                    isOutOfTimeTextShown = true;
+              for (int row = 0; row < CAVE_HEIGHT; ++row) {
+                for (int col = 0; col < CAVE_WIDTH; ++col) {
+                  switch (map[row][col]) {
+                    case OBJ_FIREFLY_POSITION_1_SCANNED:   map[row][col] = OBJ_FIREFLY_POSITION_1;   break;
+                    case OBJ_FIREFLY_POSITION_2_SCANNED:   map[row][col] = OBJ_FIREFLY_POSITION_2;   break;
+                    case OBJ_FIREFLY_POSITION_3_SCANNED:   map[row][col] = OBJ_FIREFLY_POSITION_3;   break;
+                    case OBJ_FIREFLY_POSITION_4_SCANNED:   map[row][col] = OBJ_FIREFLY_POSITION_4;   break;
+                    case OBJ_BOULDER_STATIONARY_SCANNED:   map[row][col] = OBJ_BOULDER_STATIONARY;   break;
+                    case OBJ_BOULDER_FALLING_SCANNED:      map[row][col] = OBJ_BOULDER_FALLING;      break;
+                    case OBJ_DIAMOND_STATIONARY_SCANNED:   map[row][col] = OBJ_DIAMOND_STATIONARY;   break;
+                    case OBJ_DIAMOND_FALLING_SCANNED:      map[row][col] = OBJ_DIAMOND_FALLING;      break;
+                    case OBJ_BUTTERFLY_POSITION_1_SCANNED: map[row][col] = OBJ_BUTTERFLY_POSITION_1; break;
+                    case OBJ_BUTTERFLY_POSITION_2_SCANNED: map[row][col] = OBJ_BUTTERFLY_POSITION_2; break;
+                    case OBJ_BUTTERFLY_POSITION_3_SCANNED: map[row][col] = OBJ_BUTTERFLY_POSITION_3; break;
+                    case OBJ_BUTTERFLY_POSITION_4_SCANNED: map[row][col] = OBJ_BUTTERFLY_POSITION_4; break;
+                    case OBJ_ROCKFORD_SCANNED:             map[row][col] = OBJ_ROCKFORD;             break;
+                    case OBJ_AMOEBA_SCANNED:               map[row][col] = OBJ_AMOEBA;               break;
                   }
                 }
+              }
+
+              //
+              // Handle failure
+              //
+
+              if (tileCoverTicksLeft == 0 && rockfordTurnsTillBirth == 0 &&
+                  ((isFailed() && isKeyDown(KEY_FIRE)) || isKeyDown(KEY_FAIL))) {
+                tileCoverTicksLeft = TILE_COVER_TICKS;
+                --livesLeft;
               }
             }
           }
         }
 
+        //
         // Update tile cover
+        //
+
         if (tileCoverTicksLeft > 0) {
           --tileCoverTicksLeft;
 
