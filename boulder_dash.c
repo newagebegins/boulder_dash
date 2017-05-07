@@ -17,8 +17,8 @@
 // Gameplay constants
 #define TICKS_PER_TURN 5
 #define ROCKFORD_TURNS_TILL_BIRTH 12
-#define BIRTH_COVER_TURNS 40
-#define DEATH_COVER_TICKS (32*TICKS_PER_TURN)
+#define CELL_COVER_TURNS 40
+#define TILE_COVER_TICKS (32*TICKS_PER_TURN)
 #define BONUS_LIFE_COST 500
 #define BONUS_LIFE_FLASHING_TURNS 10
 #define MAX_LIVES 9
@@ -565,8 +565,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   //
 
   uint8_t currentCaveNumber = 0;
-  uint8_t birthCover[CAVE_HEIGHT][CAVE_WIDTH];
-  bool deathCover[PLAYFIELD_HEIGHT_IN_TILES][PLAYFIELD_WIDTH_IN_TILES] = {0};
+  uint8_t cellCover[CAVE_HEIGHT][CAVE_WIDTH];
+  bool tileCover[PLAYFIELD_HEIGHT_IN_TILES][PLAYFIELD_WIDTH_IN_TILES] = {0};
   char statusBarText[PLAYFIELD_WIDTH_IN_TILES];
   int difficultyLevel = 0;
   int livesLeft = 3;
@@ -597,12 +597,12 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int diamondsCollected;
   int currentDiamondValue;
   int rockfordTurnsTillBirth;
-  int birthCoverTurnsLeft;
+  int cellCoverTurnsLeft;
   int rockfordCol;
   int rockfordRow;
   bool rockfordIsBlinking;
   bool rockfordIsTapping;
-  int deathCoverTicksLeft;
+  int tileCoverTicksLeft;
   int pauseTurnsLeft;
   bool rockfordIsMoving;
   bool rockfordIsFacingRight;
@@ -654,11 +654,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       isOutOfTimeTextShown = false;
       outOfTimeTurn = 0;
       rockfordTurnsTillBirth = DEV_IMMEDIATE_STARTUP ? 0 : ROCKFORD_TURNS_TILL_BIRTH;
-      birthCoverTurnsLeft = DEV_IMMEDIATE_STARTUP ? 1 : BIRTH_COVER_TURNS;
+      cellCoverTurnsLeft = DEV_IMMEDIATE_STARTUP ? 1 : CELL_COVER_TURNS;
 
       rockfordIsBlinking = false;
       rockfordIsTapping = false;
-      deathCoverTicksLeft = 0;
+      tileCoverTicksLeft = 0;
       pauseTurnsLeft = 0;
       rockfordIsMoving = false;
       rockfordIsFacingRight = true;
@@ -669,13 +669,13 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
       for (int row = 0; row < CAVE_HEIGHT; ++row) {
         for (int col = 0; col < CAVE_WIDTH; ++col) {
-          birthCover[row][col] = true;
+          cellCover[row][col] = true;
         }
       }
 
       for (int row = 0; row < PLAYFIELD_HEIGHT_IN_TILES; ++row) {
         for (int col = 0; col < PLAYFIELD_WIDTH_IN_TILES; ++col) {
-          deathCover[row][col] = false;
+          tileCover[row][col] = false;
         }
       }
 
@@ -740,24 +740,24 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             --turnsTillStopBonusLifeFlashing;
           }
 
-          if (birthCoverTurnsLeft > 0) {
+          if (cellCoverTurnsLeft > 0) {
             //
-            // Update birth cover
+            // Update cell cover
             //
 
-            birthCoverTurnsLeft--;
-            if (birthCoverTurnsLeft > 1) {
+            cellCoverTurnsLeft--;
+            if (cellCoverTurnsLeft > 1) {
               for (int row = 0; row < CAVE_HEIGHT; ++row) {
                 for (int i = 0; i < 3; ++i) {
-                  birthCover[row][rand()%CAVE_WIDTH] = false;
+                  cellCover[row][rand()%CAVE_WIDTH] = false;
                 }
               }
-            } else if (birthCoverTurnsLeft == 1) {
+            } else if (cellCoverTurnsLeft == 1) {
               pauseTurnsLeft = COVER_PAUSE;
-            } else if (birthCoverTurnsLeft == 0) {
+            } else if (cellCoverTurnsLeft == 0) {
               for (int row = 0; row < CAVE_HEIGHT; ++row) {
                 for (int col = 0; col < CAVE_WIDTH; ++col) {
-                  birthCover[row][col] = false;
+                  cellCover[row][col] = false;
                 }
               }
             }
@@ -775,7 +775,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                     turnsSinceRockfordSeenAlive = 0;
                     if (rockfordTurnsTillBirth == 0) {
                       map[row][col] = OBJ_PRE_ROCKFORD_2;
-                    } else if (birthCoverTurnsLeft == 0) {
+                    } else if (cellCoverTurnsLeft == 0) {
                       rockfordTurnsTillBirth--;
                     }
                     break;
@@ -963,11 +963,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               }
             }
 
-            if (deathCoverTicksLeft == 0 && isFailed()) {
+            if (tileCoverTicksLeft == 0 && isFailed()) {
               // Cave is failed
 
               if (isKeyDown(KEY_FIRE)) {
-                deathCoverTicksLeft = DEATH_COVER_TICKS;
+                tileCoverTicksLeft = TILE_COVER_TICKS;
 
                 --livesLeft;
                 if (livesLeft < 0) {
@@ -1036,7 +1036,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           if (isOutOfTimeTextShown) {
             sprintf_s(statusBarText, sizeof(statusBarText), "     O U T   O F   T I M E");
           } else {
-            if (rockfordTurnsTillBirth > 0 || deathCoverTicksLeft > 0) {
+            if (rockfordTurnsTillBirth > 0 || tileCoverTicksLeft > 0) {
               sprintf_s(statusBarText, sizeof(statusBarText), "  PLAYER 1,  %d MEN,  ROOM %c/1",
                         livesLeft, 'A' + (caveInfo->caveNumber-1));
             } else {
@@ -1053,17 +1053,17 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         }
       }
 
-      // Update death cover
-      if (deathCoverTicksLeft > 0) {
-        --deathCoverTicksLeft;
+      // Update tile cover
+      if (tileCoverTicksLeft > 0) {
+        --tileCoverTicksLeft;
 
-        if (deathCoverTicksLeft == 0) {
+        if (tileCoverTicksLeft == 0) {
           pauseTurnsLeft = COVER_PAUSE;
         } else {
           for (int i = 0; i < 7; ++i) {
             int row = rand() % PLAYFIELD_HEIGHT_IN_TILES;
             int col = rand() % PLAYFIELD_WIDTH_IN_TILES;
-            deathCover[row][col] = true;
+            tileCover[row][col] = true;
           }
         }
       }
@@ -1081,7 +1081,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           int x = PLAYFIELD_LEFT + col*CELL_SIZE - cameraX;
           int y = PLAYFIELD_TOP + row*CELL_SIZE - cameraY;
 
-          if (birthCover[row][col]) {
+          if (cellCover[row][col]) {
             drawSprite(spriteSteelWall, 0, x, y, 4, 0, turn);
           } else {
             switch (map[row][col]) {
@@ -1188,12 +1188,12 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       }
 
       //
-      // Draw screen cover after Rockford death
+      // Draw tile cover
       //
 
       for (int row = 0; row < PLAYFIELD_HEIGHT_IN_TILES; ++row) {
         for (int col = 0; col < PLAYFIELD_WIDTH_IN_TILES; ++col) {
-          if (deathCover[row][col]) {
+          if (tileCover[row][col]) {
             int x = PLAYFIELD_LEFT + col*TILE_SIZE;
             int y = PLAYFIELD_TOP + row*TILE_SIZE;
             drawSprite(spriteSteelWallTile, 0, x, y, 4, 0, turn);
