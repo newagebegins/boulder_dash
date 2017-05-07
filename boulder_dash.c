@@ -24,6 +24,8 @@
 #define MAX_LIVES 9
 #define COVER_PAUSE 2
 #define TICKS_PER_CAVE_SECOND (7*TICKS_PER_TURN)
+#define OUT_OF_TIME_ON_TURNS 25
+#define OUT_OF_TIME_OFF_TURNS 42
 
 // Keys
 #define KEY_FIRE VK_SPACE
@@ -589,6 +591,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   // These variables are initialized when cave starts
   int caveTimeLeft;
   int ticksTillNextCaveSecond;
+  bool isOutOfTime;
+  bool isOutOfTimeTextShown;
+  int outOfTimeTurn = 0;
   int diamondsCollected;
   int currentDiamondValue;
   int rockfordTurnsTillBirth;
@@ -645,6 +650,9 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       currentDiamondValue = caveInfo->initialDiamondValue;
       caveTimeLeft = DEV_QUICK_OUT_OF_TIME ? 5 : caveInfo->caveTime[difficultyLevel];
       ticksTillNextCaveSecond = TICKS_PER_CAVE_SECOND;
+      isOutOfTime = false;
+      isOutOfTimeTextShown = false;
+      outOfTimeTurn = 0;
       rockfordTurnsTillBirth = DEV_IMMEDIATE_STARTUP ? 0 : ROCKFORD_TURNS_TILL_BIRTH;
       birthCoverTurnsLeft = DEV_IMMEDIATE_STARTUP ? 1 : BIRTH_COVER_TURNS;
 
@@ -694,13 +702,15 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       int rockfordRectRight = rockfordRectLeft + CELL_SIZE;
       int rockfordRectBottom = rockfordRectTop + CELL_SIZE;
 
-      if (rockfordTurnsTillBirth == 0 && caveTimeLeft > 0) {
+      if (rockfordTurnsTillBirth == 0 && !isOutOfTime) {
         --ticksTillNextCaveSecond;
         if (ticksTillNextCaveSecond == 0) {
           ticksTillNextCaveSecond = TICKS_PER_CAVE_SECOND;
-          --caveTimeLeft;
-          if (caveTimeLeft == 0) {
-            // TODO
+          if (caveTimeLeft > 0) {
+            --caveTimeLeft;
+          } else {
+            isOutOfTime = true;
+            isOutOfTimeTextShown = true;
           }
         }
       }
@@ -791,7 +801,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
                     rockfordIsMoving = false;
 
-                    if (caveTimeLeft > 0) {
+                    if (!isOutOfTime) {
                       if (isKeyDown(KEY_RIGHT)) {
                         rockfordIsMoving = true;
                         rockfordIsFacingRight = true;
@@ -1002,17 +1012,36 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           // Update status bar text
           //
 
-          if (rockfordTurnsTillBirth > 0 || deathCoverTicksLeft > 0) {
-            sprintf_s(statusBarText, sizeof(statusBarText), "  PLAYER 1,  %d MEN,  ROOM %c/1",
-                      livesLeft, 'A' + (caveInfo->caveNumber-1));
-          } else {
-            if (diamondsCollected < caveInfo->diamondsNeeded[difficultyLevel]) {
-              sprintf_s(statusBarText, sizeof(statusBarText), "   %02d*%02d   %02d   %03d   %06d",
-                        caveInfo->diamondsNeeded[difficultyLevel],
-                        currentDiamondValue, diamondsCollected, caveTimeLeft, score);
+          if (isOutOfTime) {
+            ++outOfTimeTurn;
+            if (isOutOfTimeTextShown) {
+              if (outOfTimeTurn == OUT_OF_TIME_ON_TURNS) {
+                outOfTimeTurn = 0;
+                isOutOfTimeTextShown = false;
+              }
             } else {
-              sprintf_s(statusBarText, sizeof(statusBarText), "   ***%02d   %02d   %03d   %06d",
-                        currentDiamondValue, diamondsCollected, caveTimeLeft, score);
+              if (outOfTimeTurn == OUT_OF_TIME_OFF_TURNS) {
+                outOfTimeTurn = 0;
+                isOutOfTimeTextShown = true;
+              }
+            }
+          }
+
+          if (isOutOfTimeTextShown) {
+            sprintf_s(statusBarText, sizeof(statusBarText), "     O U T   O F   T I M E");
+          } else {
+            if (rockfordTurnsTillBirth > 0 || deathCoverTicksLeft > 0) {
+              sprintf_s(statusBarText, sizeof(statusBarText), "  PLAYER 1,  %d MEN,  ROOM %c/1",
+                        livesLeft, 'A' + (caveInfo->caveNumber-1));
+            } else {
+              if (diamondsCollected < caveInfo->diamondsNeeded[difficultyLevel]) {
+                sprintf_s(statusBarText, sizeof(statusBarText), "   %02d*%02d   %02d   %03d   %06d",
+                          caveInfo->diamondsNeeded[difficultyLevel],
+                          currentDiamondValue, diamondsCollected, caveTimeLeft, score);
+              } else {
+                sprintf_s(statusBarText, sizeof(statusBarText), "   ***%02d   %02d   %03d   %06d",
+                          currentDiamondValue, diamondsCollected, caveTimeLeft, score);
+              }
             }
           }
         }
