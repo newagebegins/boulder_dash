@@ -8,7 +8,7 @@
 #include "data_caves.h"
 
 // Developer options
-#define DEV_IMMEDIATE_STARTUP 0
+#define DEV_IMMEDIATE_STARTUP 1
 #define DEV_NEAR_OUTBOX 0
 #define DEV_SINGLE_DIAMOND_NEEDED 0
 #define DEV_CHEAP_BONUS_LIFE 0
@@ -18,7 +18,7 @@
 #define DEV_SINGLE_LIFE 0
 
 // Gameplay constants
-#define START_CAVE CAVE_A
+#define START_CAVE CAVE_B
 #define TICKS_PER_TURN 5
 #define ROCKFORD_TURNS_TILL_BIRTH 12
 #define CELL_COVER_TURNS 40
@@ -96,14 +96,14 @@
 #define OBJ_PRE_OUTBOX 0x04
 #define OBJ_FLASHING_OUTBOX 0x05
 #define OBJ_STEEL_WALL 0x07
-#define OBJ_FIREFLY_POSITION_1 0x08
-#define OBJ_FIREFLY_POSITION_2 0x09
-#define OBJ_FIREFLY_POSITION_3 0x0A
-#define OBJ_FIREFLY_POSITION_4 0x0B
-#define OBJ_FIREFLY_POSITION_1_SCANNED 0x0C
-#define OBJ_FIREFLY_POSITION_2_SCANNED 0x0D
-#define OBJ_FIREFLY_POSITION_3_SCANNED 0x0E
-#define OBJ_FIREFLY_POSITION_4_SCANNED 0x0F
+#define OBJ_FIREFLY_LEFT 0x08
+#define OBJ_FIREFLY_UP 0x09
+#define OBJ_FIREFLY_RIGHT 0x0A
+#define OBJ_FIREFLY_DOWN 0x0B
+#define OBJ_FIREFLY_LEFT_SCANNED 0x0C
+#define OBJ_FIREFLY_UP_SCANNED 0x0D
+#define OBJ_FIREFLY_RIGHT_SCANNED 0x0E
+#define OBJ_FIREFLY_DOWN_SCANNED 0x0F
 #define OBJ_BOULDER_STATIONARY 0x10
 #define OBJ_BOULDER_STATIONARY_SCANNED 0x11
 #define OBJ_BOULDER_FALLING 0x12
@@ -126,14 +126,14 @@
 #define OBJ_PRE_ROCKFORD_2 0x26
 #define OBJ_PRE_ROCKFORD_3 0x27
 #define OBJ_PRE_ROCKFORD_4 0x28
-#define OBJ_BUTTERFLY_POSITION_1 0x30
-#define OBJ_BUTTERFLY_POSITION_2 0x31
-#define OBJ_BUTTERFLY_POSITION_3 0x32
-#define OBJ_BUTTERFLY_POSITION_4 0x33
-#define OBJ_BUTTERFLY_POSITION_1_SCANNED 0x34
-#define OBJ_BUTTERFLY_POSITION_2_SCANNED 0x35
-#define OBJ_BUTTERFLY_POSITION_3_SCANNED 0x36
-#define OBJ_BUTTERFLY_POSITION_4_SCANNED 0x37
+#define OBJ_BUTTERFLY_DOWN 0x30
+#define OBJ_BUTTERFLY_LEFT 0x31
+#define OBJ_BUTTERFLY_UP 0x32
+#define OBJ_BUTTERFLY_RIGHT 0x33
+#define OBJ_BUTTERFLY_DOWN_SCANNED 0x34
+#define OBJ_BUTTERFLY_LEFT_SCANNED 0x35
+#define OBJ_BUTTERFLY_UP_SCANNED 0x36
+#define OBJ_BUTTERFLY_RIGHT_SCANNED 0x37
 #define OBJ_ROCKFORD 0x38
 #define OBJ_ROCKFORD_SCANNED 0x39
 #define OBJ_AMOEBA 0x3A
@@ -205,6 +205,12 @@ typedef struct {
   Color flyFg;
   Color flyBg;
 } CaveColors;
+
+typedef enum {
+  TURN_LEFT,
+  STRAIGHT_AHEAD,
+  TURN_RIGHT,
+} Turning;
 
 //
 // Global variables
@@ -473,19 +479,19 @@ bool isObjectRound(uint8_t object) {
 
 bool isObjectExplosive(uint8_t object) {
   return object == OBJ_ROCKFORD ||
-    object == OBJ_FIREFLY_POSITION_1 ||
-    object == OBJ_FIREFLY_POSITION_2 ||
-    object == OBJ_FIREFLY_POSITION_3 ||
-    object == OBJ_FIREFLY_POSITION_4 ||
-    object == OBJ_BUTTERFLY_POSITION_1 ||
-    object == OBJ_BUTTERFLY_POSITION_2 ||
-    object == OBJ_BUTTERFLY_POSITION_3 ||
-    object == OBJ_BUTTERFLY_POSITION_4;
+    object == OBJ_FIREFLY_LEFT ||
+    object == OBJ_FIREFLY_UP ||
+    object == OBJ_FIREFLY_RIGHT ||
+    object == OBJ_FIREFLY_DOWN ||
+    object == OBJ_BUTTERFLY_DOWN ||
+    object == OBJ_BUTTERFLY_LEFT ||
+    object == OBJ_BUTTERFLY_UP ||
+    object == OBJ_BUTTERFLY_RIGHT;
 }
 
 bool explodesToDiamonds(uint8_t object) {
   assert(isObjectExplosive(object));
-  return object == OBJ_BUTTERFLY_POSITION_1 || object == OBJ_BUTTERFLY_POSITION_2 || object == OBJ_BUTTERFLY_POSITION_3 || object == OBJ_BUTTERFLY_POSITION_4;
+  return object == OBJ_BUTTERFLY_DOWN || object == OBJ_BUTTERFLY_LEFT || object == OBJ_BUTTERFLY_UP || object == OBJ_BUTTERFLY_RIGHT;
 }
 
 void updateBoulderAndDiamond(int row, int col, uint8_t fallingScannedObj, uint8_t stationaryScannedObj, bool isFalling) {
@@ -526,6 +532,46 @@ void updateBoulderAndDiamond(int row, int col, uint8_t fallingScannedObj, uint8_
 
 bool isFailed() {
   return turnsSinceRockfordSeenAlive >= 16 || isOutOfTime;
+}
+
+bool checkFlyExplode(uint8_t object) {
+  return object == OBJ_ROCKFORD || object == OBJ_ROCKFORD_SCANNED || object == OBJ_AMOEBA;
+}
+
+void getNewFireflyPosition(int curRow, int curCol, uint8_t curDirection, Turning turning, int *newRow, int *newCol, uint8_t *newDirection) {
+  *newRow = curRow;
+  *newCol = curCol;
+
+  switch(curDirection) {
+    case OBJ_FIREFLY_UP:
+      switch (turning) {
+        case TURN_LEFT:      (*newCol)--; *newDirection = OBJ_FIREFLY_LEFT_SCANNED;  break;
+        case STRAIGHT_AHEAD: (*newRow)--; *newDirection = OBJ_FIREFLY_UP_SCANNED;    break;
+        case TURN_RIGHT:     (*newCol)++; *newDirection = OBJ_FIREFLY_RIGHT_SCANNED; break;
+      }
+      break;
+    case OBJ_FIREFLY_DOWN:
+      switch (turning) {
+        case TURN_LEFT:      (*newCol)++; *newDirection = OBJ_FIREFLY_RIGHT_SCANNED; break;
+        case STRAIGHT_AHEAD: (*newRow)++; *newDirection = OBJ_FIREFLY_DOWN_SCANNED;  break;
+        case TURN_RIGHT:     (*newCol)--; *newDirection = OBJ_FIREFLY_LEFT_SCANNED;  break;
+      }
+      break;
+    case OBJ_FIREFLY_LEFT:
+      switch (turning) {
+        case TURN_LEFT:      (*newRow)++; *newDirection = OBJ_FIREFLY_DOWN_SCANNED; break;
+        case STRAIGHT_AHEAD: (*newCol)--; *newDirection = OBJ_FIREFLY_LEFT_SCANNED; break;
+        case TURN_RIGHT:     (*newRow)--; *newDirection = OBJ_FIREFLY_UP_SCANNED;   break;
+      }
+      break;
+    case OBJ_FIREFLY_RIGHT:
+      switch (turning) {
+        case TURN_LEFT:      (*newRow)--; *newDirection = OBJ_FIREFLY_UP_SCANNED;    break;
+        case STRAIGHT_AHEAD: (*newCol)++; *newDirection = OBJ_FIREFLY_RIGHT_SCANNED; break;
+        case TURN_RIGHT:     (*newRow)++; *newDirection = OBJ_FIREFLY_DOWN_SCANNED;  break;
+      }
+      break;
+  }
 }
 
 LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
@@ -1235,6 +1281,48 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                         map[row][col] = OBJ_FLASHING_OUTBOX;
                       }
                       break;
+
+                      //
+                      // Update firefly
+                      //
+
+                    case OBJ_FIREFLY_LEFT:
+                    case OBJ_FIREFLY_UP:
+                    case OBJ_FIREFLY_RIGHT:
+                    case OBJ_FIREFLY_DOWN: {
+                      if (checkFlyExplode(map[row-1][col]) || checkFlyExplode(map[row+1][col]) ||
+                          checkFlyExplode(map[row][col-1]) || checkFlyExplode(map[row][col+1])) {
+                        explodeCell(row-1, col-1, false, 1);
+                        explodeCell(row-1, col+0, false, 1);
+                        explodeCell(row-1, col+1, false, 1);
+
+                        explodeCell(row+0, col-1, false, 1);
+                        explodeCell(row+0, col+0, false, 1);
+                        explodeCell(row+0, col+1, false, 0);
+
+                        explodeCell(row+1, col-1, false, 0);
+                        explodeCell(row+1, col+0, false, 0);
+                        explodeCell(row+1, col+1, false, 0);
+                      } else {
+                        int newRow, newCol;
+                        uint8_t newDirection;
+                        getNewFireflyPosition(row, col, map[row][col], TURN_LEFT, &newRow, &newCol, &newDirection);
+                        if (map[newRow][newCol] == OBJ_SPACE) {
+                          map[newRow][newCol] = newDirection;
+                          map[row][col] = OBJ_SPACE;
+                        } else {
+                          getNewFireflyPosition(row, col, map[row][col], STRAIGHT_AHEAD, &newRow, &newCol, &newDirection);
+                          if (map[newRow][newCol] == OBJ_SPACE) {
+                            map[newRow][newCol] = newDirection;
+                            map[row][col] = OBJ_SPACE;
+                          } else {
+                            getNewFireflyPosition(row, col, map[row][col], TURN_RIGHT, &newRow, &newCol, &newDirection);
+                            map[row][col] = newDirection;
+                          }
+                        }
+                      }
+                      break;
+                    }
                   }
                 }
               }
@@ -1246,20 +1334,20 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               for (int row = 0; row < CAVE_HEIGHT; ++row) {
                 for (int col = 0; col < CAVE_WIDTH; ++col) {
                   switch (map[row][col]) {
-                    case OBJ_FIREFLY_POSITION_1_SCANNED:   map[row][col] = OBJ_FIREFLY_POSITION_1;   break;
-                    case OBJ_FIREFLY_POSITION_2_SCANNED:   map[row][col] = OBJ_FIREFLY_POSITION_2;   break;
-                    case OBJ_FIREFLY_POSITION_3_SCANNED:   map[row][col] = OBJ_FIREFLY_POSITION_3;   break;
-                    case OBJ_FIREFLY_POSITION_4_SCANNED:   map[row][col] = OBJ_FIREFLY_POSITION_4;   break;
-                    case OBJ_BOULDER_STATIONARY_SCANNED:   map[row][col] = OBJ_BOULDER_STATIONARY;   break;
-                    case OBJ_BOULDER_FALLING_SCANNED:      map[row][col] = OBJ_BOULDER_FALLING;      break;
-                    case OBJ_DIAMOND_STATIONARY_SCANNED:   map[row][col] = OBJ_DIAMOND_STATIONARY;   break;
-                    case OBJ_DIAMOND_FALLING_SCANNED:      map[row][col] = OBJ_DIAMOND_FALLING;      break;
-                    case OBJ_BUTTERFLY_POSITION_1_SCANNED: map[row][col] = OBJ_BUTTERFLY_POSITION_1; break;
-                    case OBJ_BUTTERFLY_POSITION_2_SCANNED: map[row][col] = OBJ_BUTTERFLY_POSITION_2; break;
-                    case OBJ_BUTTERFLY_POSITION_3_SCANNED: map[row][col] = OBJ_BUTTERFLY_POSITION_3; break;
-                    case OBJ_BUTTERFLY_POSITION_4_SCANNED: map[row][col] = OBJ_BUTTERFLY_POSITION_4; break;
-                    case OBJ_ROCKFORD_SCANNED:             map[row][col] = OBJ_ROCKFORD;             break;
-                    case OBJ_AMOEBA_SCANNED:               map[row][col] = OBJ_AMOEBA;               break;
+                    case OBJ_FIREFLY_LEFT_SCANNED:       map[row][col] = OBJ_FIREFLY_LEFT;       break;
+                    case OBJ_FIREFLY_UP_SCANNED:         map[row][col] = OBJ_FIREFLY_UP;         break;
+                    case OBJ_FIREFLY_RIGHT_SCANNED:      map[row][col] = OBJ_FIREFLY_RIGHT;      break;
+                    case OBJ_FIREFLY_DOWN_SCANNED:       map[row][col] = OBJ_FIREFLY_DOWN;       break;
+                    case OBJ_BOULDER_STATIONARY_SCANNED: map[row][col] = OBJ_BOULDER_STATIONARY; break;
+                    case OBJ_BOULDER_FALLING_SCANNED:    map[row][col] = OBJ_BOULDER_FALLING;    break;
+                    case OBJ_DIAMOND_STATIONARY_SCANNED: map[row][col] = OBJ_DIAMOND_STATIONARY; break;
+                    case OBJ_DIAMOND_FALLING_SCANNED:    map[row][col] = OBJ_DIAMOND_FALLING;    break;
+                    case OBJ_BUTTERFLY_DOWN_SCANNED:     map[row][col] = OBJ_BUTTERFLY_DOWN;     break;
+                    case OBJ_BUTTERFLY_LEFT_SCANNED:     map[row][col] = OBJ_BUTTERFLY_LEFT;     break;
+                    case OBJ_BUTTERFLY_UP_SCANNED:       map[row][col] = OBJ_BUTTERFLY_UP;       break;
+                    case OBJ_BUTTERFLY_RIGHT_SCANNED:    map[row][col] = OBJ_BUTTERFLY_RIGHT;    break;
+                    case OBJ_ROCKFORD_SCANNED:           map[row][col] = OBJ_ROCKFORD;           break;
+                    case OBJ_AMOEBA_SCANNED:             map[row][col] = OBJ_AMOEBA;             break;
                   }
                 }
               }
@@ -1384,6 +1472,13 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               case OBJ_DIAMOND_STATIONARY:
               case OBJ_DIAMOND_FALLING:
                 drawSprite(spriteDiamond, turn, x, y, COLOR_WHITE, COLOR_BLACK, 0);
+                break;
+
+              case OBJ_FIREFLY_LEFT:
+              case OBJ_FIREFLY_UP:
+              case OBJ_FIREFLY_RIGHT:
+              case OBJ_FIREFLY_DOWN:
+                drawSprite(spriteFirefly, turn, x, y, currentCaveColors.flyFg, currentCaveColors.flyBg, 0);
                 break;
 
                 //
