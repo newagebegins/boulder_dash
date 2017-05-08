@@ -9,16 +9,16 @@
 
 // Developer options
 #define DEV_IMMEDIATE_STARTUP 1
-#define DEV_NEAR_OUTBOX 0
+#define DEV_NEAR_OUTBOX 1
 #define DEV_SINGLE_DIAMOND_NEEDED 0
-#define DEV_CHEAP_BONUS_LIFE 0
+#define DEV_CHEAP_BONUS_LIFE 1
 #define DEV_CAMERA_DEBUGGING 0
 #define DEV_SLOW_TICK_DURATION 0
 #define DEV_QUICK_OUT_OF_TIME 0
 #define DEV_SINGLE_LIFE 0
 
 // Gameplay constants
-#define START_CAVE CAVE_B
+#define START_CAVE CAVE_A
 #define TICKS_PER_TURN 5
 #define ROCKFORD_TURNS_TILL_BIRTH 12
 #define CELL_COVER_TURNS 40
@@ -223,6 +223,10 @@ uint8_t map[CAVE_HEIGHT][CAVE_WIDTH];
 CaveInfo *caveInfo;
 int turnsSinceRockfordSeenAlive;
 bool isOutOfTime;
+int livesLeft;
+int score;
+int scoreTillBonusLife;
+int turnsTillStopBonusLifeFlashing;
 
 //
 //
@@ -567,6 +571,21 @@ void getNewFireflyPosition(int curRow, int curCol, Object curDirection, Turning 
   }
 }
 
+void addScore(int amount) {
+  score += amount;
+
+  // Check for bonus life
+  scoreTillBonusLife -= amount;
+  if (scoreTillBonusLife <= 0) {
+    scoreTillBonusLife += BONUS_LIFE_COST;
+    turnsTillStopBonusLifeFlashing = BONUS_LIFE_FLASHING_TURNS;
+    ++livesLeft;
+    if (livesLeft > MAX_LIVES) {
+      livesLeft = MAX_LIVES;
+    }
+  }
+}
+
 LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
   switch (msg) {
     case WM_DESTROY:
@@ -815,10 +834,6 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int pauseTurnsLeft;
   uint8_t currentCaveNumber;
   int difficultyLevel;
-  int livesLeft;
-  int score;
-  int scoreTillBonusLife;
-  int turnsTillStopBonusLifeFlashing;
 
   // These variables are initialized when cave starts
   bool isExitingCave;
@@ -954,7 +969,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       if (isAddingTimeToScore) {
         if (caveTimeLeft > 0) {
           --caveTimeLeft;
-          ++score;
+          addScore(1);
         } else {
           isAddingTimeToScore = false;
           isExitingCave = true;
@@ -991,7 +1006,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
             borderColor = normalBorderColor;
 
-            if (turnsTillStopBonusLifeFlashing > 0) {
+            if (turnsTillExitingCave == 0 && turnsTillStopBonusLifeFlashing > 0) {
               --turnsTillStopBonusLifeFlashing;
             }
 
@@ -1165,18 +1180,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                           //
 
                           actuallyMoved = true;
-                          score += currentDiamondValue;
-
-                          // Check for bonus life
-                          scoreTillBonusLife -= currentDiamondValue;
-                          if (scoreTillBonusLife <= 0) {
-                            scoreTillBonusLife += BONUS_LIFE_COST;
-                            turnsTillStopBonusLifeFlashing = BONUS_LIFE_FLASHING_TURNS;
-                            ++livesLeft;
-                            if (livesLeft > MAX_LIVES) {
-                              livesLeft = MAX_LIVES;
-                            }
-                          }
+                          addScore(currentDiamondValue);
 
                           // Check if all the needed diamonds for this cave were collected
                           ++diamondsCollected;
@@ -1419,7 +1423,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           } else {
             switch (map[row][col]) {
               case OBJ_SPACE:
-                if (turnsTillStopBonusLifeFlashing > 0) {
+                if (turnsTillStopBonusLifeFlashing > 0 && !isAddingTimeToScore && turnsTillExitingCave == 0) {
                   drawSprite(spriteSpaceFlash, turn, x, y, COLOR_WHITE, COLOR_BLACK, 0);
                 } else {
                   drawSprite(spriteSpace, 0, x, y, COLOR_BLACK, COLOR_BLACK, 0);
