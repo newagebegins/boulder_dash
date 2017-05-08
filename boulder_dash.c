@@ -24,7 +24,7 @@
 #define CELL_COVER_TURNS 40
 #define TILE_COVER_TICKS (32*TICKS_PER_TURN)
 #define BONUS_LIFE_COST (DEV_CHEAP_BONUS_LIFE ? 5 : 500)
-#define BONUS_LIFE_FLASHING_TURNS 10
+#define SPACE_FLASHING_TURNS 10
 #define MAX_LIVES 9
 #define COVER_PAUSE 2
 #define TICKS_PER_CAVE_SECOND (7*TICKS_PER_TURN)
@@ -226,7 +226,7 @@ bool isOutOfTime;
 int livesLeft;
 int score;
 int scoreTillBonusLife;
-int turnsTillStopBonusLifeFlashing;
+int spaceFlashingTurnsLeft;
 
 //
 //
@@ -578,7 +578,7 @@ void addScore(int amount) {
   scoreTillBonusLife -= amount;
   if (scoreTillBonusLife <= 0) {
     scoreTillBonusLife += BONUS_LIFE_COST;
-    turnsTillStopBonusLifeFlashing = BONUS_LIFE_FLASHING_TURNS;
+    spaceFlashingTurnsLeft = SPACE_FLASHING_TURNS;
     ++livesLeft;
     if (livesLeft > MAX_LIVES) {
       livesLeft = MAX_LIVES;
@@ -897,7 +897,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       livesLeft = DEV_SINGLE_LIFE ? 1 : 3;
       score = 0;
       scoreTillBonusLife = BONUS_LIFE_COST;
-      turnsTillStopBonusLifeFlashing = 0;
+      spaceFlashingTurnsLeft = 0;
     }
 
     if (isCaveStart && pauseTurnsLeft == 0) {
@@ -1006,8 +1006,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
             borderColor = normalBorderColor;
 
-            if (turnsTillExitingCave == 0 && turnsTillStopBonusLifeFlashing > 0) {
-              --turnsTillStopBonusLifeFlashing;
+            if (turnsTillExitingCave == 0 && spaceFlashingTurnsLeft > 0) {
+              --spaceFlashingTurnsLeft;
             }
 
             //
@@ -1423,7 +1423,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           } else {
             switch (map[row][col]) {
               case OBJ_SPACE:
-                if (turnsTillStopBonusLifeFlashing > 0 && !isAddingTimeToScore && turnsTillExitingCave == 0) {
+                if (spaceFlashingTurnsLeft > 0 && !isAddingTimeToScore && turnsTillExitingCave == 0) {
                   drawSprite(spriteSpaceFlash, turn, x, y, COLOR_WHITE, COLOR_BLACK, 0);
                 } else {
                   drawSprite(spriteSpace, 0, x, y, COLOR_BLACK, COLOR_BLACK, 0);
