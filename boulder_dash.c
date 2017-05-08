@@ -18,7 +18,7 @@
 #define DEV_SINGLE_LIFE 0
 
 // Gameplay constants
-#define START_CAVE CAVE_H
+#define START_CAVE CAVE_D
 #define TICKS_PER_TURN 5
 #define ROCKFORD_TURNS_TILL_BIRTH 12
 #define CELL_COVER_TURNS 40
@@ -144,6 +144,13 @@ typedef enum {
   OBJ_AMOEBA = 0x3A,
   OBJ_AMOEBA_SCANNED = 0x3B,
 } Object;
+
+typedef enum {
+  OBJST_SINGLE,
+  OBJST_LINE,
+  OBJST_FILLED_RECT,
+  OBJST_RECT,
+} ObjectStructure;
 
 #define CAVE_HEIGHT 22
 #define CAVE_WIDTH 40
@@ -402,13 +409,13 @@ void decodeCave(int caveIndex) {
       Object object = (explicitData[i] & 0x3F);
 
       switch (3 & (explicitData[i] >> 6)) {
-        case 0: {
+        case OBJST_SINGLE: {
           int col = explicitData[++i];
           int row = explicitData[++i] - uselessTopBorderHeight;
           map[row][col] = object;
           break;
         }
-        case 1: {
+        case OBJST_LINE: {
           int col = explicitData[++i];
           int row = explicitData[++i] - uselessTopBorderHeight;
           int length = explicitData[++i];
@@ -416,7 +423,7 @@ void decodeCave(int caveIndex) {
           placeObjectLine(object, row, col, length, direction);
           break;
         }
-        case 2: {
+        case OBJST_FILLED_RECT: {
           int col = explicitData[++i];
           int row = explicitData[++i] - uselessTopBorderHeight;
           int width = explicitData[++i];
@@ -425,7 +432,7 @@ void decodeCave(int caveIndex) {
           placeObjectFilledRect(object, row, col, width, height, fill);
           break;
         }
-        case 3: {
+        case OBJST_RECT: {
           int col = explicitData[++i];
           int row = explicitData[++i] - uselessTopBorderHeight;
           int width = explicitData[++i];
