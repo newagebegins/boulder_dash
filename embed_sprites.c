@@ -92,7 +92,7 @@ void main() {
   printSprite("spriteDiamond", 8, 2, 0, 144);
   printSprite("spriteFirefly", 4, 2, 0, 160);
   printSprite("spriteButterfly", 8, 2, 0, 176);
-  printSprite("spriteAmoeba", 8, 2, 0, 192);
+  printSprite("spriteAmoeba", 4, 2, 0, 192);
   printSprite("spriteAscii", 59, 1, 0, 224);
   printSprite("spriteSpaceFlash", 10, 2, 0, 240);
 }

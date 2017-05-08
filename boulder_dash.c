@@ -9,7 +9,7 @@
 
 // Developer options
 #define DEV_IMMEDIATE_STARTUP 0
-#define DEV_NEAR_OUTBOX 1
+#define DEV_NEAR_OUTBOX 0
 #define DEV_SINGLE_DIAMOND_NEEDED 0
 #define DEV_CHEAP_BONUS_LIFE 0
 #define DEV_CAMERA_DEBUGGING 0
@@ -18,7 +18,7 @@
 #define DEV_SINGLE_LIFE 0
 
 // Gameplay constants
-#define START_CAVE CAVE_P
+#define START_CAVE CAVE_G
 #define TICKS_PER_TURN 5
 #define ROCKFORD_TURNS_TILL_BIRTH 12
 #define CELL_COVER_TURNS 40
@@ -32,6 +32,10 @@
 #define OUT_OF_TIME_OFF_TURNS 42
 #define TURNS_TILL_GAME_RESTART 10
 #define TURNS_TILL_EXITING_CAVE 12
+
+#define TOO_MANY_AMOEBA 200
+#define AMOEBA_FACTOR_SLOW 127
+#define AMOEBA_FACTOR_FAST 15
 
 // Keys
 #define KEY_FIRE VK_SPACE
@@ -148,7 +152,7 @@ typedef enum {
 
 typedef struct {
   uint8_t caveNumber;
-  uint8_t magicWallMillingTime; // also max amoeba time at 3% growth
+  uint8_t magicWallMillingTime; // also amoebaSlowGrowthTime
   uint8_t initialDiamondValue;
   uint8_t extraDiamondValue;
   uint8_t randomiserSeed[NUM_DIFFICULTY_LEVELS];
@@ -181,7 +185,7 @@ typedef struct {
   Color flyBg;
 } CaveColors;
 
-typedef enum {UP, DOWN, LEFT, RIGHT} Direction;
+typedef enum {UP, DOWN, LEFT, RIGHT, DIRECTION_COUNT} Direction;
 typedef enum {TURN_LEFT, STRAIGHT_AHEAD, TURN_RIGHT} Turning;
 
 //
@@ -652,6 +656,21 @@ char getCurrentCaveLetter() {
   return ' ';
 }
 
+bool canAmoebaGrowHere(int row, int col) {
+  return map[row][col] == OBJ_SPACE || map[row][col] == OBJ_DIRT;
+}
+
+void getRandomCellNear(int row, int col, int *newRow, int *newCol) {
+  *newRow = row;
+  *newCol = col;
+  switch (rand() % DIRECTION_COUNT) {
+    case UP:    (*newRow)--; break;
+    case DOWN:  (*newRow)++; break;
+    case LEFT:  (*newCol)--; break;
+    case RIGHT: (*newCol)++; break;
+  }
+}
+
 ////////////////
 
 bool isKeyDown(uint8_t virtKey) {
@@ -900,12 +919,17 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int cameraVelX = 0;
   int cameraVelY = 0;
 
+  //
   // These variables are initialized when game starts
+  //
 
   bool isCaveStart;
   int pauseTurnsLeft;
 
+  //
   // These variables are initialized when cave starts
+  //
+
   bool isExitingCave;
   int caveTimeLeft;
   int ticksTillNextCaveSecond;
@@ -916,12 +940,19 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int rockfordTurnsTillBirth;
   int cellCoverTurnsLeft;
   int tileCoverTicksLeft;
+
   int rockfordCol;
   int rockfordRow;
   bool rockfordIsBlinking;
   bool rockfordIsTapping;
   bool rockfordIsMoving;
   bool rockfordIsFacingRight;
+
+  int amoebaSlowGrowthTimeLeft;
+  int numberOfAmoebaFoundThisTurn;
+  int totalAmoebaFoundLastTurn;
+  bool amoebaSuffocatedLastTurn;
+  bool atLeastOneAmoebaFoundThisTurnWhichCanGrow;
 
   //
   // Game loop
@@ -981,12 +1012,18 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       diamondsCollected = 0;
       currentDiamondValue = caveInfo->initialDiamondValue;
       caveTimeLeft = DEV_QUICK_OUT_OF_TIME ? 5 : caveInfo->caveTime[difficultyLevel];
+      amoebaSlowGrowthTimeLeft = caveInfo->magicWallMillingTime;
       ticksTillNextCaveSecond = TICKS_PER_CAVE_SECOND;
       isOutOfTime = false;
       isOutOfTimeTextShown = false;
       outOfTimeTurn = 0;
       rockfordTurnsTillBirth = DEV_IMMEDIATE_STARTUP ? 0 : ROCKFORD_TURNS_TILL_BIRTH;
       cellCoverTurnsLeft = DEV_IMMEDIATE_STARTUP ? 1 : CELL_COVER_TURNS;
+
+      numberOfAmoebaFoundThisTurn = 0;
+      totalAmoebaFoundLastTurn = 0;
+      amoebaSuffocatedLastTurn = false;
+      atLeastOneAmoebaFoundThisTurnWhichCanGrow = true;
 
       rockfordIsBlinking = false;
       rockfordIsTapping = false;
@@ -1031,6 +1068,10 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       tickTimer -= tickDuration;
       tick++;
 
+      //
+      // Do tick
+      //
+
       int rockfordRectLeft = PLAYFIELD_LEFT + rockfordCol*CELL_SIZE - cameraX;
       int rockfordRectTop = PLAYFIELD_TOP + rockfordRow*CELL_SIZE - cameraY;
       int rockfordRectRight = rockfordRectLeft + CELL_SIZE;
@@ -1057,6 +1098,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             ticksTillNextCaveSecond = TICKS_PER_CAVE_SECOND;
             if (caveTimeLeft > 0) {
               --caveTimeLeft;
+              --amoebaSlowGrowthTimeLeft;
             } else {
               isOutOfTime = true;
               isOutOfTimeTextShown = true;
@@ -1073,6 +1115,10 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             pauseTurnsLeft--;
           } else {
             turn++;
+
+            //
+            // Do turn
+            //
 
             borderColor = normalBorderColor;
 
@@ -1173,10 +1219,22 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               }
             } else {
               //
-              // Scan cave
+              // Before cave scanning
               //
 
               ++turnsSinceRockfordSeenAlive;
+
+              /////
+
+              totalAmoebaFoundLastTurn = numberOfAmoebaFoundThisTurn;
+              numberOfAmoebaFoundThisTurn = 0;
+
+              amoebaSuffocatedLastTurn = !atLeastOneAmoebaFoundThisTurnWhichCanGrow;
+              atLeastOneAmoebaFoundThisTurnWhichCanGrow = false;
+
+              //
+              // Scan cave
+              //
 
               for (int row = 0; row < CAVE_HEIGHT; ++row) {
                 for (int col = 0; col < CAVE_WIDTH; ++col) {
@@ -1365,6 +1423,35 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                     case OBJ_BUTTERFLY_RIGHT:
                     case OBJ_BUTTERFLY_DOWN:
                       updateFly(row, col, false);
+                      break;
+
+                      //
+                      // Update amoeba
+                      //
+
+                    case OBJ_AMOEBA:
+                      ++numberOfAmoebaFoundThisTurn;
+                      if (totalAmoebaFoundLastTurn >= TOO_MANY_AMOEBA) {
+                        map[row][col] = OBJ_BOULDER_STATIONARY;
+                      } else if (amoebaSuffocatedLastTurn) {
+                        map[row][col] = OBJ_DIAMOND_STATIONARY;
+                      } else {
+                        if (!atLeastOneAmoebaFoundThisTurnWhichCanGrow) {
+                          atLeastOneAmoebaFoundThisTurnWhichCanGrow =
+                            canAmoebaGrowHere(row-1, col) ||
+                            canAmoebaGrowHere(row+1, col) ||
+                            canAmoebaGrowHere(row, col-1) ||
+                            canAmoebaGrowHere(row, col+1);
+                        }
+                        int amoebaRandomFactor = amoebaSlowGrowthTimeLeft > 0 ? AMOEBA_FACTOR_SLOW : AMOEBA_FACTOR_FAST;
+                        if ((rand() % amoebaRandomFactor) < 4) {
+                          int newRow, newCol;
+                          getRandomCellNear(row, col, &newRow, &newCol);
+                          if (canAmoebaGrowHere(newRow, newCol)) {
+                            map[newRow][newCol] = OBJ_AMOEBA;
+                          }
+                        }
+                      }
                       break;
                   }
                 }
@@ -1605,6 +1692,10 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               case OBJ_EXPLODE_TO_SPACE_4:
               case OBJ_EXPLODE_TO_DIAMOND_4:
                 drawSprite(spriteExplosion, 0, x, y, WHITE, BLACK, 0);
+                break;
+
+              case OBJ_AMOEBA:
+                drawSprite(spriteAmoeba, turn, x, y, GREEN, BLACK, 0);
                 break;
             }
           }
