@@ -8,7 +8,7 @@
 #include "data_caves.h"
 
 // Developer options
-#define DEV_IMMEDIATE_STARTUP 0
+#define DEV_IMMEDIATE_STARTUP 1
 #define DEV_NEAR_OUTBOX 0
 #define DEV_SINGLE_DIAMOND_NEEDED 0
 #define DEV_CHEAP_BONUS_LIFE 0
@@ -18,7 +18,7 @@
 #define DEV_SINGLE_LIFE 0
 
 // Gameplay constants
-#define START_CAVE CAVE_A
+#define START_CAVE CAVE_D
 #define TICKS_PER_TURN 5
 #define ROCKFORD_TURNS_TILL_BIRTH 12
 #define CELL_COVER_TURNS 40
@@ -170,7 +170,7 @@ typedef enum {
   CAVE_COUNT,
 } CaveName;
 
-typedef enum { BLACK, GRAY, WHITE, RED, YELLOW, GREEN, BLUE, PURPLE, CYAN, COLOR_COUNT } Color;
+typedef enum {BLACK, GRAY, WHITE, RED, YELLOW, GREEN, BLUE, PURPLE, CYAN, COLOR_COUNT} Color;
 
 typedef struct {
   Color boulderFg;
@@ -181,11 +181,8 @@ typedef struct {
   Color flyBg;
 } CaveColors;
 
-typedef enum {
-  TURN_LEFT,
-  STRAIGHT_AHEAD,
-  TURN_RIGHT,
-} Turning;
+typedef enum {UP, DOWN, LEFT, RIGHT} Direction;
+typedef enum {TURN_LEFT, STRAIGHT_AHEAD, TURN_RIGHT} Turning;
 
 //
 // Global variables
@@ -514,39 +511,91 @@ bool checkFlyExplode(Object object) {
   return object == OBJ_ROCKFORD || object == OBJ_ROCKFORD_SCANNED || object == OBJ_AMOEBA;
 }
 
-void getNewFireflyPosition(int curRow, int curCol, Object curDirection, Turning turning, int *newRow, int *newCol, Object *newDirection) {
+void getNewFlyPosition(int curRow, int curCol, Direction curDirection, Turning turning, int *newRow, int *newCol, Direction *newDirection) {
   *newRow = curRow;
   *newCol = curCol;
 
   switch(curDirection) {
-    case OBJ_FIREFLY_UP:
+    case UP:
       switch (turning) {
-        case TURN_LEFT:      (*newCol)--; *newDirection = OBJ_FIREFLY_LEFT_SCANNED;  break;
-        case STRAIGHT_AHEAD: (*newRow)--; *newDirection = OBJ_FIREFLY_UP_SCANNED;    break;
-        case TURN_RIGHT:     (*newCol)++; *newDirection = OBJ_FIREFLY_RIGHT_SCANNED; break;
+        case TURN_LEFT:      (*newCol)--; *newDirection = LEFT;  break;
+        case STRAIGHT_AHEAD: (*newRow)--; *newDirection = UP;    break;
+        case TURN_RIGHT:     (*newCol)++; *newDirection = RIGHT; break;
       }
       break;
-    case OBJ_FIREFLY_DOWN:
+    case DOWN:
       switch (turning) {
-        case TURN_LEFT:      (*newCol)++; *newDirection = OBJ_FIREFLY_RIGHT_SCANNED; break;
-        case STRAIGHT_AHEAD: (*newRow)++; *newDirection = OBJ_FIREFLY_DOWN_SCANNED;  break;
-        case TURN_RIGHT:     (*newCol)--; *newDirection = OBJ_FIREFLY_LEFT_SCANNED;  break;
+        case TURN_LEFT:      (*newCol)++; *newDirection = RIGHT; break;
+        case STRAIGHT_AHEAD: (*newRow)++; *newDirection = DOWN;  break;
+        case TURN_RIGHT:     (*newCol)--; *newDirection = LEFT;  break;
       }
       break;
-    case OBJ_FIREFLY_LEFT:
+    case LEFT:
       switch (turning) {
-        case TURN_LEFT:      (*newRow)++; *newDirection = OBJ_FIREFLY_DOWN_SCANNED; break;
-        case STRAIGHT_AHEAD: (*newCol)--; *newDirection = OBJ_FIREFLY_LEFT_SCANNED; break;
-        case TURN_RIGHT:     (*newRow)--; *newDirection = OBJ_FIREFLY_UP_SCANNED;   break;
+        case TURN_LEFT:      (*newRow)++; *newDirection = DOWN; break;
+        case STRAIGHT_AHEAD: (*newCol)--; *newDirection = LEFT; break;
+        case TURN_RIGHT:     (*newRow)--; *newDirection = UP;   break;
       }
       break;
-    case OBJ_FIREFLY_RIGHT:
+    case RIGHT:
       switch (turning) {
-        case TURN_LEFT:      (*newRow)--; *newDirection = OBJ_FIREFLY_UP_SCANNED;    break;
-        case STRAIGHT_AHEAD: (*newCol)++; *newDirection = OBJ_FIREFLY_RIGHT_SCANNED; break;
-        case TURN_RIGHT:     (*newRow)++; *newDirection = OBJ_FIREFLY_DOWN_SCANNED;  break;
+        case TURN_LEFT:      (*newRow)--; *newDirection = UP;    break;
+        case STRAIGHT_AHEAD: (*newCol)++; *newDirection = RIGHT; break;
+        case TURN_RIGHT:     (*newRow)++; *newDirection = DOWN;  break;
       }
       break;
+  }
+}
+
+Object getFlyScanned(Direction direction, bool isFirefly) {
+  switch (direction) {
+    case UP    : return isFirefly ? OBJ_FIREFLY_UP_SCANNED    : OBJ_BUTTERFLY_UP_SCANNED;
+    case DOWN  : return isFirefly ? OBJ_FIREFLY_DOWN_SCANNED  : OBJ_BUTTERFLY_DOWN_SCANNED;
+    case LEFT  : return isFirefly ? OBJ_FIREFLY_LEFT_SCANNED  : OBJ_BUTTERFLY_LEFT_SCANNED;
+    case RIGHT : return isFirefly ? OBJ_FIREFLY_RIGHT_SCANNED : OBJ_BUTTERFLY_RIGHT_SCANNED;
+  }
+}
+
+Direction getFlyDirection(Object fly, bool isFirefly) {
+  if (isFirefly) {
+    switch (fly) {
+      case OBJ_FIREFLY_UP:      return UP;
+      case OBJ_FIREFLY_DOWN:    return DOWN;
+      case OBJ_FIREFLY_LEFT:    return LEFT;
+      case OBJ_FIREFLY_RIGHT:   return RIGHT;
+    }
+  } else {
+    switch (fly) {
+      case OBJ_BUTTERFLY_UP:    return UP;
+      case OBJ_BUTTERFLY_DOWN:  return DOWN;
+      case OBJ_BUTTERFLY_LEFT:  return LEFT;
+      case OBJ_BUTTERFLY_RIGHT: return RIGHT;
+    }
+  }
+}
+
+void updateFly(int row, int col, bool isFirefly) {
+  if (checkFlyExplode(map[row-1][col]) || checkFlyExplode(map[row+1][col]) ||
+      checkFlyExplode(map[row][col-1]) || checkFlyExplode(map[row][col+1])) {
+    explode(row, col, row, col);
+  } else {
+    int direction = getFlyDirection(map[row][col], isFirefly);
+    int newRow, newCol;
+    Direction newDirection;
+    getNewFlyPosition(row, col, direction, (isFirefly ? TURN_LEFT : TURN_RIGHT), &newRow, &newCol, &newDirection);
+    if (map[newRow][newCol] == OBJ_SPACE) {
+      map[newRow][newCol] = getFlyScanned(newDirection, isFirefly);
+      map[row][col] = OBJ_SPACE;
+    } else {
+      getNewFlyPosition(row, col, direction, STRAIGHT_AHEAD, &newRow, &newCol, &newDirection);
+      if (map[newRow][newCol] == OBJ_SPACE) {
+        map[newRow][newCol] = getFlyScanned(newDirection, isFirefly);
+        map[row][col] = OBJ_SPACE;
+      } else {
+        getNewFlyPosition(row, col, direction, (isFirefly ? TURN_RIGHT : TURN_LEFT), &newRow, &newCol, &newDirection);
+        map[row][col] = getFlyScanned(newDirection, isFirefly);
+      }
+    }
   }
 }
 
@@ -1265,36 +1314,22 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                       break;
 
                       //
-                      // Update firefly
+                      // Update fireflies and butterflies
                       //
 
                     case OBJ_FIREFLY_LEFT:
                     case OBJ_FIREFLY_UP:
                     case OBJ_FIREFLY_RIGHT:
-                    case OBJ_FIREFLY_DOWN: {
-                      if (checkFlyExplode(map[row-1][col]) || checkFlyExplode(map[row+1][col]) ||
-                          checkFlyExplode(map[row][col-1]) || checkFlyExplode(map[row][col+1])) {
-                        explode(row, col, row, col);
-                      } else {
-                        int newRow, newCol;
-                        Object newDirection;
-                        getNewFireflyPosition(row, col, map[row][col], TURN_LEFT, &newRow, &newCol, &newDirection);
-                        if (map[newRow][newCol] == OBJ_SPACE) {
-                          map[newRow][newCol] = newDirection;
-                          map[row][col] = OBJ_SPACE;
-                        } else {
-                          getNewFireflyPosition(row, col, map[row][col], STRAIGHT_AHEAD, &newRow, &newCol, &newDirection);
-                          if (map[newRow][newCol] == OBJ_SPACE) {
-                            map[newRow][newCol] = newDirection;
-                            map[row][col] = OBJ_SPACE;
-                          } else {
-                            getNewFireflyPosition(row, col, map[row][col], TURN_RIGHT, &newRow, &newCol, &newDirection);
-                            map[row][col] = newDirection;
-                          }
-                        }
-                      }
+                    case OBJ_FIREFLY_DOWN:
+                      updateFly(row, col, true);
                       break;
-                    }
+
+                    case OBJ_BUTTERFLY_LEFT:
+                    case OBJ_BUTTERFLY_UP:
+                    case OBJ_BUTTERFLY_RIGHT:
+                    case OBJ_BUTTERFLY_DOWN:
+                      updateFly(row, col, false);
+                      break;
                   }
                 }
               }
@@ -1451,6 +1486,13 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               case OBJ_FIREFLY_RIGHT:
               case OBJ_FIREFLY_DOWN:
                 drawSprite(spriteFirefly, turn, x, y, curColors.flyFg, curColors.flyBg, 0);
+                break;
+
+              case OBJ_BUTTERFLY_LEFT:
+              case OBJ_BUTTERFLY_UP:
+              case OBJ_BUTTERFLY_RIGHT:
+              case OBJ_BUTTERFLY_DOWN:
+                drawSprite(spriteButterfly, turn, x, y, curColors.flyFg, curColors.flyBg, 0);
                 break;
 
                 //

@@ -1,6 +1,7 @@
 @echo off
+set compilerFlags=/nologo /Od /Z7 /FC /W4 /wd4701 /wd4715
 if not exist build mkdir build
 pushd build
-cl /nologo /Od /Z7 /FC /W4 /wd4701 ..\boulder_dash.c /link /INCREMENTAL:NO /SUBSYSTEM:WINDOWS user32.lib gdi32.lib
-cl /nologo /Od /Z7 /FC /W4 ..\embed_sprites.c /link /INCREMENTAL:NO /SUBSYSTEM:CONSOLE
+cl %compilerFlags% ..\boulder_dash.c /link /INCREMENTAL:NO /SUBSYSTEM:WINDOWS user32.lib gdi32.lib
+cl %compilerFlags% ..\embed_sprites.c /link /INCREMENTAL:NO /SUBSYSTEM:CONSOLE
 popd
