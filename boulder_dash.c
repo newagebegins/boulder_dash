@@ -89,55 +89,57 @@
 #define BACKBUFFER_HEIGHT (VIEWPORT_HEIGHT + BORDER_SIZE*2)
 #define BACKBUFFER_BYTES (BACKBUFFER_WIDTH*BACKBUFFER_HEIGHT/2)
 
-#define OBJ_SPACE 0x00
-#define OBJ_DIRT 0x01
-#define OBJ_BRICK_WALL 0x02
-#define OBJ_MAGIC_WALL 0x03
-#define OBJ_PRE_OUTBOX 0x04
-#define OBJ_FLASHING_OUTBOX 0x05
-#define OBJ_STEEL_WALL 0x07
-#define OBJ_FIREFLY_LEFT 0x08
-#define OBJ_FIREFLY_UP 0x09
-#define OBJ_FIREFLY_RIGHT 0x0A
-#define OBJ_FIREFLY_DOWN 0x0B
-#define OBJ_FIREFLY_LEFT_SCANNED 0x0C
-#define OBJ_FIREFLY_UP_SCANNED 0x0D
-#define OBJ_FIREFLY_RIGHT_SCANNED 0x0E
-#define OBJ_FIREFLY_DOWN_SCANNED 0x0F
-#define OBJ_BOULDER_STATIONARY 0x10
-#define OBJ_BOULDER_STATIONARY_SCANNED 0x11
-#define OBJ_BOULDER_FALLING 0x12
-#define OBJ_BOULDER_FALLING_SCANNED 0x13
-#define OBJ_DIAMOND_STATIONARY 0x14
-#define OBJ_DIAMOND_STATIONARY_SCANNED 0x15
-#define OBJ_DIAMOND_FALLING 0x16
-#define OBJ_DIAMOND_FALLING_SCANNED 0x17
-#define OBJ_EXPLODE_TO_SPACE_0 0x1B
-#define OBJ_EXPLODE_TO_SPACE_1 0x1C
-#define OBJ_EXPLODE_TO_SPACE_2 0x1D
-#define OBJ_EXPLODE_TO_SPACE_3 0x1E
-#define OBJ_EXPLODE_TO_SPACE_4 0x1F
-#define OBJ_EXPLODE_TO_DIAMOND_0 0x20
-#define OBJ_EXPLODE_TO_DIAMOND_1 0x21
-#define OBJ_EXPLODE_TO_DIAMOND_2 0x22
-#define OBJ_EXPLODE_TO_DIAMOND_3 0x23
-#define OBJ_EXPLODE_TO_DIAMOND_4 0x24
-#define OBJ_PRE_ROCKFORD_1 0x25
-#define OBJ_PRE_ROCKFORD_2 0x26
-#define OBJ_PRE_ROCKFORD_3 0x27
-#define OBJ_PRE_ROCKFORD_4 0x28
-#define OBJ_BUTTERFLY_DOWN 0x30
-#define OBJ_BUTTERFLY_LEFT 0x31
-#define OBJ_BUTTERFLY_UP 0x32
-#define OBJ_BUTTERFLY_RIGHT 0x33
-#define OBJ_BUTTERFLY_DOWN_SCANNED 0x34
-#define OBJ_BUTTERFLY_LEFT_SCANNED 0x35
-#define OBJ_BUTTERFLY_UP_SCANNED 0x36
-#define OBJ_BUTTERFLY_RIGHT_SCANNED 0x37
-#define OBJ_ROCKFORD 0x38
-#define OBJ_ROCKFORD_SCANNED 0x39
-#define OBJ_AMOEBA 0x3A
-#define OBJ_AMOEBA_SCANNED 0x3B
+typedef enum {
+  OBJ_SPACE = 0x00,
+  OBJ_DIRT = 0x01,
+  OBJ_BRICK_WALL = 0x02,
+  OBJ_MAGIC_WALL = 0x03,
+  OBJ_PRE_OUTBOX = 0x04,
+  OBJ_FLASHING_OUTBOX = 0x05,
+  OBJ_STEEL_WALL = 0x07,
+  OBJ_FIREFLY_LEFT = 0x08,
+  OBJ_FIREFLY_UP = 0x09,
+  OBJ_FIREFLY_RIGHT = 0x0A,
+  OBJ_FIREFLY_DOWN = 0x0B,
+  OBJ_FIREFLY_LEFT_SCANNED = 0x0C,
+  OBJ_FIREFLY_UP_SCANNED = 0x0D,
+  OBJ_FIREFLY_RIGHT_SCANNED = 0x0E,
+  OBJ_FIREFLY_DOWN_SCANNED = 0x0F,
+  OBJ_BOULDER_STATIONARY = 0x10,
+  OBJ_BOULDER_STATIONARY_SCANNED = 0x11,
+  OBJ_BOULDER_FALLING = 0x12,
+  OBJ_BOULDER_FALLING_SCANNED = 0x13,
+  OBJ_DIAMOND_STATIONARY = 0x14,
+  OBJ_DIAMOND_STATIONARY_SCANNED = 0x15,
+  OBJ_DIAMOND_FALLING = 0x16,
+  OBJ_DIAMOND_FALLING_SCANNED = 0x17,
+  OBJ_EXPLODE_TO_SPACE_0 = 0x1B,
+  OBJ_EXPLODE_TO_SPACE_1 = 0x1C,
+  OBJ_EXPLODE_TO_SPACE_2 = 0x1D,
+  OBJ_EXPLODE_TO_SPACE_3 = 0x1E,
+  OBJ_EXPLODE_TO_SPACE_4 = 0x1F,
+  OBJ_EXPLODE_TO_DIAMOND_0 = 0x20,
+  OBJ_EXPLODE_TO_DIAMOND_1 = 0x21,
+  OBJ_EXPLODE_TO_DIAMOND_2 = 0x22,
+  OBJ_EXPLODE_TO_DIAMOND_3 = 0x23,
+  OBJ_EXPLODE_TO_DIAMOND_4 = 0x24,
+  OBJ_PRE_ROCKFORD_1 = 0x25,
+  OBJ_PRE_ROCKFORD_2 = 0x26,
+  OBJ_PRE_ROCKFORD_3 = 0x27,
+  OBJ_PRE_ROCKFORD_4 = 0x28,
+  OBJ_BUTTERFLY_DOWN = 0x30,
+  OBJ_BUTTERFLY_LEFT = 0x31,
+  OBJ_BUTTERFLY_UP = 0x32,
+  OBJ_BUTTERFLY_RIGHT = 0x33,
+  OBJ_BUTTERFLY_DOWN_SCANNED = 0x34,
+  OBJ_BUTTERFLY_LEFT_SCANNED = 0x35,
+  OBJ_BUTTERFLY_UP_SCANNED = 0x36,
+  OBJ_BUTTERFLY_RIGHT_SCANNED = 0x37,
+  OBJ_ROCKFORD = 0x38,
+  OBJ_ROCKFORD_SCANNED = 0x39,
+  OBJ_AMOEBA = 0x3A,
+  OBJ_AMOEBA_SCANNED = 0x3B,
+} Object;
 
 #define CAVE_HEIGHT 22
 #define CAVE_WIDTH 40
@@ -331,7 +333,7 @@ void nextRandom(int *randSeed1, int *randSeed2) {
   *randSeed1 = result & 0x00FF;
 }
 
-void placeObjectLine(uint8_t object, int row, int col, int length, int direction) {
+void placeObjectLine(Object object, int row, int col, int length, int direction) {
   int ldx[8] = { 0,  1, 1, 1, 0, -1, -1, -1 };
   int ldy[8] = { -1, -1, 0, 1, 1,  1,  0, -1 };
 
@@ -340,7 +342,7 @@ void placeObjectLine(uint8_t object, int row, int col, int length, int direction
   }
 }
 
-void placeObjectFilledRect(uint8_t object, int row, int col, int width, int height, uint8_t fillObject) {
+void placeObjectFilledRect(Object object, int row, int col, int width, int height, Object fillObject) {
   for (int i = 0; i < width; i++) {
     for (int j = 0; j < height; j++) {
       if ((j == 0) || (j == height - 1)) {
@@ -354,7 +356,7 @@ void placeObjectFilledRect(uint8_t object, int row, int col, int width, int heig
   }
 }
 
-void placeObjectRect(uint8_t object, int row, int col, int width, int height) {
+void placeObjectRect(Object object, int row, int col, int width, int height) {
   for (int i = 0; i < width; i++) {
     map[row][col+i] = object;
     map[row+height-1][col+i] = object;
@@ -391,7 +393,7 @@ void decodeCave(uint8_t caveIndex) {
 
     for (int row = 1; row < CAVE_HEIGHT; row++) {
       for (int col = 0; col < CAVE_WIDTH; col++) {
-        uint8_t object = OBJ_DIRT;
+        Object object = OBJ_DIRT;
         nextRandom(&randSeed1, &randSeed2);
         for (int i = 0; i < NUM_RANDOM_OBJECTS; i++) {
           if (randSeed1 < caveInfo->objectProbability[i]) {
@@ -409,7 +411,7 @@ void decodeCave(uint8_t caveIndex) {
     int uselessTopBorderHeight = 2;
 
     for (int i = 0; explicitData[i] != 0xFF; i++) {
-      uint8_t object = (explicitData[i] & 0x3F);
+      Object object = (explicitData[i] & 0x3F);
 
       switch (3 & (explicitData[i] >> 6)) {
         case 0: {
@@ -431,7 +433,7 @@ void decodeCave(uint8_t caveIndex) {
           int row = explicitData[++i] - uselessTopBorderHeight;
           int width = explicitData[++i];
           int height = explicitData[++i];
-          uint8_t fill = explicitData[++i];
+          Object fill = explicitData[++i];
           placeObjectFilledRect(object, row, col, width, height, fill);
           break;
         }
@@ -473,11 +475,11 @@ void explodeCell(int row, int col, bool toDiamonds, int explosionStage) {
   }
 }
 
-bool isObjectRound(uint8_t object) {
+bool isObjectRound(Object object) {
   return object == OBJ_BOULDER_STATIONARY || object == OBJ_DIAMOND_STATIONARY || object == OBJ_BRICK_WALL;
 }
 
-bool isObjectExplosive(uint8_t object) {
+bool isObjectExplosive(Object object) {
   return object == OBJ_ROCKFORD ||
     object == OBJ_FIREFLY_LEFT ||
     object == OBJ_FIREFLY_UP ||
@@ -489,12 +491,12 @@ bool isObjectExplosive(uint8_t object) {
     object == OBJ_BUTTERFLY_RIGHT;
 }
 
-bool explodesToDiamonds(uint8_t object) {
+bool explodesToDiamonds(Object object) {
   assert(isObjectExplosive(object));
   return object == OBJ_BUTTERFLY_DOWN || object == OBJ_BUTTERFLY_LEFT || object == OBJ_BUTTERFLY_UP || object == OBJ_BUTTERFLY_RIGHT;
 }
 
-void updateBoulderAndDiamond(int row, int col, uint8_t fallingScannedObj, uint8_t stationaryScannedObj, bool isFalling) {
+void updateBoulderAndDiamond(int row, int col, Object fallingScannedObj, Object stationaryScannedObj, bool isFalling) {
   if (map[row+1][col] == OBJ_SPACE) {
     map[row+1][col] = fallingScannedObj;
     map[row][col] = OBJ_SPACE;
@@ -534,11 +536,11 @@ bool isFailed() {
   return turnsSinceRockfordSeenAlive >= 16 || isOutOfTime;
 }
 
-bool checkFlyExplode(uint8_t object) {
+bool checkFlyExplode(Object object) {
   return object == OBJ_ROCKFORD || object == OBJ_ROCKFORD_SCANNED || object == OBJ_AMOEBA;
 }
 
-void getNewFireflyPosition(int curRow, int curCol, uint8_t curDirection, Turning turning, int *newRow, int *newCol, uint8_t *newDirection) {
+void getNewFireflyPosition(int curRow, int curCol, Object curDirection, Turning turning, int *newRow, int *newCol, Object *newDirection) {
   *newRow = curRow;
   *newCol = curCol;
 
@@ -793,7 +795,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   // Initialize game
   //
 
-  uint8_t cellCover[CAVE_HEIGHT][CAVE_WIDTH];
+  bool cellCover[CAVE_HEIGHT][CAVE_WIDTH];
   bool tileCover[PLAYFIELD_HEIGHT_IN_TILES][PLAYFIELD_WIDTH_IN_TILES];
   char statusBarText[PLAYFIELD_WIDTH_IN_TILES];
   CaveColors currentCaveColors;
@@ -1305,7 +1307,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                         explodeCell(row+1, col+1, false, 0);
                       } else {
                         int newRow, newCol;
-                        uint8_t newDirection;
+                        Object newDirection;
                         getNewFireflyPosition(row, col, map[row][col], TURN_LEFT, &newRow, &newCol, &newDirection);
                         if (map[newRow][newCol] == OBJ_SPACE) {
                           map[newRow][newCol] = newDirection;
