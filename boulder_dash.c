@@ -163,41 +163,14 @@ typedef struct {
 } CaveInfo;
 
 typedef enum {
-  CAVE_A,
-  CAVE_B,
-  CAVE_C,
-  CAVE_D,
-  INTERMISSION_1,
-  CAVE_E,
-  CAVE_F,
-  CAVE_G,
-  CAVE_H,
-  INTERMISSION_2,
-  CAVE_I,
-  CAVE_J,
-  CAVE_K,
-  CAVE_L,
-  INTERMISSION_3,
-  CAVE_M,
-  CAVE_N,
-  CAVE_O,
-  CAVE_P,
-  INTERMISSION_4,
+  CAVE_A, CAVE_B, CAVE_C, CAVE_D, INTERMISSION_1,
+  CAVE_E, CAVE_F, CAVE_G, CAVE_H, INTERMISSION_2,
+  CAVE_I, CAVE_J, CAVE_K, CAVE_L, INTERMISSION_3,
+  CAVE_M, CAVE_N, CAVE_O, CAVE_P, INTERMISSION_4,
   CAVE_COUNT,
 } CaveName;
 
-typedef enum {
-  COLOR_BLACK,
-  COLOR_GRAY,
-  COLOR_WHITE,
-  COLOR_RED,
-  COLOR_YELLOW,
-  COLOR_GREEN,
-  COLOR_BLUE,
-  COLOR_PURPLE,
-  COLOR_CYAN,
-  COLOR_COUNT,
-} Color;
+typedef enum { BLACK, GRAY, WHITE, RED, YELLOW, GREEN, BLUE, PURPLE, CYAN, COLOR_COUNT } Color;
 
 typedef struct {
   Color boulderSteelWallOutboxFg;
@@ -228,9 +201,7 @@ int score;
 int scoreTillBonusLife;
 int spaceFlashingTurnsLeft;
 
-//
-//
-//
+///////////////
 
 #define ARRAY_LENGTH(array) (sizeof(array)/sizeof(*array))
 
@@ -242,6 +213,10 @@ void debugPrint(char *format, ...) {
   va_end(argptr);
   OutputDebugString(str);
 }
+
+//
+// Graphics
+//
 
 void setPixel(int x, int y, Color color) {
   assert(color < COLOR_COUNT);
@@ -316,6 +291,10 @@ void drawSprite(uint8_t *sprite, int frame, int dstX, int dstY, Color fgColor, C
     }
   }
 }
+
+//
+// Cave decoding
+//
 
 void nextRandom(int *randSeed1, int *randSeed2) {
   int tempRand1 = (*randSeed1 & 0x0001) * 0x0080;
@@ -457,9 +436,9 @@ void decodeCave(uint8_t caveIndex) {
   placeObjectRect(OBJ_STEEL_WALL, 0, 0, CAVE_WIDTH, CAVE_HEIGHT);
 }
 
-bool isKeyDown(uint8_t virtKey) {
-  return GetFocus() && (GetKeyState(virtKey) & 0x8000);
-}
+//
+// Gameplay
+//
 
 bool isObjectRound(Object object) {
   return object == OBJ_BOULDER_STATIONARY || object == OBJ_DIAMOND_STATIONARY || object == OBJ_BRICK_WALL;
@@ -586,6 +565,12 @@ void addScore(int amount) {
   }
 }
 
+////////////////
+
+bool isKeyDown(uint8_t virtKey) {
+  return GetFocus() && (GetKeyState(virtKey) & 0x8000);
+}
+
 LRESULT CALLBACK wndProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam) {
   switch (msg) {
     case WM_DESTROY:
@@ -652,15 +637,15 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   RGBQUAD gray   = {0xCC, 0xCC, 0xCC, 0x00};
   RGBQUAD white  = {0xFF, 0xFF, 0xFF, 0x00};
 
-  bitmapInfo->bmiColors[COLOR_BLACK] = black;
-  bitmapInfo->bmiColors[COLOR_RED] = red;
-  bitmapInfo->bmiColors[COLOR_GREEN] = green;
-  bitmapInfo->bmiColors[COLOR_YELLOW] = yellow;
-  bitmapInfo->bmiColors[COLOR_BLUE] = blue;
-  bitmapInfo->bmiColors[COLOR_PURPLE] = purple;
-  bitmapInfo->bmiColors[COLOR_CYAN] = cyan;
-  bitmapInfo->bmiColors[COLOR_GRAY] = gray;
-  bitmapInfo->bmiColors[COLOR_WHITE] = white;
+  bitmapInfo->bmiColors[BLACK] = black;
+  bitmapInfo->bmiColors[RED] = red;
+  bitmapInfo->bmiColors[GREEN] = green;
+  bitmapInfo->bmiColors[YELLOW] = yellow;
+  bitmapInfo->bmiColors[BLUE] = blue;
+  bitmapInfo->bmiColors[PURPLE] = purple;
+  bitmapInfo->bmiColors[CYAN] = cyan;
+  bitmapInfo->bmiColors[GRAY] = gray;
+  bitmapInfo->bmiColors[WHITE] = white;
 
   //
   // Clock
@@ -682,124 +667,124 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
   CaveColors caveColors[CAVE_COUNT] = {0};
 
-  caveColors[CAVE_A].boulderSteelWallOutboxFg = COLOR_YELLOW;
-  caveColors[CAVE_A].brickWallFg = COLOR_GRAY;
-  caveColors[CAVE_A].brickWallBg = COLOR_RED;
-  caveColors[CAVE_A].dirtFg = COLOR_RED;
+  caveColors[CAVE_A].boulderSteelWallOutboxFg = YELLOW;
+  caveColors[CAVE_A].brickWallFg = GRAY;
+  caveColors[CAVE_A].brickWallBg = RED;
+  caveColors[CAVE_A].dirtFg = RED;
 
-  caveColors[CAVE_B].boulderSteelWallOutboxFg = COLOR_BLUE;
-  caveColors[CAVE_B].brickWallFg = COLOR_BLUE;
-  caveColors[CAVE_B].brickWallBg = COLOR_YELLOW;
-  caveColors[CAVE_B].dirtFg = COLOR_PURPLE;
-  caveColors[CAVE_B].flyFg = COLOR_BLUE;
-  caveColors[CAVE_B].flyBg = COLOR_YELLOW;
+  caveColors[CAVE_B].boulderSteelWallOutboxFg = BLUE;
+  caveColors[CAVE_B].brickWallFg = BLUE;
+  caveColors[CAVE_B].brickWallBg = YELLOW;
+  caveColors[CAVE_B].dirtFg = PURPLE;
+  caveColors[CAVE_B].flyFg = BLUE;
+  caveColors[CAVE_B].flyBg = YELLOW;
 
-  caveColors[CAVE_C].boulderSteelWallOutboxFg = COLOR_PURPLE;
-  caveColors[CAVE_C].brickWallFg = COLOR_GRAY;
-  caveColors[CAVE_C].brickWallBg = COLOR_PURPLE;
-  caveColors[CAVE_C].dirtFg = COLOR_GREEN;
+  caveColors[CAVE_C].boulderSteelWallOutboxFg = PURPLE;
+  caveColors[CAVE_C].brickWallFg = GRAY;
+  caveColors[CAVE_C].brickWallBg = PURPLE;
+  caveColors[CAVE_C].dirtFg = GREEN;
 
-  caveColors[CAVE_D].boulderSteelWallOutboxFg = COLOR_YELLOW;
-  caveColors[CAVE_D].dirtFg = COLOR_BLUE;
-  caveColors[CAVE_D].flyFg = COLOR_CYAN;
-  caveColors[CAVE_D].flyBg = COLOR_BLACK;
+  caveColors[CAVE_D].boulderSteelWallOutboxFg = YELLOW;
+  caveColors[CAVE_D].dirtFg = BLUE;
+  caveColors[CAVE_D].flyFg = CYAN;
+  caveColors[CAVE_D].flyBg = BLACK;
 
-  caveColors[INTERMISSION_1].boulderSteelWallOutboxFg = COLOR_PURPLE;
-  caveColors[INTERMISSION_1].dirtFg = COLOR_BLUE;
-  caveColors[INTERMISSION_1].flyFg = COLOR_BLUE;
-  caveColors[INTERMISSION_1].flyBg = COLOR_BLACK;
+  caveColors[INTERMISSION_1].boulderSteelWallOutboxFg = PURPLE;
+  caveColors[INTERMISSION_1].dirtFg = BLUE;
+  caveColors[INTERMISSION_1].flyFg = BLUE;
+  caveColors[INTERMISSION_1].flyBg = BLACK;
 
-  caveColors[CAVE_E].boulderSteelWallOutboxFg = COLOR_PURPLE;
-  caveColors[CAVE_E].dirtFg = COLOR_RED;
-  caveColors[CAVE_E].flyFg = COLOR_RED;
-  caveColors[CAVE_E].flyBg = COLOR_YELLOW;
+  caveColors[CAVE_E].boulderSteelWallOutboxFg = PURPLE;
+  caveColors[CAVE_E].dirtFg = RED;
+  caveColors[CAVE_E].flyFg = RED;
+  caveColors[CAVE_E].flyBg = YELLOW;
 
-  caveColors[CAVE_F].boulderSteelWallOutboxFg = COLOR_PURPLE;
-  caveColors[CAVE_F].brickWallFg = COLOR_PURPLE;
-  caveColors[CAVE_F].brickWallBg = COLOR_GRAY;
-  caveColors[CAVE_F].dirtFg = COLOR_BLUE;
-  caveColors[CAVE_F].flyFg = COLOR_PURPLE;
-  caveColors[CAVE_F].flyBg = COLOR_GRAY;
+  caveColors[CAVE_F].boulderSteelWallOutboxFg = PURPLE;
+  caveColors[CAVE_F].brickWallFg = PURPLE;
+  caveColors[CAVE_F].brickWallBg = GRAY;
+  caveColors[CAVE_F].dirtFg = BLUE;
+  caveColors[CAVE_F].flyFg = PURPLE;
+  caveColors[CAVE_F].flyBg = GRAY;
 
-  caveColors[CAVE_G].boulderSteelWallOutboxFg = COLOR_PURPLE;
-  caveColors[CAVE_G].brickWallFg = COLOR_RED;
-  caveColors[CAVE_G].brickWallBg = COLOR_GRAY;
-  caveColors[CAVE_G].dirtFg = COLOR_RED;
-  caveColors[CAVE_G].flyFg = COLOR_PURPLE;
-  caveColors[CAVE_G].flyBg = COLOR_YELLOW;
+  caveColors[CAVE_G].boulderSteelWallOutboxFg = PURPLE;
+  caveColors[CAVE_G].brickWallFg = RED;
+  caveColors[CAVE_G].brickWallBg = GRAY;
+  caveColors[CAVE_G].dirtFg = RED;
+  caveColors[CAVE_G].flyFg = PURPLE;
+  caveColors[CAVE_G].flyBg = YELLOW;
 
-  caveColors[CAVE_H].boulderSteelWallOutboxFg = COLOR_CYAN;
-  caveColors[CAVE_H].brickWallFg = COLOR_CYAN;
-  caveColors[CAVE_H].brickWallBg = COLOR_GRAY;
-  caveColors[CAVE_H].dirtFg = COLOR_RED;
-  caveColors[CAVE_H].flyFg = COLOR_BLUE;
-  caveColors[CAVE_H].flyBg = COLOR_CYAN;
+  caveColors[CAVE_H].boulderSteelWallOutboxFg = CYAN;
+  caveColors[CAVE_H].brickWallFg = CYAN;
+  caveColors[CAVE_H].brickWallBg = GRAY;
+  caveColors[CAVE_H].dirtFg = RED;
+  caveColors[CAVE_H].flyFg = BLUE;
+  caveColors[CAVE_H].flyBg = CYAN;
 
-  caveColors[INTERMISSION_2].boulderSteelWallOutboxFg = COLOR_YELLOW;
-  caveColors[INTERMISSION_2].dirtFg = COLOR_BLUE;
-  caveColors[INTERMISSION_2].flyFg = COLOR_RED;
-  caveColors[INTERMISSION_2].flyBg = COLOR_GRAY;
+  caveColors[INTERMISSION_2].boulderSteelWallOutboxFg = YELLOW;
+  caveColors[INTERMISSION_2].dirtFg = BLUE;
+  caveColors[INTERMISSION_2].flyFg = RED;
+  caveColors[INTERMISSION_2].flyBg = GRAY;
 
-  caveColors[CAVE_I].boulderSteelWallOutboxFg = COLOR_BLUE;
-  caveColors[CAVE_I].brickWallFg = COLOR_BLUE;
-  caveColors[CAVE_I].brickWallBg = COLOR_CYAN;
-  caveColors[CAVE_I].dirtFg = COLOR_PURPLE;
+  caveColors[CAVE_I].boulderSteelWallOutboxFg = BLUE;
+  caveColors[CAVE_I].brickWallFg = BLUE;
+  caveColors[CAVE_I].brickWallBg = CYAN;
+  caveColors[CAVE_I].dirtFg = PURPLE;
 
-  caveColors[CAVE_J].boulderSteelWallOutboxFg = COLOR_RED;
-  caveColors[CAVE_J].brickWallFg = COLOR_BLUE;
-  caveColors[CAVE_J].brickWallBg = COLOR_GRAY;
-  caveColors[CAVE_J].dirtFg = COLOR_BLUE;
-  caveColors[CAVE_J].flyFg = COLOR_RED;
-  caveColors[CAVE_J].flyBg = COLOR_GRAY;
+  caveColors[CAVE_J].boulderSteelWallOutboxFg = RED;
+  caveColors[CAVE_J].brickWallFg = BLUE;
+  caveColors[CAVE_J].brickWallBg = GRAY;
+  caveColors[CAVE_J].dirtFg = BLUE;
+  caveColors[CAVE_J].flyFg = RED;
+  caveColors[CAVE_J].flyBg = GRAY;
 
-  caveColors[CAVE_K].boulderSteelWallOutboxFg = COLOR_YELLOW;
-  caveColors[CAVE_K].brickWallFg = COLOR_GRAY;
-  caveColors[CAVE_K].brickWallBg = COLOR_YELLOW;
-  caveColors[CAVE_K].dirtFg = COLOR_GREEN;
-  caveColors[CAVE_K].flyFg = COLOR_GREEN;
-  caveColors[CAVE_K].flyBg = COLOR_GRAY;
+  caveColors[CAVE_K].boulderSteelWallOutboxFg = YELLOW;
+  caveColors[CAVE_K].brickWallFg = GRAY;
+  caveColors[CAVE_K].brickWallBg = YELLOW;
+  caveColors[CAVE_K].dirtFg = GREEN;
+  caveColors[CAVE_K].flyFg = GREEN;
+  caveColors[CAVE_K].flyBg = GRAY;
 
-  caveColors[CAVE_L].boulderSteelWallOutboxFg = COLOR_YELLOW;
-  caveColors[CAVE_L].brickWallFg = COLOR_YELLOW;
-  caveColors[CAVE_L].brickWallBg = COLOR_GRAY;
-  caveColors[CAVE_L].dirtFg = COLOR_GREEN;
-  caveColors[CAVE_L].flyFg = COLOR_GREEN;
-  caveColors[CAVE_L].flyBg = COLOR_GRAY;
+  caveColors[CAVE_L].boulderSteelWallOutboxFg = YELLOW;
+  caveColors[CAVE_L].brickWallFg = YELLOW;
+  caveColors[CAVE_L].brickWallBg = GRAY;
+  caveColors[CAVE_L].dirtFg = GREEN;
+  caveColors[CAVE_L].flyFg = GREEN;
+  caveColors[CAVE_L].flyBg = GRAY;
 
-  caveColors[INTERMISSION_3].boulderSteelWallOutboxFg = COLOR_GREEN;
-  caveColors[INTERMISSION_3].flyFg = COLOR_GREEN;
-  caveColors[INTERMISSION_3].flyBg = COLOR_RED;
+  caveColors[INTERMISSION_3].boulderSteelWallOutboxFg = GREEN;
+  caveColors[INTERMISSION_3].flyFg = GREEN;
+  caveColors[INTERMISSION_3].flyBg = RED;
 
-  caveColors[CAVE_M].boulderSteelWallOutboxFg = COLOR_RED;
-  caveColors[CAVE_M].brickWallFg = COLOR_BLACK;
-  caveColors[CAVE_M].brickWallBg = COLOR_GRAY;
-  caveColors[CAVE_M].dirtFg = COLOR_BLUE;
-  caveColors[CAVE_M].flyFg = COLOR_YELLOW;
-  caveColors[CAVE_M].flyBg = COLOR_BLACK;
+  caveColors[CAVE_M].boulderSteelWallOutboxFg = RED;
+  caveColors[CAVE_M].brickWallFg = BLACK;
+  caveColors[CAVE_M].brickWallBg = GRAY;
+  caveColors[CAVE_M].dirtFg = BLUE;
+  caveColors[CAVE_M].flyFg = YELLOW;
+  caveColors[CAVE_M].flyBg = BLACK;
 
-  caveColors[CAVE_N].boulderSteelWallOutboxFg = COLOR_YELLOW;
-  caveColors[CAVE_N].dirtFg = COLOR_PURPLE;
-  caveColors[CAVE_N].flyFg = COLOR_YELLOW;
-  caveColors[CAVE_N].flyBg = COLOR_BLACK;
+  caveColors[CAVE_N].boulderSteelWallOutboxFg = YELLOW;
+  caveColors[CAVE_N].dirtFg = PURPLE;
+  caveColors[CAVE_N].flyFg = YELLOW;
+  caveColors[CAVE_N].flyBg = BLACK;
 
-  caveColors[CAVE_O].boulderSteelWallOutboxFg = COLOR_BLUE;
-  caveColors[CAVE_O].brickWallFg = COLOR_BLACK;
-  caveColors[CAVE_O].brickWallBg = COLOR_GRAY;
-  caveColors[CAVE_O].dirtFg = COLOR_PURPLE;
-  caveColors[CAVE_O].flyFg = COLOR_BLUE;
-  caveColors[CAVE_O].flyBg = COLOR_GRAY;
+  caveColors[CAVE_O].boulderSteelWallOutboxFg = BLUE;
+  caveColors[CAVE_O].brickWallFg = BLACK;
+  caveColors[CAVE_O].brickWallBg = GRAY;
+  caveColors[CAVE_O].dirtFg = PURPLE;
+  caveColors[CAVE_O].flyFg = BLUE;
+  caveColors[CAVE_O].flyBg = GRAY;
 
-  caveColors[CAVE_P].boulderSteelWallOutboxFg = COLOR_CYAN;
-  caveColors[CAVE_P].brickWallFg = COLOR_PURPLE;
-  caveColors[CAVE_P].brickWallBg = COLOR_GRAY;
-  caveColors[CAVE_P].dirtFg = COLOR_RED;
-  caveColors[CAVE_P].flyFg = COLOR_PURPLE;
-  caveColors[CAVE_P].flyBg = COLOR_GRAY;
+  caveColors[CAVE_P].boulderSteelWallOutboxFg = CYAN;
+  caveColors[CAVE_P].brickWallFg = PURPLE;
+  caveColors[CAVE_P].brickWallBg = GRAY;
+  caveColors[CAVE_P].dirtFg = RED;
+  caveColors[CAVE_P].flyFg = PURPLE;
+  caveColors[CAVE_P].flyBg = GRAY;
 
-  caveColors[INTERMISSION_4].boulderSteelWallOutboxFg = COLOR_GREEN;
-  caveColors[INTERMISSION_4].brickWallFg = COLOR_GRAY;
-  caveColors[INTERMISSION_4].brickWallBg = COLOR_GREEN;
-  caveColors[INTERMISSION_4].dirtFg = COLOR_YELLOW;
+  caveColors[INTERMISSION_4].boulderSteelWallOutboxFg = GREEN;
+  caveColors[INTERMISSION_4].brickWallFg = GRAY;
+  caveColors[INTERMISSION_4].brickWallBg = GREEN;
+  caveColors[INTERMISSION_4].dirtFg = YELLOW;
 
   //
   // Initialize game
@@ -819,8 +804,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int turnsTillExitingCave = 0;
   bool isAddingTimeToScore = false;
 
-  Color normalBorderColor = COLOR_BLACK;
-  Color flashBorderColor = COLOR_GRAY;
+  Color normalBorderColor = BLACK;
+  Color flashBorderColor = GRAY;
   Color borderColor = normalBorderColor;
 
   int cameraX = 0;
@@ -1419,32 +1404,32 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           int y = PLAYFIELD_TOP + row*CELL_SIZE - cameraY;
 
           if (cellCover[row][col]) {
-            drawSprite(spriteSteelWall, 0, x, y, currentCaveColors.boulderSteelWallOutboxFg, COLOR_BLACK, turn);
+            drawSprite(spriteSteelWall, 0, x, y, currentCaveColors.boulderSteelWallOutboxFg, BLACK, turn);
           } else {
             switch (map[row][col]) {
               case OBJ_SPACE:
                 if (spaceFlashingTurnsLeft > 0 && !isAddingTimeToScore && turnsTillExitingCave == 0) {
-                  drawSprite(spriteSpaceFlash, turn, x, y, COLOR_WHITE, COLOR_BLACK, 0);
+                  drawSprite(spriteSpaceFlash, turn, x, y, WHITE, BLACK, 0);
                 } else {
-                  drawSprite(spriteSpace, 0, x, y, COLOR_BLACK, COLOR_BLACK, 0);
+                  drawSprite(spriteSpace, 0, x, y, BLACK, BLACK, 0);
                 }
                 break;
 
               case OBJ_STEEL_WALL:
               case OBJ_PRE_OUTBOX:
-                drawSprite(spriteSteelWall, 0, x, y, currentCaveColors.boulderSteelWallOutboxFg, COLOR_BLACK, 0);
+                drawSprite(spriteSteelWall, 0, x, y, currentCaveColors.boulderSteelWallOutboxFg, BLACK, 0);
                 break;
 
               case OBJ_FLASHING_OUTBOX:
                 if (turn % 2 == 0) {
-                  drawSprite(spriteOutbox, 0, x, y, currentCaveColors.boulderSteelWallOutboxFg, COLOR_BLACK, 0);
+                  drawSprite(spriteOutbox, 0, x, y, currentCaveColors.boulderSteelWallOutboxFg, BLACK, 0);
                 } else {
-                  drawSprite(spriteSteelWall, 0, x, y, currentCaveColors.boulderSteelWallOutboxFg, COLOR_BLACK, 0);
+                  drawSprite(spriteSteelWall, 0, x, y, currentCaveColors.boulderSteelWallOutboxFg, BLACK, 0);
                 }
                 break;
 
               case OBJ_DIRT:
-                drawSprite(spriteDirt, 0, x, y, currentCaveColors.dirtFg, COLOR_BLACK, 0);
+                drawSprite(spriteDirt, 0, x, y, currentCaveColors.dirtFg, BLACK, 0);
                 break;
 
               case OBJ_BRICK_WALL:
@@ -1453,12 +1438,12 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
               case OBJ_BOULDER_STATIONARY:
               case OBJ_BOULDER_FALLING:
-                drawSprite(spriteBoulder, 0, x, y, currentCaveColors.boulderSteelWallOutboxFg, COLOR_BLACK, 0);
+                drawSprite(spriteBoulder, 0, x, y, currentCaveColors.boulderSteelWallOutboxFg, BLACK, 0);
                 break;
 
               case OBJ_DIAMOND_STATIONARY:
               case OBJ_DIAMOND_FALLING:
-                drawSprite(spriteDiamond, turn, x, y, COLOR_WHITE, COLOR_BLACK, 0);
+                drawSprite(spriteDiamond, turn, x, y, WHITE, BLACK, 0);
                 break;
 
               case OBJ_FIREFLY_LEFT:
@@ -1475,22 +1460,22 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               case OBJ_PRE_ROCKFORD_1:
                 if (rockfordTurnsTillBirth > 0) {
                   if (rockfordTurnsTillBirth % 2) {
-                    drawSprite(spriteSteelWall, 0, x, y, currentCaveColors.boulderSteelWallOutboxFg, COLOR_BLACK, 0);
+                    drawSprite(spriteSteelWall, 0, x, y, currentCaveColors.boulderSteelWallOutboxFg, BLACK, 0);
                   } else {
-                    drawSprite(spriteOutbox, 0, x, y, currentCaveColors.boulderSteelWallOutboxFg, COLOR_BLACK, 0);
+                    drawSprite(spriteOutbox, 0, x, y, currentCaveColors.boulderSteelWallOutboxFg, BLACK, 0);
                   }
                 } else {
-                  drawSprite(spriteExplosion, 0, x, y, COLOR_WHITE, COLOR_BLACK, 0);
+                  drawSprite(spriteExplosion, 0, x, y, WHITE, BLACK, 0);
                 }
                 break;
               case OBJ_PRE_ROCKFORD_2:
-                drawSprite(spriteExplosion, 1, x, y, COLOR_WHITE, COLOR_BLACK, 0);
+                drawSprite(spriteExplosion, 1, x, y, WHITE, BLACK, 0);
                 break;
               case OBJ_PRE_ROCKFORD_3:
-                drawSprite(spriteExplosion, 2, x, y, COLOR_WHITE, COLOR_BLACK, 0);
+                drawSprite(spriteExplosion, 2, x, y, WHITE, BLACK, 0);
                 break;
               case OBJ_PRE_ROCKFORD_4:
-                drawSprite(spriteRockfordRight, turn, x, y, COLOR_GRAY, COLOR_BLACK, 0);
+                drawSprite(spriteRockfordRight, turn, x, y, GRAY, BLACK, 0);
                 break;
 
                 //
@@ -1500,18 +1485,18 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               case OBJ_ROCKFORD:
                 if (rockfordIsMoving) {
                   if (rockfordIsFacingRight) {
-                    drawSprite(spriteRockfordRight, tick, x, y, COLOR_GRAY, COLOR_BLACK, 0);
+                    drawSprite(spriteRockfordRight, tick, x, y, GRAY, BLACK, 0);
                   } else {
-                    drawSprite(spriteRockfordLeft, tick, x, y, COLOR_GRAY, COLOR_BLACK, 0);
+                    drawSprite(spriteRockfordLeft, tick, x, y, GRAY, BLACK, 0);
                   }
                 } else if (rockfordIsBlinking && rockfordIsTapping) {
-                  drawSprite(spriteRockfordBlinkTap, tick, x, y, COLOR_GRAY, COLOR_BLACK, 0);
+                  drawSprite(spriteRockfordBlinkTap, tick, x, y, GRAY, BLACK, 0);
                 } else if (rockfordIsBlinking) {
-                  drawSprite(spriteRockfordBlink, tick, x, y, COLOR_GRAY, COLOR_BLACK, 0);
+                  drawSprite(spriteRockfordBlink, tick, x, y, GRAY, BLACK, 0);
                 } else if (rockfordIsTapping) {
-                  drawSprite(spriteRockfordTap, tick, x, y, COLOR_GRAY, COLOR_BLACK, 0);
+                  drawSprite(spriteRockfordTap, tick, x, y, GRAY, BLACK, 0);
                 } else {
-                  drawSprite(spriteRockfordIdle, 0, x, y, COLOR_GRAY, COLOR_BLACK, 0);
+                  drawSprite(spriteRockfordIdle, 0, x, y, GRAY, BLACK, 0);
                 }
                 break;
 
@@ -1521,19 +1506,19 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
               case OBJ_EXPLODE_TO_SPACE_1:
               case OBJ_EXPLODE_TO_DIAMOND_1:
-                drawSprite(spriteExplosion, 1, x, y, COLOR_WHITE, COLOR_BLACK, 0);
+                drawSprite(spriteExplosion, 1, x, y, WHITE, BLACK, 0);
                 break;
               case OBJ_EXPLODE_TO_SPACE_2:
               case OBJ_EXPLODE_TO_DIAMOND_2:
-                drawSprite(spriteExplosion, 2, x, y, COLOR_WHITE, COLOR_BLACK, 0);
+                drawSprite(spriteExplosion, 2, x, y, WHITE, BLACK, 0);
                 break;
               case OBJ_EXPLODE_TO_SPACE_3:
               case OBJ_EXPLODE_TO_DIAMOND_3:
-                drawSprite(spriteExplosion, 1, x, y, COLOR_WHITE, COLOR_BLACK, 0);
+                drawSprite(spriteExplosion, 1, x, y, WHITE, BLACK, 0);
                 break;
               case OBJ_EXPLODE_TO_SPACE_4:
               case OBJ_EXPLODE_TO_DIAMOND_4:
-                drawSprite(spriteExplosion, 0, x, y, COLOR_WHITE, COLOR_BLACK, 0);
+                drawSprite(spriteExplosion, 0, x, y, WHITE, BLACK, 0);
                 break;
             }
           }
@@ -1549,7 +1534,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
           if (tileCover[row][col]) {
             int x = PLAYFIELD_LEFT + col*TILE_SIZE;
             int y = PLAYFIELD_TOP + row*TILE_SIZE;
-            drawSprite(spriteSteelWallTile, 0, x, y, currentCaveColors.boulderSteelWallOutboxFg, COLOR_BLACK, turn);
+            drawSprite(spriteSteelWallTile, 0, x, y, currentCaveColors.boulderSteelWallOutboxFg, BLACK, turn);
           }
         }
       }
@@ -1560,13 +1545,13 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
       {
         // Black background
-        drawFilledRect(VIEWPORT_LEFT, VIEWPORT_TOP, VIEWPORT_RIGHT, VIEWPORT_TOP+STATUS_BAR_HEIGHT, COLOR_BLACK);
+        drawFilledRect(VIEWPORT_LEFT, VIEWPORT_TOP, VIEWPORT_RIGHT, VIEWPORT_TOP+STATUS_BAR_HEIGHT, BLACK);
 
         int x = VIEWPORT_LEFT;
         int y = VIEWPORT_TOP + TILE_SIZE;
 
         for (int i = 0; statusBarText[i]; ++i) {
-          drawSprite(spriteAscii, statusBarText[i]-' ', x + i*TILE_SIZE, y, COLOR_GRAY, COLOR_BLACK, 0);
+          drawSprite(spriteAscii, statusBarText[i]-' ', x + i*TILE_SIZE, y, GRAY, BLACK, 0);
         }
       }
 
@@ -1575,17 +1560,17 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       //
 
       if (DEV_CAMERA_DEBUGGING) {
-        drawRect(CAMERA_START_LEFT, 0, CAMERA_START_LEFT, BACKBUFFER_HEIGHT-1, COLOR_WHITE);
-        drawRect(CAMERA_STOP_LEFT, 0, CAMERA_STOP_LEFT, BACKBUFFER_HEIGHT-1, COLOR_WHITE);
-        drawRect(CAMERA_START_RIGHT, 0, CAMERA_START_RIGHT, BACKBUFFER_HEIGHT-1, COLOR_WHITE);
-        drawRect(CAMERA_STOP_RIGHT, 0, CAMERA_STOP_RIGHT, BACKBUFFER_HEIGHT-1, COLOR_WHITE);
+        drawRect(CAMERA_START_LEFT, 0, CAMERA_START_LEFT, BACKBUFFER_HEIGHT-1, WHITE);
+        drawRect(CAMERA_STOP_LEFT, 0, CAMERA_STOP_LEFT, BACKBUFFER_HEIGHT-1, WHITE);
+        drawRect(CAMERA_START_RIGHT, 0, CAMERA_START_RIGHT, BACKBUFFER_HEIGHT-1, WHITE);
+        drawRect(CAMERA_STOP_RIGHT, 0, CAMERA_STOP_RIGHT, BACKBUFFER_HEIGHT-1, WHITE);
 
-        drawRect(0, CAMERA_START_TOP, BACKBUFFER_WIDTH-1, CAMERA_START_TOP, COLOR_WHITE);
-        drawRect(0, CAMERA_STOP_TOP, BACKBUFFER_WIDTH-1, CAMERA_STOP_TOP, COLOR_WHITE);
-        drawRect(0, CAMERA_START_BOTTOM, BACKBUFFER_WIDTH-1, CAMERA_START_BOTTOM, COLOR_WHITE);
-        drawRect(0, CAMERA_STOP_BOTTOM, BACKBUFFER_WIDTH-1, CAMERA_STOP_BOTTOM, COLOR_WHITE);
+        drawRect(0, CAMERA_START_TOP, BACKBUFFER_WIDTH-1, CAMERA_START_TOP, WHITE);
+        drawRect(0, CAMERA_STOP_TOP, BACKBUFFER_WIDTH-1, CAMERA_STOP_TOP, WHITE);
+        drawRect(0, CAMERA_START_BOTTOM, BACKBUFFER_WIDTH-1, CAMERA_START_BOTTOM, WHITE);
+        drawRect(0, CAMERA_STOP_BOTTOM, BACKBUFFER_WIDTH-1, CAMERA_STOP_BOTTOM, WHITE);
 
-        drawRect(rockfordRectLeft, rockfordRectTop, rockfordRectRight, rockfordRectBottom, COLOR_WHITE);
+        drawRect(rockfordRectLeft, rockfordRectTop, rockfordRectRight, rockfordRectBottom, WHITE);
       }
 
       // Display backbuffer
