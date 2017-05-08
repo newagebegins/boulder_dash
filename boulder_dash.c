@@ -457,24 +457,6 @@ bool isKeyDown(uint8_t virtKey) {
   return GetFocus() && (GetKeyState(virtKey) & 0x8000);
 }
 
-void explodeCell(int row, int col, bool toDiamonds, int explosionStage) {
-  if (map[row][col] != OBJ_STEEL_WALL) {
-    if (toDiamonds) {
-      if (explosionStage == 0) {
-        map[row][col] = OBJ_EXPLODE_TO_DIAMOND_0;
-      } else {
-        map[row][col] = OBJ_EXPLODE_TO_DIAMOND_1;
-      }
-    } else {
-      if (explosionStage == 0) {
-        map[row][col] = OBJ_EXPLODE_TO_SPACE_0;
-      } else {
-        map[row][col] = OBJ_EXPLODE_TO_SPACE_1;
-      }
-    }
-  }
-}
-
 bool isObjectRound(Object object) {
   return object == OBJ_BOULDER_STATIONARY || object == OBJ_DIAMOND_STATIONARY || object == OBJ_BRICK_WALL;
 }
@@ -496,6 +478,27 @@ bool explodesToDiamonds(Object object) {
   return object == OBJ_BUTTERFLY_DOWN || object == OBJ_BUTTERFLY_LEFT || object == OBJ_BUTTERFLY_UP || object == OBJ_BUTTERFLY_RIGHT;
 }
 
+void explodeCell(int row, int col, bool toDiamonds, int stage) {
+  if (map[row][col] != OBJ_STEEL_WALL) {
+    if (toDiamonds) {
+      map[row][col] = stage == 0 ? OBJ_EXPLODE_TO_DIAMOND_0 : OBJ_EXPLODE_TO_DIAMOND_1;
+    } else {
+      map[row][col] = stage == 0 ? OBJ_EXPLODE_TO_SPACE_0 : OBJ_EXPLODE_TO_SPACE_1;
+    }
+  }
+}
+
+void explode(int atRow, int atCol, int scanRow, int scanCol) {
+  bool toDiamonds = explodesToDiamonds(map[atRow][atCol]);
+
+  for (int row = atRow-1; row <= atRow+1; ++row) {
+    for (int col = atCol-1; col <= atCol+1; ++col) {
+      int stage = ((row < scanRow) || (row == scanRow && col <= scanCol)) ? 1 : 0;
+      explodeCell(row, col, toDiamonds, stage);
+    }
+  }
+}
+
 void updateBoulderAndDiamond(int row, int col, Object fallingScannedObj, Object stationaryScannedObj, bool isFalling) {
   if (map[row+1][col] == OBJ_SPACE) {
     map[row+1][col] = fallingScannedObj;
@@ -514,19 +517,7 @@ void updateBoulderAndDiamond(int row, int col, Object fallingScannedObj, Object 
       map[row][col] = stationaryScannedObj;
     }
   } else if (isFalling && isObjectExplosive(map[row+1][col])) {
-    bool toDiamonds = explodesToDiamonds(map[row+1][col]);
-
-    explodeCell(row, col, toDiamonds, 1);
-    explodeCell(row, col-1, toDiamonds, 1);
-    explodeCell(row, col+1, toDiamonds, 0);
-
-    explodeCell(row+1, col, toDiamonds, 0);
-    explodeCell(row+1, col-1, toDiamonds, 0);
-    explodeCell(row+1, col+1, toDiamonds, 0);
-
-    explodeCell(row+2, col, toDiamonds, 0);
-    explodeCell(row+2, col-1, toDiamonds, 0);
-    explodeCell(row+2, col+1, toDiamonds, 0);
+    explode(row+1, col, row, col);
   } else {
     map[row][col] = stationaryScannedObj;
   }
@@ -1294,17 +1285,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                     case OBJ_FIREFLY_DOWN: {
                       if (checkFlyExplode(map[row-1][col]) || checkFlyExplode(map[row+1][col]) ||
                           checkFlyExplode(map[row][col-1]) || checkFlyExplode(map[row][col+1])) {
-                        explodeCell(row-1, col-1, false, 1);
-                        explodeCell(row-1, col+0, false, 1);
-                        explodeCell(row-1, col+1, false, 1);
-
-                        explodeCell(row+0, col-1, false, 1);
-                        explodeCell(row+0, col+0, false, 1);
-                        explodeCell(row+0, col+1, false, 0);
-
-                        explodeCell(row+1, col-1, false, 0);
-                        explodeCell(row+1, col+0, false, 0);
-                        explodeCell(row+1, col+1, false, 0);
+                        explode(row, col, row, col);
                       } else {
                         int newRow, newCol;
                         Object newDirection;
