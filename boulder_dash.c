@@ -10,7 +10,7 @@
 // Developer options
 #define DEV_IMMEDIATE_STARTUP 0
 #define DEV_NEAR_OUTBOX 0
-#define DEV_SINGLE_DIAMOND_NEEDED 0
+#define DEV_SINGLE_DIAMOND_NEEDED 1
 #define DEV_CHEAP_BONUS_LIFE 0
 #define DEV_CAMERA_DEBUGGING 0
 #define DEV_SLOW_TICK_DURATION 0
@@ -18,7 +18,7 @@
 #define DEV_SINGLE_LIFE 0
 
 // Gameplay constants
-#define START_CAVE CAVE_G
+#define START_CAVE CAVE_H
 #define TICKS_PER_TURN 5
 #define ROCKFORD_TURNS_TILL_BIRTH 12
 #define CELL_COVER_TURNS 40
@@ -187,6 +187,7 @@ typedef struct {
 
 typedef enum {UP, DOWN, LEFT, RIGHT, DIRECTION_COUNT} Direction;
 typedef enum {TURN_LEFT, STRAIGHT_AHEAD, TURN_RIGHT} Turning;
+typedef enum {MAGIC_WALL_OFF, MAGIC_WALL_ON, MAGIC_WALL_EXPIRED} MagicWallStatus;
 
 //
 // Global variables
@@ -203,6 +204,7 @@ int score;
 int scoreTillBonusLife;
 int spaceFlashingTurnsLeft;
 int currentCaveNumber;
+MagicWallStatus magicWallStatus;
 
 ///////////////
 
@@ -485,9 +487,21 @@ void explode(int atRow, int atCol, int scanRow, int scanCol) {
   }
 }
 
-void updateBoulderAndDiamond(int row, int col, Object fallingScannedObj, Object stationaryScannedObj, bool isFalling) {
+void updateBoulderAndDiamond(int row, int col, bool isFalling, bool isBoulder) {
+  Object fallingScannedObj = isBoulder ? OBJ_BOULDER_FALLING_SCANNED : OBJ_DIAMOND_FALLING_SCANNED;
+  Object stationaryScannedObj = isBoulder ? OBJ_BOULDER_STATIONARY_SCANNED : OBJ_DIAMOND_STATIONARY_SCANNED;
+  Object fallingScannedObjInvert = isBoulder ? OBJ_DIAMOND_FALLING_SCANNED : OBJ_BOULDER_FALLING_SCANNED;
+
   if (map[row+1][col] == OBJ_SPACE) {
     map[row+1][col] = fallingScannedObj;
+    map[row][col] = OBJ_SPACE;
+  } else if (isFalling && map[row+1][col] == OBJ_MAGIC_WALL) {
+    if (magicWallStatus == MAGIC_WALL_OFF) {
+      magicWallStatus = MAGIC_WALL_ON;
+    }
+    if (magicWallStatus == MAGIC_WALL_ON && map[row+2][col] == OBJ_SPACE) {
+      map[row+2][col] = fallingScannedObjInvert;
+    }
     map[row][col] = OBJ_SPACE;
   } else if (isObjectRound(map[row+1][col])) {
     // Try to roll off
@@ -949,6 +963,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   bool rockfordIsFacingRight;
 
   int amoebaSlowGrowthTimeLeft;
+  int magicWallMillingTimeLeft;
+
   int numberOfAmoebaFoundThisTurn;
   int totalAmoebaFoundLastTurn;
   bool amoebaSuffocatedLastTurn;
@@ -988,6 +1004,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       gameIsRunning = false;
     }
 
+    // Initialization on game start
     if (isGameStart) {
       isGameStart = false;
 
@@ -1001,6 +1018,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       spaceFlashingTurnsLeft = 0;
     }
 
+    // Initialization on cave start
     if (isCaveStart && pauseTurnsLeft == 0) {
       isCaveStart = false;
 
@@ -1012,13 +1030,17 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       diamondsCollected = 0;
       currentDiamondValue = caveInfo->initialDiamondValue;
       caveTimeLeft = DEV_QUICK_OUT_OF_TIME ? 5 : caveInfo->caveTime[difficultyLevel];
+
       amoebaSlowGrowthTimeLeft = caveInfo->magicWallMillingTime;
+      magicWallMillingTimeLeft = caveInfo->magicWallMillingTime;
+
       ticksTillNextCaveSecond = TICKS_PER_CAVE_SECOND;
       isOutOfTime = false;
       isOutOfTimeTextShown = false;
       outOfTimeTurn = 0;
       rockfordTurnsTillBirth = DEV_IMMEDIATE_STARTUP ? 0 : ROCKFORD_TURNS_TILL_BIRTH;
       cellCoverTurnsLeft = DEV_IMMEDIATE_STARTUP ? 1 : CELL_COVER_TURNS;
+      magicWallStatus = MAGIC_WALL_OFF;
 
       numberOfAmoebaFoundThisTurn = 0;
       totalAmoebaFoundLastTurn = 0;
@@ -1098,7 +1120,17 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
             ticksTillNextCaveSecond = TICKS_PER_CAVE_SECOND;
             if (caveTimeLeft > 0) {
               --caveTimeLeft;
-              --amoebaSlowGrowthTimeLeft;
+
+              if (amoebaSlowGrowthTimeLeft > 0) {
+                --amoebaSlowGrowthTimeLeft;
+              }
+
+              if (magicWallStatus == MAGIC_WALL_ON) {
+                --magicWallMillingTimeLeft;
+                if (magicWallMillingTimeLeft == 0) {
+                  magicWallStatus = MAGIC_WALL_EXPIRED;
+                }
+              }
             } else {
               isOutOfTime = true;
               isOutOfTimeTextShown = true;
@@ -1373,12 +1405,12 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
                     case OBJ_BOULDER_STATIONARY:
                     case OBJ_BOULDER_FALLING:
-                      updateBoulderAndDiamond(row, col, OBJ_BOULDER_FALLING_SCANNED, OBJ_BOULDER_STATIONARY_SCANNED, map[row][col] == OBJ_BOULDER_FALLING);
+                      updateBoulderAndDiamond(row, col, map[row][col] == OBJ_BOULDER_FALLING, true);
                       break;
 
                     case OBJ_DIAMOND_STATIONARY:
                     case OBJ_DIAMOND_FALLING:
-                      updateBoulderAndDiamond(row, col, OBJ_DIAMOND_FALLING_SCANNED, OBJ_DIAMOND_STATIONARY_SCANNED, map[row][col] == OBJ_DIAMOND_FALLING);
+                      updateBoulderAndDiamond(row, col, map[row][col] == OBJ_DIAMOND_FALLING, false);
                       break;
 
                       //
@@ -1601,6 +1633,12 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               case OBJ_BRICK_WALL:
                 drawSprite(spriteBrickWall, 0, x, y, curColors.brickWallFg, curColors.brickWallBg, 0);
                 break;
+
+              case OBJ_MAGIC_WALL: {
+                int frame = (magicWallStatus == MAGIC_WALL_ON) ? turn : 0;
+                drawSprite(spriteBrickWall, frame, x, y, curColors.brickWallFg, curColors.brickWallBg, 0);
+                break;
+              }
 
               case OBJ_BOULDER_STATIONARY:
               case OBJ_BOULDER_FALLING:

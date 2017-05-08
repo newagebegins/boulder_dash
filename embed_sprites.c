@@ -87,7 +87,7 @@ void main() {
   printSprite("spriteOutbox", 1, 2, 16, 96);
   printSprite("spriteBoulder", 1, 2, 32, 96);
   printSprite("spriteDirt", 1, 2, 48, 96);
-  printSprite("spriteBrickWall", 1, 2, 0, 112);
+  printSprite("spriteBrickWall", 4, 2, 0, 112);
   printSprite("spriteExplosion", 3, 2, 0, 128);
   printSprite("spriteDiamond", 8, 2, 0, 144);
   printSprite("spriteFirefly", 4, 2, 0, 160);
