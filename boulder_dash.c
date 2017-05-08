@@ -8,8 +8,8 @@
 #include "data_caves.h"
 
 // Developer options
-#define DEV_IMMEDIATE_STARTUP 1
-#define DEV_NEAR_OUTBOX 0
+#define DEV_IMMEDIATE_STARTUP 0
+#define DEV_NEAR_OUTBOX 1
 #define DEV_SINGLE_DIAMOND_NEEDED 0
 #define DEV_CHEAP_BONUS_LIFE 0
 #define DEV_CAMERA_DEBUGGING 0
@@ -18,7 +18,7 @@
 #define DEV_SINGLE_LIFE 0
 
 // Gameplay constants
-#define START_CAVE CAVE_D
+#define START_CAVE CAVE_P
 #define TICKS_PER_TURN 5
 #define ROCKFORD_TURNS_TILL_BIRTH 12
 #define CELL_COVER_TURNS 40
@@ -194,9 +194,11 @@ CaveInfo *caveInfo;
 int turnsSinceRockfordSeenAlive;
 bool isOutOfTime;
 int livesLeft;
+int difficultyLevel;
 int score;
 int scoreTillBonusLife;
 int spaceFlashingTurnsLeft;
+int currentCaveNumber;
 
 ///////////////
 
@@ -347,7 +349,7 @@ void placeObjectRect(Object object, int row, int col, int width, int height) {
   }
 }
 
-void decodeCave(uint8_t caveIndex) {
+void decodeCave(int caveIndex) {
   uint8_t *caves[CAVE_COUNT] = {
     caveA, caveB, caveC, caveD, intermission1,
     caveE, caveF, caveG, caveH, intermission2,
@@ -355,7 +357,7 @@ void decodeCave(uint8_t caveIndex) {
     caveM, caveN, caveO, caveP, intermission4,
   };
 
-  assert(caveIndex < CAVE_COUNT);
+  assert(caveIndex >= 0 && caveIndex < CAVE_COUNT);
 
   caveInfo = (CaveInfo *)caves[caveIndex];
 
@@ -614,6 +616,42 @@ void addScore(int amount) {
   }
 }
 
+bool isIntermission() {
+  return ((currentCaveNumber + 1) % 5) == 0;
+}
+
+void incrementCaveNumber() {
+  ++currentCaveNumber;
+  if (currentCaveNumber >= CAVE_COUNT) {
+    currentCaveNumber = 0;
+    if (difficultyLevel < NUM_DIFFICULTY_LEVELS-1) {
+      ++difficultyLevel;
+    }
+  }
+}
+
+char getCurrentCaveLetter() {
+  switch (currentCaveNumber) {
+    case CAVE_A: return 'A';
+    case CAVE_B: return 'B';
+    case CAVE_C: return 'C';
+    case CAVE_D: return 'D';
+    case CAVE_E: return 'E';
+    case CAVE_F: return 'F';
+    case CAVE_G: return 'G';
+    case CAVE_H: return 'H';
+    case CAVE_I: return 'I';
+    case CAVE_J: return 'J';
+    case CAVE_K: return 'K';
+    case CAVE_L: return 'L';
+    case CAVE_M: return 'M';
+    case CAVE_N: return 'N';
+    case CAVE_O: return 'O';
+    case CAVE_P: return 'P';
+  }
+  return ' ';
+}
+
 ////////////////
 
 bool isKeyDown(uint8_t virtKey) {
@@ -866,8 +904,6 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
   bool isCaveStart;
   int pauseTurnsLeft;
-  uint8_t currentCaveNumber;
-  int difficultyLevel;
 
   // These variables are initialized when cave starts
   bool isExitingCave;
@@ -1007,7 +1043,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         } else {
           isAddingTimeToScore = false;
           isExitingCave = true;
-          ++currentCaveNumber;
+          incrementCaveNumber();
           turnsTillExitingCave = TURNS_TILL_EXITING_CAVE;
         }
       } else {
@@ -1366,7 +1402,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               if (tileCoverTicksLeft == 0 && rockfordTurnsTillBirth == 0 &&
                   ((isFailed() && isKeyDown(KEY_FIRE)) || isKeyDown(KEY_FAIL))) {
                 tileCoverTicksLeft = TILE_COVER_TICKS;
-                --livesLeft;
+                if (isIntermission()) {
+                  incrementCaveNumber();
+                } else {
+                  --livesLeft;
+                }
               }
             }
           }
@@ -1411,8 +1451,12 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         sprintf_s(statusBarText, sizeof(statusBarText), "     O U T   O F   T I M E");
       } else {
         if (rockfordTurnsTillBirth > 0 || tileCoverTicksLeft > 0 || isCaveStart) {
-          sprintf_s(statusBarText, sizeof(statusBarText), "  PLAYER 1,  %d MEN,  ROOM %c/%d",
-                    livesLeft, 'A' + currentCaveNumber, difficultyLevel+1);
+          if (isIntermission()) {
+            sprintf_s(statusBarText, sizeof(statusBarText), "       B O N U S  L I F E");
+          } else {
+            sprintf_s(statusBarText, sizeof(statusBarText), "  PLAYER 1,  %d MEN,  ROOM %c/%d",
+                      livesLeft, getCurrentCaveLetter(), difficultyLevel+1);
+          }
         } else {
           if (diamondsCollected < caveInfo->diamondsNeeded[difficultyLevel]) {
             sprintf_s(statusBarText, sizeof(statusBarText), "   %02d*%02d   %02d   %03d   %06d",
