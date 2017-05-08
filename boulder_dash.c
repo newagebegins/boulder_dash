@@ -18,7 +18,7 @@
 #define DEV_SINGLE_LIFE 0
 
 // Gameplay constants
-#define START_CAVE CAVE_D
+#define START_CAVE CAVE_H
 #define TICKS_PER_TURN 5
 #define ROCKFORD_TURNS_TILL_BIRTH 12
 #define CELL_COVER_TURNS 40
@@ -338,16 +338,14 @@ void placeObjectLine(Object object, int row, int col, int length, int direction)
 }
 
 void placeObjectFilledRect(Object object, int row, int col, int width, int height, Object fillObject) {
-  for (int i = 0; i < width; i++) {
-    for (int j = 0; j < height; j++) {
-      if ((j == 0) || (j == height - 1)) {
-        map[row+j][col+i] = object;
+  for (int x = 0; x < width; x++) {
+    for (int y = 0; y < height; y++) {
+      if (y == 0 || y == height-1 || x == 0 || x == width-1) {
+        map[row+y][col+x] = object;
       } else {
-        map[row+j][col+i] = fillObject;
+        map[row+y][col+x] = fillObject;
       }
     }
-    map[row][col+i] = object;
-    map[row+height-1][col+i] = object;
   }
 }
 
