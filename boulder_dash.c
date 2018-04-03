@@ -4,11 +4,16 @@
 #include <stdio.h>
 #include <assert.h>
 
+#define ARRAY_LENGTH(array) (sizeof(array)/sizeof(*array))
+
+#include "sound.h"
+#include "sound.c"
+
 #include "data_sprites.h"
 #include "data_caves.h"
 
 // Developer options
-#define DEV_IMMEDIATE_STARTUP 0
+#define DEV_IMMEDIATE_STARTUP 1
 #define DEV_NEAR_OUTBOX 0
 #define DEV_SINGLE_DIAMOND_NEEDED 0
 #define DEV_CHEAP_BONUS_LIFE 0
@@ -214,8 +219,6 @@ int currentCaveNumber;
 MagicWallStatus magicWallStatus;
 
 ///////////////
-
-#define ARRAY_LENGTH(array) (sizeof(array)/sizeof(*array))
 
 void debugPrint(char *format, ...) {
   va_list argptr;
@@ -976,6 +979,12 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   bool atLeastOneAmoebaFoundThisTurnWhichCanGrow;
 
   //
+  // Initialize sound
+  //
+  SoundSystem soundSystem = {0};
+  initializeSoundSystem(&soundSystem, maxDt);
+
+  //
   // Game loop
   //
 
@@ -1376,6 +1385,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                       }
 
                       if (actuallyMoved) {
+                        playSound(&soundSystem, SND_ROCKFORD_MOVE, tickDuration);
                         if (isKeyDown(KEY_FIRE)) {
                           map[newRow][newCol] = OBJ_SPACE;
                         } else {
@@ -1800,6 +1810,8 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                     backbuffer, bitmapInfo,
                     DIB_RGB_COLORS, SRCCOPY);
     }
+
+    outputSound(&soundSystem);
   }
 
   return 0;
