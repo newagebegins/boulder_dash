@@ -45,5 +45,5 @@ typedef struct {
   int channelsCount;
   int samplesPerSecond;
   float tickDuration;
-  Sound sounds[8]; // TODO(slava): Do we really need multiple simultaneous sounds? How many?
+  Sound sounds[2];
 } SoundSystem;

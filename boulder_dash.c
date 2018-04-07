@@ -495,15 +495,17 @@ void explode(int atRow, int atCol, int scanRow, int scanCol) {
   }
 }
 
-void updateBoulderAndDiamond(int row, int col, bool isFalling, bool isBoulder) {
+void updateBoulderAndDiamond(SoundSystem *sys, int row, int col, bool isFalling, bool isBoulder) {
   Object fallingScannedObj = isBoulder ? OBJ_BOULDER_FALLING_SCANNED : OBJ_DIAMOND_FALLING_SCANNED;
   Object stationaryScannedObj = isBoulder ? OBJ_BOULDER_STATIONARY_SCANNED : OBJ_DIAMOND_STATIONARY_SCANNED;
   Object fallingScannedObjInvert = isBoulder ? OBJ_DIAMOND_FALLING_SCANNED : OBJ_BOULDER_FALLING_SCANNED;
 
   if (map[row+1][col] == OBJ_SPACE) {
-    //playSound(SND_BOULDER);
     map[row+1][col] = fallingScannedObj;
     map[row][col] = OBJ_SPACE;
+    if (!isFalling) {
+      playSound(sys, SND_BOULDER);
+    }
   } else if (isFalling && map[row+1][col] == OBJ_MAGIC_WALL) {
     if (magicWallStatus == MAGIC_WALL_OFF) {
       magicWallStatus = MAGIC_WALL_ON;
@@ -524,11 +526,17 @@ void updateBoulderAndDiamond(int row, int col, bool isFalling, bool isBoulder) {
       map[row][col] = OBJ_SPACE;
     } else {
       map[row][col] = stationaryScannedObj;
+      if (isFalling) {
+        playSound(sys, SND_BOULDER);
+      }
     }
   } else if (isFalling && isObjectExplosive(map[row+1][col])) {
     explode(row+1, col, row, col);
   } else {
     map[row][col] = stationaryScannedObj;
+    if (isFalling) {
+      playSound(sys, SND_BOULDER);
+    }
   }
 }
 
@@ -1426,12 +1434,12 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
                     case OBJ_BOULDER_STATIONARY:
                     case OBJ_BOULDER_FALLING:
-                      updateBoulderAndDiamond(row, col, map[row][col] == OBJ_BOULDER_FALLING, true);
+                      updateBoulderAndDiamond(&soundSystem, row, col, map[row][col] == OBJ_BOULDER_FALLING, true);
                       break;
 
                     case OBJ_DIAMOND_STATIONARY:
                     case OBJ_DIAMOND_FALLING:
-                      updateBoulderAndDiamond(row, col, map[row][col] == OBJ_DIAMOND_FALLING, false);
+                      updateBoulderAndDiamond(&soundSystem, row, col, map[row][col] == OBJ_DIAMOND_FALLING, false);
                       break;
 
                       //

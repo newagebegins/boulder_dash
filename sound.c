@@ -79,6 +79,7 @@ static void playSound(SoundSystem *sys, SoundID soundId) {
     ToneShape toneShape;
     float amplitude;
 
+    // TODO(slava): More sounds
     // TODO(slava): Let specify attack, decay, etc?
     switch (soundId) {
       case SND_ROCKFORD_MOVE_SPACE:
@@ -102,8 +103,8 @@ static void playSound(SoundSystem *sys, SoundID soundId) {
         break;
       }
       case SND_BOULDER:
-        toneFrequency = 300.0f;
-        soundDurationSec = sys->tickDuration;
+        toneFrequency = 1500.0f;
+        soundDurationSec = 0.7f*sys->tickDuration;
         toneShape = TONE_SHAPE_NOISE;
         amplitude = 0.1f;
         break;
