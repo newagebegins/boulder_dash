@@ -14,7 +14,7 @@
 
 // Developer options
 #define DEV_IMMEDIATE_STARTUP 1
-#define DEV_NEAR_OUTBOX 0
+#define DEV_NEAR_OUTBOX 1
 #define DEV_SINGLE_DIAMOND_NEEDED 0
 #define DEV_CHEAP_BONUS_LIFE 0
 #define DEV_CAMERA_DEBUGGING 0
@@ -1126,11 +1126,14 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
         if (caveTimeLeft > 0) {
           --caveTimeLeft;
           addScore(1);
+          soundSystem.addingTimeToScoreSoundFrequency += soundSystem.addingTimeToScoreSoundFrequencyStep;
+          playSound(&soundSystem, SND_ADDING_TIME_TO_SCORE);
         } else {
           isAddingTimeToScore = false;
           isExitingCave = true;
           incrementCaveNumber();
           turnsTillExitingCave = TURNS_TILL_EXITING_CAVE;
+          soundSystem.addingTimeToScoreSoundFrequency = soundSystem.initialAddingTimeToScoreSoundFrequency;
         }
       } else {
         //

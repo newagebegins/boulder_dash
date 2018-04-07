@@ -53,6 +53,9 @@ static void initializeSoundSystem(SoundSystem *sys, float bufferDurationSec, flo
   sys->channelsCount = waveFormat.nChannels;
   sys->samplesPerSecond = waveFormat.nSamplesPerSec;
   sys->tickDuration = tickDuration;
+  sys->initialAddingTimeToScoreSoundFrequency = 500.0f;
+  sys->addingTimeToScoreSoundFrequency = sys->initialAddingTimeToScoreSoundFrequency;
+  sys->addingTimeToScoreSoundFrequencyStep = 8.0f;
 
   audioClient->lpVtbl->Start(audioClient);
 }
@@ -107,6 +110,12 @@ static void playSound(SoundSystem *sys, SoundID soundId) {
         soundDurationSec = 0.7f*sys->tickDuration;
         toneShape = TONE_SHAPE_NOISE;
         amplitude = 0.1f;
+        break;
+      case SND_ADDING_TIME_TO_SCORE:
+        toneFrequency = sys->addingTimeToScoreSoundFrequency;
+        soundDurationSec = sys->tickDuration;
+        toneShape = TONE_SHAPE_TRIANGLE;
+        amplitude = 0.4f;
         break;
       default:
         assert(!"Unknown sound ID");

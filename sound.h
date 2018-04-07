@@ -16,6 +16,7 @@ typedef enum {
   SND_ROCKFORD_MOVE_DIRT,
   SND_DIAMOND_PICK_UP,
   SND_BOULDER,
+  SND_ADDING_TIME_TO_SCORE,
 } SoundID;
 
 typedef enum {
@@ -46,4 +47,7 @@ typedef struct {
   int samplesPerSecond;
   float tickDuration;
   Sound sounds[2];
+  float initialAddingTimeToScoreSoundFrequency;
+  float addingTimeToScoreSoundFrequency;
+  float addingTimeToScoreSoundFrequencyStep;
 } SoundSystem;
