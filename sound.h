@@ -11,7 +11,9 @@ const GUID IID_IAudioRenderClient = {0xF294ACFC, 0x3146, 0x4483, 0xA7, 0xBF, 0xA
 #define TWO_PI 6.28318530718f
 
 typedef enum {
-  SND_ROCKFORD_MOVE,
+  SND_ROCKFORD_MOVE_SPACE,
+  SND_ROCKFORD_MOVE_DIRT,
+  SND_DIAMOND_PICK_UP,
 } SoundID;
 
 typedef struct {
@@ -29,5 +31,6 @@ typedef struct {
   int bytesPerSample;
   int channelsCount;
   int samplesPerSecond;
+  float tickDuration;
   Sound sounds[8]; // TODO(slava): Do we really need multiple simultaneous sounds? How many?
 } SoundSystem;

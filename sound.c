@@ -4,7 +4,7 @@ inline UINT32 power(UINT32 base, UINT32 exponent) {
   return result;
 }
 
-static void initializeSoundSystem(SoundSystem *sys, float bufferDurationSec) {
+static void initializeSoundSystem(SoundSystem *sys, float bufferDurationSec, float tickDuration) {
   //
   // Initialize WASAPI
   //
@@ -52,11 +52,12 @@ static void initializeSoundSystem(SoundSystem *sys, float bufferDurationSec) {
   sys->bytesPerSample = waveFormat.wBitsPerSample / 8;
   sys->channelsCount = waveFormat.nChannels;
   sys->samplesPerSecond = waveFormat.nSamplesPerSec;
+  sys->tickDuration = tickDuration;
 
   audioClient->lpVtbl->Start(audioClient);
 }
 
-static void playSound(SoundSystem *sys, SoundID soundId, float tickDuration) {
+static void playSound(SoundSystem *sys, SoundID soundId) {
   Sound *freeSound = 0;
   for (int soundIndex = 0; soundIndex < ARRAY_LENGTH(sys->sounds); ++soundIndex) {
     Sound *sound = &sys->sounds[soundIndex];
@@ -71,11 +72,20 @@ static void playSound(SoundSystem *sys, SoundID soundId, float tickDuration) {
     float soundDurationSec;
 
     // TODO(slava): Add other sounds
+    // TODO(slava): Let specify a form of tone (triangle, square)?
+    // TODO(slava): Let specify attack, decay, etc?
     switch (soundId) {
-      // TODO(slava): Better move sound
-      case SND_ROCKFORD_MOVE:
+      case SND_ROCKFORD_MOVE_SPACE:
         toneFrequency = 220.0f;
-        soundDurationSec = tickDuration;
+        soundDurationSec = sys->tickDuration;
+        break;
+      case SND_ROCKFORD_MOVE_DIRT:
+        toneFrequency = 190.0f;
+        soundDurationSec = sys->tickDuration;
+        break;
+      case SND_DIAMOND_PICK_UP:
+        toneFrequency = 440.0f;
+        soundDurationSec = sys->tickDuration;
         break;
       default:
         assert(!"Unknown sound ID");

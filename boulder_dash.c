@@ -926,6 +926,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   int turn = 0;
   int tick = 0;
   float tickTimer = 0;
+  float tickDuration = DEV_SLOW_TICK_DURATION ? 0.15f : 0.03375f;
 
   bool isGameStart = true;
   int turnsTillGameRestart = 0;
@@ -982,7 +983,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
   // Initialize sound
   //
   SoundSystem soundSystem = {0};
-  initializeSoundSystem(&soundSystem, maxDt);
+  initializeSoundSystem(&soundSystem, maxDt, tickDuration);
 
   //
   // Game loop
@@ -1097,7 +1098,6 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
       }
     }
 
-    float tickDuration = DEV_SLOW_TICK_DURATION ? 0.15f : 0.03375f;
     tickTimer += dt;
 
     if (tickTimer >= tickDuration) {
@@ -1343,8 +1343,13 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
                       switch (map[newRow][newCol]) {
                         case OBJ_SPACE:
+                          actuallyMoved = true;
+                          playSound(&soundSystem, SND_ROCKFORD_MOVE_SPACE);
+                          break;
+
                         case OBJ_DIRT:
                           actuallyMoved = true;
+                          playSound(&soundSystem, SND_ROCKFORD_MOVE_DIRT);
                           break;
 
                         case OBJ_DIAMOND_STATIONARY:
@@ -1355,6 +1360,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
                           actuallyMoved = true;
                           addScore(currentDiamondValue);
+                          playSound(&soundSystem, SND_DIAMOND_PICK_UP);
 
                           // Check if all the needed diamonds for this cave were collected
                           ++diamondsCollected;
@@ -1385,7 +1391,6 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                       }
 
                       if (actuallyMoved) {
-                        playSound(&soundSystem, SND_ROCKFORD_MOVE, tickDuration);
                         if (isKeyDown(KEY_FIRE)) {
                           map[newRow][newCol] = OBJ_SPACE;
                         } else {
