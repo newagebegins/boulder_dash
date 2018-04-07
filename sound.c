@@ -80,27 +80,29 @@ static void playSound(SoundSystem *sys, SoundID soundId) {
     float toneFrequency;
     float soundDurationSec;
     float amplitude;
+    float variance;
 
     // TODO(slava): More sounds
     // TODO(slava): Let specify attack, decay, etc?
     switch (soundId) {
       case SND_ROCKFORD_MOVE_SPACE:
-        toneFrequency = 100.0f;
+        variance = 20.0f;
+        toneFrequency = 100.0f + variance*(rand()/(float)RAND_MAX) - variance;
         soundDurationSec = 0.1f*sys->tickDuration;
         amplitude = 0.1f;
         break;
       case SND_ROCKFORD_MOVE_DIRT:
-        toneFrequency = 800.0f;
+        variance = 100.0f;
+        toneFrequency = 800.0f + variance*(rand()/(float)RAND_MAX) - variance;
         soundDurationSec = 0.1f*sys->tickDuration;
         amplitude = 0.1f;
         break;
-      case SND_DIAMOND_PICK_UP: {
-        float variance = 200.0f;
+      case SND_DIAMOND_PICK_UP:
+        variance = 200.0f;
         toneFrequency = 2500.0f + variance*(rand()/(float)RAND_MAX) - variance;
         soundDurationSec = 0.4f*sys->tickDuration;
         amplitude = 0.2f;
         break;
-      }
       case SND_BOULDER:
         toneFrequency = 500.0f;
         soundDurationSec = 0.5f*sys->tickDuration;
@@ -112,7 +114,7 @@ static void playSound(SoundSystem *sys, SoundID soundId) {
         amplitude = 0.2f;
         break;
       case SND_UPDATE_CELL_COVER:
-        float variance = 1000.0f;
+        variance = 1000.0f;
         toneFrequency = 4000.0f + variance*(rand()/(float)RAND_MAX) - variance;
         soundDurationSec = 0.1f*sys->tickDuration;
         amplitude = 0.1f;
@@ -148,14 +150,8 @@ static void outputSound(SoundSystem *sys) {
     float fval = 0;
     for (int soundIndex = 0; soundIndex < ARRAY_LENGTH(sys->sounds); ++soundIndex) {
       Sound *sound = &sys->sounds[soundIndex];
-      float v = 0;
       if (sound->isPlaying) {
-        if (sound->phase < PI) {
-          v = -1.0f;
-        } else {
-          v = 1.0f;
-        }
-        fval += v * sound->amplitude;
+        fval += (sound->phase < PI ? -1.0f : 1.0f) * sound->amplitude;
         sound->phase += sound->phaseStep;
         if (sound->phase >= TWO_PI) {
           sound->phase -= TWO_PI;
@@ -176,7 +172,7 @@ static void outputSound(SoundSystem *sys) {
     // If fval is 1.0f, an overflow of INT32 is going to happen when we multiply
     // by maxSampleVal. To avoid this, we multiply by amplitude which is less
     // than 1.
-    float amplitude = 0.9f;
+    float amplitude = 0.8f;
     INT32 val = (INT32)(fval * amplitude * sys->maxIntegerSampleValue);
 
     for (int channel = 0; channel < sys->channelsCount; ++channel)
