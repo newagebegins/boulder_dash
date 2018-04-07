@@ -501,6 +501,7 @@ void updateBoulderAndDiamond(int row, int col, bool isFalling, bool isBoulder) {
   Object fallingScannedObjInvert = isBoulder ? OBJ_DIAMOND_FALLING_SCANNED : OBJ_BOULDER_FALLING_SCANNED;
 
   if (map[row+1][col] == OBJ_SPACE) {
+    //playSound(SND_BOULDER);
     map[row+1][col] = fallingScannedObj;
     map[row][col] = OBJ_SPACE;
   } else if (isFalling && map[row+1][col] == OBJ_MAGIC_WALL) {

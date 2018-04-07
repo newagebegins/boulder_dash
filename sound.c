@@ -57,6 +57,12 @@ static void initializeSoundSystem(SoundSystem *sys, float bufferDurationSec, flo
   audioClient->lpVtbl->Start(audioClient);
 }
 
+static void fillNoiseBuffer(Sound *sound) {
+  for (int i = 0; i < ARRAY_LENGTH(sound->noise); ++i) {
+    sound->noise[i] = 2.0f*((float)rand()/(float)RAND_MAX) - 1.0f;
+  }
+}
+
 static void playSound(SoundSystem *sys, SoundID soundId) {
   Sound *freeSound = 0;
   for (int soundIndex = 0; soundIndex < ARRAY_LENGTH(sys->sounds); ++soundIndex) {
@@ -70,22 +76,36 @@ static void playSound(SoundSystem *sys, SoundID soundId) {
   if (freeSound) {
     float toneFrequency;
     float soundDurationSec;
+    ToneShape toneShape;
+    float amplitude;
 
-    // TODO(slava): Add other sounds
-    // TODO(slava): Let specify a form of tone (triangle, square)?
     // TODO(slava): Let specify attack, decay, etc?
     switch (soundId) {
       case SND_ROCKFORD_MOVE_SPACE:
-        toneFrequency = 220.0f;
+        toneFrequency = 100.0f;
         soundDurationSec = sys->tickDuration;
+        toneShape = TONE_SHAPE_NOISE;
+        amplitude = 0.1f;
         break;
       case SND_ROCKFORD_MOVE_DIRT:
-        toneFrequency = 190.0f;
-        soundDurationSec = sys->tickDuration;
+        toneFrequency = 2000.0f;
+        soundDurationSec = 0.3f*sys->tickDuration;
+        toneShape = TONE_SHAPE_NOISE;
+        amplitude = 0.1f;
         break;
-      case SND_DIAMOND_PICK_UP:
-        toneFrequency = 440.0f;
+      case SND_DIAMOND_PICK_UP: {
+        float variance = 200.0f;
+        toneFrequency = 2000.0f + variance*(rand()/(float)RAND_MAX) - variance;
+        soundDurationSec = 0.5f*sys->tickDuration;
+        toneShape = TONE_SHAPE_TRIANGLE;
+        amplitude = 0.4f;
+        break;
+      }
+      case SND_BOULDER:
+        toneFrequency = 300.0f;
         soundDurationSec = sys->tickDuration;
+        toneShape = TONE_SHAPE_NOISE;
+        amplitude = 0.1f;
         break;
       default:
         assert(!"Unknown sound ID");
@@ -95,6 +115,11 @@ static void playSound(SoundSystem *sys, SoundID soundId) {
     freeSound->phase = 0;
     freeSound->phaseStep = TWO_PI*toneFrequency / sys->samplesPerSecond;
     freeSound->samplesLeftToPlay = (int)(soundDurationSec * sys->samplesPerSecond);
+    freeSound->toneShape = toneShape;
+    freeSound->amplitude = amplitude;
+    if (toneShape == TONE_SHAPE_NOISE) {
+      fillNoiseBuffer(freeSound);
+    }
   } else {
     // All sound slots are occupied.
   }
@@ -117,11 +142,42 @@ static void outputSound(SoundSystem *sys) {
     float fval = 0;
     for (int soundIndex = 0; soundIndex < ARRAY_LENGTH(sys->sounds); ++soundIndex) {
       Sound *sound = &sys->sounds[soundIndex];
+      float v = 0;
       if (sound->isPlaying) {
-        fval += sinf(sound->phase);
+        switch (sound->toneShape) {
+          case TONE_SHAPE_SINE:
+            v = sinf(sound->phase);
+            break;
+          case TONE_SHAPE_SQUARE:
+            if (sound->phase < PI) {
+              v = -1.0f;
+            } else {
+              v = 1.0f;
+            }
+            break;
+          case TONE_SHAPE_TRIANGLE:
+            if (sound->phase < 0.5f*PI) {
+              v = 2.0f*sound->phase/PI;
+            } else if (sound->phase < 1.5f*PI) {
+              v = 2.0f*(1.0f - sound->phase/PI);
+            } else {
+              v = -4.0f + (2.0f/PI)*sound->phase;
+            }
+            break;
+          case TONE_SHAPE_NOISE: {
+            int index = (int)(sound->phase/TWO_PI)*(ARRAY_LENGTH(sound->noise) - 1);
+            assert(index >= 0 && index < ARRAY_LENGTH(sound->noise));
+            v = sound->noise[index];
+            break;
+          }
+        }
+        fval += v * sound->amplitude;
         sound->phase += sound->phaseStep;
         if (sound->phase >= TWO_PI) {
           sound->phase -= TWO_PI;
+          if (sound->toneShape == TONE_SHAPE_NOISE) {
+            fillNoiseBuffer(sound);
+          }
         }
         sound->samplesLeftToPlay--;
         if (sound->samplesLeftToPlay == 0) {

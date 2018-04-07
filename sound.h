@@ -8,19 +8,32 @@ const GUID IID_IAudioClient = {0x1CB9AD4C, 0xDBFA, 0x4c32, 0xB1, 0x78, 0xC2, 0xF
 const GUID IID_IAudioRenderClient = {0xF294ACFC, 0x3146, 0x4483, 0xA7, 0xBF, 0xAD, 0xDC, 0xA7, 0xC2, 0x60, 0xE2};
 
 #define REFTIMES_PER_SEC 10000000
+#define PI 3.14159265359f
 #define TWO_PI 6.28318530718f
 
 typedef enum {
   SND_ROCKFORD_MOVE_SPACE,
   SND_ROCKFORD_MOVE_DIRT,
   SND_DIAMOND_PICK_UP,
+  SND_BOULDER,
 } SoundID;
+
+typedef enum {
+  TONE_SHAPE_SINE,
+  TONE_SHAPE_TRIANGLE,
+  TONE_SHAPE_SQUARE,
+  TONE_SHAPE_NOISE,
+  TONE_SHAPE_COUNT,
+} ToneShape;
 
 typedef struct {
   bool isPlaying;
   float phase;
   float phaseStep;
   int samplesLeftToPlay;
+  ToneShape toneShape;
+  float amplitude;
+  float noise[32];
 } Sound;
 
 typedef struct {
