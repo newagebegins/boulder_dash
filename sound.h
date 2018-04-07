@@ -17,6 +17,7 @@ typedef enum {
   SND_DIAMOND_PICK_UP,
   SND_BOULDER,
   SND_ADDING_TIME_TO_SCORE,
+  SND_UPDATE_CELL_COVER,
 } SoundID;
 
 typedef enum {

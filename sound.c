@@ -117,6 +117,13 @@ static void playSound(SoundSystem *sys, SoundID soundId) {
         toneShape = TONE_SHAPE_TRIANGLE;
         amplitude = 0.4f;
         break;
+      case SND_UPDATE_CELL_COVER:
+        float variance = 1000.0f;
+        toneFrequency = 4000.0f + variance*(rand()/(float)RAND_MAX) - variance;
+        soundDurationSec = 0.1f*sys->tickDuration;
+        toneShape = TONE_SHAPE_SQUARE;
+        amplitude = 0.1f;
+        break;
       default:
         assert(!"Unknown sound ID");
     }

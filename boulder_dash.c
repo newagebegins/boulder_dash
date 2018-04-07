@@ -13,8 +13,8 @@
 #include "data_caves.h"
 
 // Developer options
-#define DEV_IMMEDIATE_STARTUP 1
-#define DEV_NEAR_OUTBOX 1
+#define DEV_IMMEDIATE_STARTUP 0
+#define DEV_NEAR_OUTBOX 0
 #define DEV_SINGLE_DIAMOND_NEEDED 0
 #define DEV_CHEAP_BONUS_LIFE 0
 #define DEV_CAMERA_DEBUGGING 0
@@ -1266,6 +1266,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                     cellCover[row][rand()%CAVE_WIDTH] = false;
                   }
                 }
+                playSound(&soundSystem, SND_UPDATE_CELL_COVER);
               } else if (cellCoverTurnsLeft == 1) {
                 pauseTurnsLeft = COVER_PAUSE;
               } else if (cellCoverTurnsLeft == 0) {
