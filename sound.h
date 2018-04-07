@@ -20,20 +20,11 @@ typedef enum {
   SND_UPDATE_CELL_COVER,
 } SoundID;
 
-typedef enum {
-  TONE_SHAPE_SINE,
-  TONE_SHAPE_TRIANGLE,
-  TONE_SHAPE_SQUARE,
-  TONE_SHAPE_NOISE,
-  TONE_SHAPE_COUNT,
-} ToneShape;
-
 typedef struct {
   bool isPlaying;
   float phase;
   float phaseStep;
   int samplesLeftToPlay;
-  ToneShape toneShape;
   float amplitude;
   float noise[32];
 } Sound;

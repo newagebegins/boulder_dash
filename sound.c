@@ -53,9 +53,9 @@ static void initializeSoundSystem(SoundSystem *sys, float bufferDurationSec, flo
   sys->channelsCount = waveFormat.nChannels;
   sys->samplesPerSecond = waveFormat.nSamplesPerSec;
   sys->tickDuration = tickDuration;
-  sys->initialAddingTimeToScoreSoundFrequency = 500.0f;
+  sys->initialAddingTimeToScoreSoundFrequency = 200.0f;
   sys->addingTimeToScoreSoundFrequency = sys->initialAddingTimeToScoreSoundFrequency;
-  sys->addingTimeToScoreSoundFrequencyStep = 8.0f;
+  sys->addingTimeToScoreSoundFrequencyStep = 5.0f;
 
   audioClient->lpVtbl->Start(audioClient);
 }
@@ -79,7 +79,6 @@ static void playSound(SoundSystem *sys, SoundID soundId) {
   if (freeSound) {
     float toneFrequency;
     float soundDurationSec;
-    ToneShape toneShape;
     float amplitude;
 
     // TODO(slava): More sounds
@@ -87,41 +86,35 @@ static void playSound(SoundSystem *sys, SoundID soundId) {
     switch (soundId) {
       case SND_ROCKFORD_MOVE_SPACE:
         toneFrequency = 100.0f;
-        soundDurationSec = sys->tickDuration;
-        toneShape = TONE_SHAPE_NOISE;
+        soundDurationSec = 0.1f*sys->tickDuration;
         amplitude = 0.1f;
         break;
       case SND_ROCKFORD_MOVE_DIRT:
-        toneFrequency = 2000.0f;
-        soundDurationSec = 0.3f*sys->tickDuration;
-        toneShape = TONE_SHAPE_NOISE;
+        toneFrequency = 800.0f;
+        soundDurationSec = 0.1f*sys->tickDuration;
         amplitude = 0.1f;
         break;
       case SND_DIAMOND_PICK_UP: {
         float variance = 200.0f;
-        toneFrequency = 2000.0f + variance*(rand()/(float)RAND_MAX) - variance;
-        soundDurationSec = 0.5f*sys->tickDuration;
-        toneShape = TONE_SHAPE_TRIANGLE;
-        amplitude = 0.4f;
+        toneFrequency = 2500.0f + variance*(rand()/(float)RAND_MAX) - variance;
+        soundDurationSec = 0.4f*sys->tickDuration;
+        amplitude = 0.2f;
         break;
       }
       case SND_BOULDER:
-        toneFrequency = 1500.0f;
-        soundDurationSec = 0.7f*sys->tickDuration;
-        toneShape = TONE_SHAPE_NOISE;
+        toneFrequency = 500.0f;
+        soundDurationSec = 0.5f*sys->tickDuration;
         amplitude = 0.1f;
         break;
       case SND_ADDING_TIME_TO_SCORE:
         toneFrequency = sys->addingTimeToScoreSoundFrequency;
         soundDurationSec = sys->tickDuration;
-        toneShape = TONE_SHAPE_TRIANGLE;
-        amplitude = 0.4f;
+        amplitude = 0.2f;
         break;
       case SND_UPDATE_CELL_COVER:
         float variance = 1000.0f;
         toneFrequency = 4000.0f + variance*(rand()/(float)RAND_MAX) - variance;
         soundDurationSec = 0.1f*sys->tickDuration;
-        toneShape = TONE_SHAPE_SQUARE;
         amplitude = 0.1f;
         break;
       default:
@@ -132,11 +125,7 @@ static void playSound(SoundSystem *sys, SoundID soundId) {
     freeSound->phase = 0;
     freeSound->phaseStep = TWO_PI*toneFrequency / sys->samplesPerSecond;
     freeSound->samplesLeftToPlay = (int)(soundDurationSec * sys->samplesPerSecond);
-    freeSound->toneShape = toneShape;
     freeSound->amplitude = amplitude;
-    if (toneShape == TONE_SHAPE_NOISE) {
-      fillNoiseBuffer(freeSound);
-    }
   } else {
     // All sound slots are occupied.
   }
@@ -161,40 +150,15 @@ static void outputSound(SoundSystem *sys) {
       Sound *sound = &sys->sounds[soundIndex];
       float v = 0;
       if (sound->isPlaying) {
-        switch (sound->toneShape) {
-          case TONE_SHAPE_SINE:
-            v = sinf(sound->phase);
-            break;
-          case TONE_SHAPE_SQUARE:
-            if (sound->phase < PI) {
-              v = -1.0f;
-            } else {
-              v = 1.0f;
-            }
-            break;
-          case TONE_SHAPE_TRIANGLE:
-            if (sound->phase < 0.5f*PI) {
-              v = 2.0f*sound->phase/PI;
-            } else if (sound->phase < 1.5f*PI) {
-              v = 2.0f*(1.0f - sound->phase/PI);
-            } else {
-              v = -4.0f + (2.0f/PI)*sound->phase;
-            }
-            break;
-          case TONE_SHAPE_NOISE: {
-            int index = (int)(sound->phase/TWO_PI)*(ARRAY_LENGTH(sound->noise) - 1);
-            assert(index >= 0 && index < ARRAY_LENGTH(sound->noise));
-            v = sound->noise[index];
-            break;
-          }
+        if (sound->phase < PI) {
+          v = -1.0f;
+        } else {
+          v = 1.0f;
         }
         fval += v * sound->amplitude;
         sound->phase += sound->phaseStep;
         if (sound->phase >= TWO_PI) {
           sound->phase -= TWO_PI;
-          if (sound->toneShape == TONE_SHAPE_NOISE) {
-            fillNoiseBuffer(sound);
-          }
         }
         sound->samplesLeftToPlay--;
         if (sound->samplesLeftToPlay == 0) {
