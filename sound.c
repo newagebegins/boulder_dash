@@ -77,56 +77,70 @@ static void playSound(SoundSystem *sys, SoundID soundId) {
   }
 
   if (freeSound) {
-    float toneFrequency;
-    float soundDurationSec;
-    float amplitude;
-    float variance;
+    float toneFrequency = 0.0f;
+    float baseFrequency = 0.0f;
+    float freqVariance = 0.0f;
+    float amplitude = 0.0f;
+    float soundDurationSec = 0.0f;
+    float baseDuration = 0.0f;
+    float durationVariance = 0.0f;
 
     // TODO(slava): More sounds
     // TODO(slava): Let specify attack, decay, etc?
     switch (soundId) {
       case SND_ROCKFORD_MOVE_SPACE:
-        variance = 20.0f;
-        toneFrequency = 100.0f + variance*(rand()/(float)RAND_MAX) - variance;
-        soundDurationSec = 0.1f*sys->tickDuration;
+        baseFrequency = 100.0f;
+        freqVariance = 20.0f;
+        baseDuration = 0.1f;
         amplitude = 0.1f;
         break;
       case SND_ROCKFORD_MOVE_DIRT:
-        variance = 100.0f;
-        toneFrequency = 800.0f + variance*(rand()/(float)RAND_MAX) - variance;
-        soundDurationSec = 0.1f*sys->tickDuration;
+        baseFrequency = 800.0f;
+        freqVariance = 100.0f;
+        baseDuration = 0.1f;
         amplitude = 0.1f;
         break;
       case SND_DIAMOND_PICK_UP:
-        variance = 200.0f;
-        toneFrequency = 2500.0f + variance*(rand()/(float)RAND_MAX) - variance;
-        soundDurationSec = 0.4f*sys->tickDuration;
+        baseFrequency = 2500.0f;
+        freqVariance = 200.0f;
+        baseDuration = 0.4f;
         amplitude = 0.2f;
         break;
       case SND_BOULDER:
-        toneFrequency = 500.0f;
-        soundDurationSec = 0.5f*sys->tickDuration;
+        baseFrequency = 500.0f;
+        freqVariance = 0.0f;
+        baseDuration = 0.5f;
         amplitude = 0.1f;
         break;
       case SND_ADDING_TIME_TO_SCORE:
-        toneFrequency = sys->addingTimeToScoreSoundFrequency;
-        soundDurationSec = sys->tickDuration;
+        baseFrequency = sys->addingTimeToScoreSoundFrequency;
+        baseDuration = 1.0f;
         amplitude = 0.2f;
         break;
       case SND_UPDATE_CELL_COVER:
-        variance = 1000.0f;
-        toneFrequency = 4000.0f + variance*(rand()/(float)RAND_MAX) - variance;
-        soundDurationSec = 0.1f*sys->tickDuration;
+        baseFrequency = 4000.0f;
+        freqVariance = 1000.0f;
+        baseDuration = 0.1f;
         amplitude = 0.1f;
         break;
+      case SND_UPDATE_TILE_COVER:
+        baseFrequency = 3000.0f;
+        freqVariance = 2500.0f;
+        baseDuration = 0.12f;
+        durationVariance = 0.09f;
+        amplitude = 0.05f;
+        break;
       case SND_ROCKFORD_BIRTH:
-        toneFrequency = 3000.0f;
-        soundDurationSec = 0.2f*sys->tickDuration;
+        baseFrequency = 3000.0f;
+        baseDuration = 0.2f;
         amplitude = 0.2f;
         break;
       default:
         assert(!"Unknown sound ID");
     }
+
+    toneFrequency = baseFrequency + freqVariance*(rand()/(float)RAND_MAX) - freqVariance;
+    soundDurationSec = sys->tickDuration*(baseDuration + durationVariance*(rand()/(float)RAND_MAX) - durationVariance);
 
     freeSound->isPlaying = true;
     freeSound->phase = 0;

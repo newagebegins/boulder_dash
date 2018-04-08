@@ -13,7 +13,7 @@
 #include "data_caves.h"
 
 // Developer options
-#define DEV_IMMEDIATE_STARTUP 1
+#define DEV_IMMEDIATE_STARTUP 0
 #define DEV_NEAR_OUTBOX 0
 #define DEV_SINGLE_DIAMOND_NEEDED 0
 #define DEV_CHEAP_BONUS_LIFE 0
@@ -1592,6 +1592,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               int col = rand() % PLAYFIELD_WIDTH_IN_TILES;
               tileCover[row][col] = true;
             }
+            playSound(&soundSystem, SND_UPDATE_TILE_COVER);
           }
         }
       }
