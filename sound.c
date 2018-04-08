@@ -135,6 +135,13 @@ static void playSound(SoundSystem *sys, SoundID soundId) {
         baseDuration = 0.2f;
         amplitude = 0.2f;
         break;
+      case SND_AMOEBA:
+        baseFrequency = 4000.0f;
+        freqVariance = 3500.0f;
+        baseDuration = 0.4f;
+        durationVariance = 0.2f;
+        amplitude = 0.01f;
+        break;
       default:
         assert(!"Unknown sound ID");
     }
@@ -191,7 +198,7 @@ static void outputSound(SoundSystem *sys) {
     // If fval is 1.0f, an overflow of INT32 is going to happen when we multiply
     // by maxSampleVal. To avoid this, we multiply by amplitude which is less
     // than 1.
-    float amplitude = 0.8f;
+    float amplitude = 0.7f;
     INT32 val = (INT32)(fval * amplitude * sys->maxIntegerSampleValue);
 
     for (int channel = 0; channel < sys->channelsCount; ++channel)

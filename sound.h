@@ -20,6 +20,7 @@ typedef enum {
   SND_UPDATE_CELL_COVER,
   SND_UPDATE_TILE_COVER,
   SND_ROCKFORD_BIRTH,
+  SND_AMOEBA,
 } SoundID;
 
 typedef struct {
@@ -40,7 +41,7 @@ typedef struct {
   int channelsCount;
   int samplesPerSecond;
   float tickDuration;
-  Sound sounds[2];
+  Sound sounds[3];
   float initialAddingTimeToScoreSoundFrequency;
   float addingTimeToScoreSoundFrequency;
   float addingTimeToScoreSoundFrequencyStep;

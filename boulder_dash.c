@@ -13,7 +13,7 @@
 #include "data_caves.h"
 
 // Developer options
-#define DEV_IMMEDIATE_STARTUP 0
+#define DEV_IMMEDIATE_STARTUP 1
 #define DEV_NEAR_OUTBOX 0
 #define DEV_SINGLE_DIAMOND_NEEDED 0
 #define DEV_CHEAP_BONUS_LIFE 0
@@ -23,7 +23,7 @@
 #define DEV_SINGLE_LIFE 0
 
 // Gameplay constants
-#define START_CAVE CAVE_A
+#define START_CAVE CAVE_G // CAVE_A
 #define TICKS_PER_TURN 5
 #define ROCKFORD_TURNS_TILL_BIRTH 12
 #define CELL_COVER_TURNS 40
@@ -1520,6 +1520,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                           }
                         }
                       }
+                      playSound(&soundSystem, SND_AMOEBA);
                       break;
                   }
                 }
