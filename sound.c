@@ -119,6 +119,11 @@ static void playSound(SoundSystem *sys, SoundID soundId) {
         soundDurationSec = 0.1f*sys->tickDuration;
         amplitude = 0.1f;
         break;
+      case SND_ROCKFORD_BIRTH:
+        toneFrequency = 3000.0f;
+        soundDurationSec = 0.2f*sys->tickDuration;
+        amplitude = 0.2f;
+        break;
       default:
         assert(!"Unknown sound ID");
     }

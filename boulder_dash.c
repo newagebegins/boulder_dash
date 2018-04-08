@@ -13,7 +13,7 @@
 #include "data_caves.h"
 
 // Developer options
-#define DEV_IMMEDIATE_STARTUP 0
+#define DEV_IMMEDIATE_STARTUP 1
 #define DEV_NEAR_OUTBOX 0
 #define DEV_SINGLE_DIAMOND_NEEDED 0
 #define DEV_CHEAP_BONUS_LIFE 0
@@ -504,7 +504,7 @@ void updateBoulderAndDiamond(SoundSystem *sys, int row, int col, bool isFalling,
     map[row+1][col] = fallingScannedObj;
     map[row][col] = OBJ_SPACE;
     if (!isFalling) {
-      playSound(sys, SND_BOULDER);
+      playSound(sys, isBoulder ? SND_BOULDER : SND_DIAMOND_PICK_UP);
     }
   } else if (isFalling && map[row+1][col] == OBJ_MAGIC_WALL) {
     if (magicWallStatus == MAGIC_WALL_OFF) {
@@ -527,7 +527,7 @@ void updateBoulderAndDiamond(SoundSystem *sys, int row, int col, bool isFalling,
     } else {
       map[row][col] = stationaryScannedObj;
       if (isFalling) {
-        playSound(sys, SND_BOULDER);
+        playSound(sys, isBoulder ? SND_BOULDER : SND_DIAMOND_PICK_UP);
       }
     }
   } else if (isFalling && isObjectExplosive(map[row+1][col])) {
@@ -535,7 +535,7 @@ void updateBoulderAndDiamond(SoundSystem *sys, int row, int col, bool isFalling,
   } else {
     map[row][col] = stationaryScannedObj;
     if (isFalling) {
-      playSound(sys, SND_BOULDER);
+      playSound(sys, isBoulder ? SND_BOULDER : SND_DIAMOND_PICK_UP);
     }
   }
 }
@@ -1320,6 +1320,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                     case OBJ_PRE_ROCKFORD_4:
                       turnsSinceRockfordSeenAlive = 0;
                       map[row][col] = OBJ_ROCKFORD;
+                      playSound(&soundSystem, SND_ROCKFORD_BIRTH);
                       break;
 
                       //
@@ -1390,9 +1391,11 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
                             if (isKeyDown(KEY_RIGHT) && map[newRow][newCol+1] == OBJ_SPACE) {
                               map[newRow][newCol+1] = OBJ_BOULDER_STATIONARY_SCANNED;
                               actuallyMoved = true;
+                              playSound(&soundSystem, SND_BOULDER);
                             } else if (isKeyDown(KEY_LEFT) && map[newRow][newCol-1] == OBJ_SPACE) {
                               map[newRow][newCol-1] = OBJ_BOULDER_STATIONARY_SCANNED;
                               actuallyMoved = true;
+                              playSound(&soundSystem, SND_BOULDER);
                             }
                           }
                           break;
