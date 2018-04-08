@@ -100,7 +100,7 @@ static void playSound(SoundSystem *sys, SoundID soundId) {
         baseDuration = 0.1f;
         amplitude = 0.1f;
         break;
-      case SND_DIAMOND_PICK_UP:
+      case SND_DIAMOND:
         baseFrequency = 2500.0f;
         freqVariance = 200.0f;
         baseDuration = 0.4f;
@@ -140,7 +140,14 @@ static void playSound(SoundSystem *sys, SoundID soundId) {
         freqVariance = 3500.0f;
         baseDuration = 0.4f;
         durationVariance = 0.2f;
-        amplitude = 0.01f;
+        amplitude = 0.02f;
+        break;
+      case SND_MAGIC_WALL:
+        baseFrequency = 3000.0f;
+        freqVariance = 1000.0f;
+        baseDuration = 0.2f;
+        durationVariance = 0.1f;
+        amplitude = 0.02f;
         break;
       default:
         assert(!"Unknown sound ID");

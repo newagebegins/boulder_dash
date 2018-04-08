@@ -13,7 +13,7 @@
 #include "data_caves.h"
 
 // Developer options
-#define DEV_IMMEDIATE_STARTUP 1
+#define DEV_IMMEDIATE_STARTUP 0
 #define DEV_NEAR_OUTBOX 0
 #define DEV_SINGLE_DIAMOND_NEEDED 0
 #define DEV_CHEAP_BONUS_LIFE 0
@@ -23,7 +23,7 @@
 #define DEV_SINGLE_LIFE 0
 
 // Gameplay constants
-#define START_CAVE CAVE_G // CAVE_A
+#define START_CAVE CAVE_A
 #define TICKS_PER_TURN 5
 #define ROCKFORD_TURNS_TILL_BIRTH 12
 #define CELL_COVER_TURNS 40
@@ -504,7 +504,7 @@ void updateBoulderAndDiamond(SoundSystem *sys, int row, int col, bool isFalling,
     map[row+1][col] = fallingScannedObj;
     map[row][col] = OBJ_SPACE;
     if (!isFalling) {
-      playSound(sys, isBoulder ? SND_BOULDER : SND_DIAMOND_PICK_UP);
+      playSound(sys, isBoulder ? SND_BOULDER : SND_DIAMOND);
     }
   } else if (isFalling && map[row+1][col] == OBJ_MAGIC_WALL) {
     if (magicWallStatus == MAGIC_WALL_OFF) {
@@ -527,7 +527,7 @@ void updateBoulderAndDiamond(SoundSystem *sys, int row, int col, bool isFalling,
     } else {
       map[row][col] = stationaryScannedObj;
       if (isFalling) {
-        playSound(sys, isBoulder ? SND_BOULDER : SND_DIAMOND_PICK_UP);
+        playSound(sys, isBoulder ? SND_BOULDER : SND_DIAMOND);
       }
     }
   } else if (isFalling && isObjectExplosive(map[row+1][col])) {
@@ -535,7 +535,7 @@ void updateBoulderAndDiamond(SoundSystem *sys, int row, int col, bool isFalling,
   } else {
     map[row][col] = stationaryScannedObj;
     if (isFalling) {
-      playSound(sys, isBoulder ? SND_BOULDER : SND_DIAMOND_PICK_UP);
+      playSound(sys, isBoulder ? SND_BOULDER : SND_DIAMOND);
     }
   }
 }
@@ -1184,6 +1184,10 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
               --spaceFlashingTurnsLeft;
             }
 
+            if (magicWallStatus == MAGIC_WALL_ON) {
+              playSound(&soundSystem, SND_MAGIC_WALL);
+            }
+
             //
             // Move camera
             //
@@ -1374,7 +1378,7 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdLine, int cmdS
 
                           actuallyMoved = true;
                           addScore(currentDiamondValue);
-                          playSound(&soundSystem, SND_DIAMOND_PICK_UP);
+                          playSound(&soundSystem, SND_DIAMOND);
 
                           // Check if all the needed diamonds for this cave were collected
                           ++diamondsCollected;
